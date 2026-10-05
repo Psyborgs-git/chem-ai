@@ -11,6 +11,7 @@ import {
 import { CandidatePanel } from "../candidates/CandidatePanel";
 import { DatasetsPanel } from "../learning/datasets/DatasetsPanel";
 import { OptimizationPanel } from "../optimization/OptimizationPanel";
+import { ReferenceAnalysisPanel } from "../reference-analysis/ReferenceAnalysisPanel";
 import { ResearchPanel } from "../research/ResearchPanel";
 import { RunsPanel } from "../runs/RunsPanel";
 import { ContractEditor } from "./ContractEditor";
@@ -31,6 +32,7 @@ const SECTIONS = [
   "decisions",
   "datasets",
   "optimization",
+  "analysis",
 ] as const;
 type Section = (typeof SECTIONS)[number];
 
@@ -38,6 +40,7 @@ function TaskDetail({ taskId, section }: { taskId: string; section: Section }) {
   const data = useLazyLoadQuery<tasksTaskDetailQuery>(TaskDetailQuery, {
     id: taskId,
     includeOptimization: section === "optimization",
+    includeAnalysis: section === "analysis",
   });
   const node = data.node;
   if (!node || !("title" in node) || !node.id) {
@@ -113,6 +116,7 @@ function TaskDetail({ taskId, section }: { taskId: string; section: Section }) {
         </section>
       )}
       {section === "optimization" && task.optimization && <section aria-label="optimization"><h3>optimization</h3><OptimizationPanel taskRef={task.optimization} /></section>}
+      {section === "analysis" && task.analysis && <section aria-label="reference analysis"><h3>reference analysis</h3><ReferenceAnalysisPanel taskRef={task.analysis} /></section>}
     </div>
   );
 }

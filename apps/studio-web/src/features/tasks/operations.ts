@@ -33,10 +33,11 @@ export const ProjectTasksQuery = graphql`
 `;
 
 export const TaskDetailQuery = graphql`
-  query tasksTaskDetailQuery($id: ID!, $includeOptimization: Boolean!) {
+  query tasksTaskDetailQuery($id: ID!, $includeOptimization: Boolean!, $includeAnalysis: Boolean!) {
     node(id: $id) {
       ... on Task {
         ...OptimizationPanel_task @include(if: $includeOptimization) @alias(as: "optimization")
+        ...ReferenceAnalysisPanel_task @include(if: $includeAnalysis) @alias(as: "analysis")
         id
         title
         mode

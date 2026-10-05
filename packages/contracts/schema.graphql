@@ -6,6 +6,47 @@ input ActualsRecordInput {
   clientMutationId: String = null
 }
 
+input AnalyticalCompareInput {
+  taskId: ID!
+  leftSeriesId: ID!
+  rightSeriesId: ID!
+  spec: JSON!
+  idempotencyKey: String!
+  clientMutationId: String = null
+}
+
+type AnalyticalComparisonInfo {
+  id: ID!
+  manifest: JSON!
+}
+
+input AnalyticalIngestInput {
+  taskId: ID!
+  rawArtifactId: String!
+  spec: JSON!
+  idempotencyKey: String!
+  clientMutationId: String = null
+}
+
+type AnalyticalMutation {
+  ingest(input: AnalyticalIngestInput!): AnalyticalResult!
+  compare(input: AnalyticalCompareInput!): AnalyticalResult!
+}
+
+type AnalyticalResult {
+  task: Task
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type AnalyticalSeriesInfo {
+  id: ID!
+  label: String!
+  method: String!
+  interpretationState: String!
+  manifest: JSON!
+}
+
 input BatchAddInput {
   executionId: ID!
   label: String!
@@ -669,6 +710,7 @@ type Mutation {
   lab: LabMutation!
   learning: LearningMutation!
   optimization: OptimizationMutation!
+  analytical: AnalyticalMutation!
 }
 
 """An object with a Globally Unique ID"""
@@ -1124,6 +1166,8 @@ type Task implements Node {
   unresolvedInputs: [String!]!
   createdAt: DateTime!
   optimizationCampaigns: [OptimizationCampaignInfo!]!
+  analyticalSeries: [AnalyticalSeriesInfo!]!
+  analyticalComparisons: [AnalyticalComparisonInfo!]!
   project: Project
 }
 

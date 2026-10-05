@@ -253,6 +253,42 @@ class OptimizationCampaignInfo:
 
 
 @strawberry.type
+class AnalyticalSeriesInfo:
+    id: relay.GlobalID
+    label: str
+    method: str
+    interpretation_state: str
+    manifest: JSON
+
+    @classmethod
+    def from_row(cls, row: Any) -> Self:
+        from studio.domain.chemistry.analytics import series_state
+
+        return cls(
+            id=relay.GlobalID("AnalyticalSeries", str(row.id)),
+            label=row.label,
+            method=row.method,
+            interpretation_state=row.interpretation_state,
+            manifest=JSON(series_state(row)),
+        )
+
+
+@strawberry.type
+class AnalyticalComparisonInfo:
+    id: relay.GlobalID
+    manifest: JSON
+
+    @classmethod
+    def from_row(cls, row: Any) -> Self:
+        from studio.domain.chemistry.analytics import comparison_state
+
+        return cls(
+            id=relay.GlobalID("AnalyticalComparison", str(row.id)),
+            manifest=JSON(comparison_state(row)),
+        )
+
+
+@strawberry.type
 class Task(relay.Node):
     id: relay.NodeID[str]
     title: str
@@ -272,6 +308,26 @@ class Task(relay.Node):
         gql = gql_ctx(info)
         rows = OptimizationService(gql.db, gql.service_ctx(), gql.settings).list(uuid.UUID(self.id))
         return [OptimizationCampaignInfo.from_row(row) for row in rows]
+
+    @strawberry.field
+    def analytical_series(self, info: strawberry.Info) -> list[AnalyticalSeriesInfo]:
+        from studio.domain.chemistry.analytics import AnalyticsService
+
+        gql = gql_ctx(info)
+        rows = AnalyticsService(gql.db, gql.service_ctx(), gql.settings).list_series(
+            uuid.UUID(self.id)
+        )
+        return [AnalyticalSeriesInfo.from_row(row) for row in rows]
+
+    @strawberry.field
+    def analytical_comparisons(self, info: strawberry.Info) -> list[AnalyticalComparisonInfo]:
+        from studio.domain.chemistry.analytics import AnalyticsService
+
+        gql = gql_ctx(info)
+        rows = AnalyticsService(gql.db, gql.service_ctx(), gql.settings).list_comparisons(
+            uuid.UUID(self.id)
+        )
+        return [AnalyticalComparisonInfo.from_row(row) for row in rows]
 
     @classmethod
     def from_row(cls, row: TaskRow) -> Self:

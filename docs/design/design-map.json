@@ -355,6 +355,13 @@
       "test_path": null,
       "status": "implemented",
       "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.reference-analysis-panel",
+      "code_path": "apps/studio-web/src/features/reference-analysis/ReferenceAnalysisPanel.tsx",
+      "test_path": "apps/studio-web/src/features/reference-analysis/ReferenceAnalysisPanel.test.tsx",
+      "status": "implemented",
+      "figma_node_id": null
     }
   ]
 }
