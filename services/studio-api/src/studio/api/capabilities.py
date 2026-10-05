@@ -44,12 +44,14 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
         }
 
     if settings.profile_optimization:
-        ok = _module_available("baybe")
+        from workers.optimization.runtime import available
+
+        ok = available()
         profiles["optimization"] = {
             "status": "available" if ok else "unavailable",
-            "detail": "baybe importable"
+            "detail": "network-denied BayBE worker installed; version checked on each request"
             if ok
-            else "baybe not installed; install extra 'optimization'",
+            else "pinned BayBE worker image unavailable; build workers/optimization/Dockerfile",
         }
     else:
         profiles["optimization"] = {"status": "disabled", "detail": "profile off"}

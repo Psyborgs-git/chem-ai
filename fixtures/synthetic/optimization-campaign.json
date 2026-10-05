@@ -1,0 +1,17 @@
+{
+  "fixture_only": true,
+  "scientific_status": "fixture_only",
+  "spec": {
+    "parameters": [
+      {"name": "a", "kind": "discrete", "unit": "percent_m/m", "values": [0, 25, 50, 75, 100]},
+      {"name": "b", "kind": "discrete", "unit": "percent_m/m", "values": [0, 25, 50, 75, 100]}
+    ],
+    "target": {"name": "metric.synthetic-performance", "mode": "maximize", "unit": "dimensionless", "method": "00000000-0000-0000-0000-000000000385"},
+    "constraints": [{"parameters": ["a"], "coefficients": [1], "operator": "<=", "rhs": 75}],
+    "mixture": {"parameters": ["a", "b"], "basis": "as_supplied_mass", "unit": "percent_m/m", "total": 100},
+    "context": {"fixture_only": "true", "representation": "synthetic-mixture-not-a-real-recipe"},
+    "seed": 17,
+    "recommender": "two_phase",
+    "switch_after": 2
+  }
+}

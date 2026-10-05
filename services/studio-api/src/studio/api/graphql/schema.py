@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
+from enum import Enum
 from typing import Any, cast
 
 import strawberry
@@ -1865,6 +1866,10 @@ class Mutation:
     def learning(self) -> LearningMutation:
         """Dataset/training-eligibility commands (CS-0601)."""
         return LearningMutation()
+
+    @strawberry.field
+    def optimization(self) -> OptimizationMutation:
+        return OptimizationMutation()
 
 
 @strawberry.input
@@ -3865,6 +3870,104 @@ class LabMeasurementsMutation:
         except DomainError as exc:
             gql.db.rollback()
             return _measurement_error(exc, input.client_mutation_id)
+
+
+@strawberry.input
+class OptimizationCreateInput:
+    task_id: relay.GlobalID
+    definition: JSON
+    idempotency_key: str
+    client_mutation_id: str | None = None
+
+
+@strawberry.enum
+class OptimizationOperation(Enum):
+    recommend = "recommend"
+    observed = "observed"
+    cancelled = "cancelled"
+    failed = "failed"
+
+
+@strawberry.input
+class OptimizationCommandInput:
+    campaign_id: relay.GlobalID
+    expected_revision: int
+    idempotency_key: str
+    operation: OptimizationOperation
+    batch_size: int = 1
+    experiment_id: str | None = None
+    measurement_id: relay.GlobalID | None = None
+    snapshot_id: relay.GlobalID | None = None
+    reason: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class OptimizationResult:
+    task: Task | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class OptimizationMutation:
+    @strawberry.mutation
+    def create(self, info: strawberry.Info, input: OptimizationCreateInput) -> OptimizationResult:
+        from studio.domain.learning.optimization import OptimizationService
+
+        gql = gql_ctx(info)
+        try:
+            if not isinstance(input.definition, dict):
+                raise DomainError(ErrorCode.VALIDATION, "definition must be an object")
+            row = OptimizationService(gql.db, gql.service_ctx(), gql.settings).create(
+                _gid_uuid(input.task_id, "Task", "taskId"), input.definition, input.idempotency_key
+            )
+            gql.db.commit()
+            task = gql.db.get(TaskRow, row.task_id)
+            return OptimizationResult(
+                task=Task.from_row(task) if task else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return OptimizationResult(
+                task=None, errors=[_err_payload(exc)], client_mutation_id=input.client_mutation_id
+            )
+
+    @strawberry.mutation
+    def command(self, info: strawberry.Info, input: OptimizationCommandInput) -> OptimizationResult:
+        from studio.domain.learning.optimization import OptimizationService
+
+        gql = gql_ctx(info)
+        try:
+            row = OptimizationService(gql.db, gql.service_ctx(), gql.settings).command(
+                _gid_uuid(input.campaign_id, "OptimizationCampaign", "campaignId"),
+                expected_revision=input.expected_revision,
+                key=input.idempotency_key,
+                operation=input.operation.value,
+                batch_size=input.batch_size,
+                experiment_id=input.experiment_id,
+                measurement_id=_gid_uuid(input.measurement_id, "Measurement", "measurementId")
+                if input.measurement_id
+                else None,
+                snapshot_id=_gid_uuid(input.snapshot_id, "DatasetSnapshot", "snapshotId")
+                if input.snapshot_id
+                else None,
+                reason=input.reason,
+            )
+            gql.db.commit()
+            task = gql.db.get(TaskRow, row.task_id)
+            return OptimizationResult(
+                task=Task.from_row(task) if task else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return OptimizationResult(
+                task=None, errors=[_err_payload(exc)], client_mutation_id=input.client_mutation_id
+            )
 
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)

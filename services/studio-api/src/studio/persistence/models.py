@@ -1859,3 +1859,34 @@ class DatasetSnapshot(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
     created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     frozen_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     frozen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class OptimizationCampaign(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    __tablename__ = "optimization_campaigns"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "task_id"],
+            ["research_tasks.workspace_id", "research_tasks.id"],
+            name="fk_optimization_scope_task",
+        ),
+        ForeignKeyConstraint(
+            ["contract_revision_id"],
+            ["success_contract_revisions.id"],
+            name="fk_optimization_contract",
+        ),
+        UniqueConstraint(
+            "workspace_id", "task_id", "creation_key", name="uq_optimization_creation"
+        ),
+        CheckConstraint("revision > 0", name="optimization_revision"),
+        Index("ix_optimization_task", "workspace_id", "task_id", "created_at", "id"),
+    )
+
+    task_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    contract_revision_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    definition: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    spec_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    replay: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    creation_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    commands: Mapped[dict[str, str]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)

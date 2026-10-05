@@ -141,7 +141,7 @@ def detect(*, for_path: str = ".") -> HardwareReport:
         disk_free = None
     cpu_logical: int | None
     try:
-        cpu_logical = len(os.sched_getaffinity(0))  # type: ignore[attr-defined]
+        cpu_logical = len(os.sched_getaffinity(0))
     except (AttributeError, OSError):
         cpu_logical = os.cpu_count()
     cpu_physical = _sysctl("hw.physicalcpu") if system == "Darwin" else None
