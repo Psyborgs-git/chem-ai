@@ -68,6 +68,9 @@ from studio.persistence.models import (
     MeasurementAmendment as MeasurementAmendmentRow,
 )
 from studio.persistence.models import (
+    ModelRelease as ModelReleaseRow,
+)
+from studio.persistence.models import (
     Principal as PrincipalRow,
 )
 from studio.persistence.models import (
@@ -92,7 +95,13 @@ from studio.persistence.models import (
     RunAttempt as RunAttemptRow,
 )
 from studio.persistence.models import (
+    ServingPointer as ServingPointerRow,
+)
+from studio.persistence.models import (
     SessionMessage as SessionMessageRow,
+)
+from studio.persistence.models import (
+    SessionModelPin as SessionModelPinRow,
 )
 from studio.persistence.models import (
     SuccessContractRevision as ContractRow,
@@ -2029,4 +2038,107 @@ class DatasetSnapshotInfo:
             manifest=JSON(row.manifest),
             created_at=row.created_at,
             frozen_at=row.frozen_at,
+        )
+
+
+# ---------------------------------------------------------- model registry
+
+
+@strawberry.type
+class ModelReleaseInfo:
+    """One registered model release (§17.5, CS-0802): lineage,
+    base/tokenizer/adapter identities, serving format + derived
+    conversion artifacts, latest validation verdict, honest capability
+    labels."""
+
+    id: relay.GlobalID
+    task_id: str | None
+    name: str
+    state: str
+    snapshot_id: str
+    training_run_id: str | None
+    base_model_id: str
+    architecture: str
+    base_sha256: str
+    license_id: str
+    tokenizer_kind: str
+    tokenizer_sha256: str
+    adapter_sha256: str
+    adapter_method: str
+    serving_format: str
+    conversions: JSON | None
+    validation: JSON | None
+    capability: JSON | None
+    provenance: JSON | None
+    approval_id: str | None
+    created_at: datetime
+    updated_at: datetime | None
+
+    @classmethod
+    def from_row(cls, row: ModelReleaseRow) -> Self:
+        return cls(
+            id=relay.GlobalID("ModelRelease", str(row.id)),
+            task_id=str(row.task_id) if row.task_id else None,
+            name=row.name,
+            state=row.state,
+            snapshot_id=str(row.snapshot_id),
+            training_run_id=str(row.training_run_id) if row.training_run_id else None,
+            base_model_id=row.base_model_id,
+            architecture=row.architecture,
+            base_sha256=row.base_sha256,
+            license_id=row.license_id,
+            tokenizer_kind=row.tokenizer_kind,
+            tokenizer_sha256=row.tokenizer_sha256,
+            adapter_sha256=row.adapter_sha256,
+            adapter_method=row.adapter_method,
+            serving_format=row.serving_format,
+            conversions=JSON(row.conversions) if row.conversions else None,
+            validation=JSON(row.validation) if row.validation else None,
+            capability=JSON(row.capability) if row.capability else None,
+            provenance=JSON(row.provenance) if row.provenance else None,
+            approval_id=str(row.approval_id) if row.approval_id else None,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+
+
+@strawberry.type
+class ServingPointerInfo:
+    """The workspace's atomic serving pointer (§18.4) — which release
+    new sessions serve, plus the monotonically bumped revision."""
+
+    release_id: relay.GlobalID | None
+    revision: int
+    reason: str
+    updated_at: datetime | None
+
+    @classmethod
+    def from_row(cls, row: ServingPointerRow) -> Self:
+        return cls(
+            release_id=(
+                relay.GlobalID("ModelRelease", str(row.release_id)) if row.release_id else None
+            ),
+            revision=int(row.revision),
+            reason=row.reason,
+            updated_at=row.updated_at,
+        )
+
+
+@strawberry.type
+class SessionModelPinInfo:
+    """The release a session pinned at start (§17.5) — the pointer
+    moving afterwards never re-anchors it."""
+
+    session_id: relay.GlobalID
+    release_id: relay.GlobalID | None
+    created_at: datetime
+
+    @classmethod
+    def from_row(cls, row: SessionModelPinRow) -> Self:
+        return cls(
+            session_id=relay.GlobalID("ResearchSession", str(row.session_id)),
+            release_id=(
+                relay.GlobalID("ModelRelease", str(row.release_id)) if row.release_id else None
+            ),
+            created_at=row.created_at,
         )

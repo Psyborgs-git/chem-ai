@@ -392,6 +392,11 @@ class TaskMemoryService:
         )
         self.db.add(session)
         self.db.flush()
+        # §17.5: the session pins the model release it begins with;
+        # a later serving-pointer move never re-anchors it (AT-0802-2).
+        from studio.domain.learning.models import pin_session_start
+
+        pin_session_start(self.db, workspace_id=self.ctx.workspace_id, session_id=session.id)
         publish(
             self.db,
             self.ctx.workspace_id,

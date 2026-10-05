@@ -43,12 +43,15 @@ from studio.api.graphql.types import (
     MaterialGrade,
     MaterialIdentity,
     Measurement,
+    ModelReleaseInfo,
     Project,
     ReferenceProduct,
     ReferenceProductRevision,
     ResearchSession,
     RunNode,
+    ServingPointerInfo,
     SessionMessage,
+    SessionModelPinInfo,
     Task,
     TaskQuestion,
     TaskSummary,
@@ -65,6 +68,7 @@ from studio.domain.evidence.revocation import RevocationService
 from studio.domain.lab.measurements import LabMeasurementService
 from studio.domain.lab.plans import LabPlanService
 from studio.domain.learning.datasets import DatasetService
+from studio.domain.learning.models import ModelRegistryService
 from studio.domain.learning.sft import TrainingRunService
 from studio.domain.materials.service import MaterialService
 from studio.domain.projects.service import ProjectService
@@ -1231,6 +1235,47 @@ class Query:
         )
 
     @strawberry.field
+    def model_releases(
+        self, info: strawberry.Info, task_id: relay.GlobalID | None = None
+    ) -> list[ModelReleaseInfo]:
+        """Registered model releases (§17.5, CS-0802)."""
+        gql = gql_ctx(info)
+        t_uuid = _gid_uuid(task_id, "Task", "taskId") if task_id is not None else None
+        rows = ModelRegistryService(gql.db, gql.service_ctx(), gql.settings).list(t_uuid)
+        return [ModelReleaseInfo.from_row(r) for r in rows]
+
+    @strawberry.field
+    def model_release(
+        self, info: strawberry.Info, model_release_id: relay.GlobalID
+    ) -> ModelReleaseInfo | None:
+        gql = gql_ctx(info)
+        r_uuid = _gid_uuid(model_release_id, "ModelRelease", "modelReleaseId")
+        try:
+            row = ModelRegistryService(gql.db, gql.service_ctx(), gql.settings).get(r_uuid)
+        except DomainError:
+            return None
+        return ModelReleaseInfo.from_row(row)
+
+    @strawberry.field
+    def serving_pointer(self, info: strawberry.Info) -> ServingPointerInfo | None:
+        """The workspace's current serving pointer (§18.4) — NULL
+        releaseId means nothing is being served."""
+        gql = gql_ctx(info)
+        row = ModelRegistryService(gql.db, gql.service_ctx(), gql.settings).pointer()
+        return ServingPointerInfo.from_row(row) if row is not None else None
+
+    @strawberry.field
+    def session_model_pins(
+        self, info: strawberry.Info, task_id: relay.GlobalID | None = None
+    ) -> list[SessionModelPinInfo]:
+        """Per-session pinned releases (§17.5) — what each session began
+        with, regardless of later pointer moves."""
+        gql = gql_ctx(info)
+        t_uuid = _gid_uuid(task_id, "Task", "taskId") if task_id is not None else None
+        rows = ModelRegistryService(gql.db, gql.service_ctx(), gql.settings).session_pins(t_uuid)
+        return [SessionModelPinInfo.from_row(r) for r in rows]
+
+    @strawberry.field
     def session_messages(
         self,
         info: strawberry.Info,
@@ -1986,6 +2031,66 @@ class TrainingRunResult:
     client_mutation_id: str | None
 
 
+@strawberry.input
+class ModelReleaseRegisterInput:
+    training_run_id: relay.GlobalID
+    name: str
+    task_id: relay.GlobalID | None = None
+    serving_format: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class ModelReleaseIdInput:
+    model_release_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class ModelReleaseConvertInput:
+    model_release_id: relay.GlobalID
+    target_format: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class ModelReleaseApproveInput:
+    model_release_id: relay.GlobalID
+    rationale: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class ModelReleaseRollbackInput:
+    model_release_id: relay.GlobalID | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class SessionModelBindInput:
+    session_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class ModelReleaseResult:
+    model_release: ModelReleaseInfo | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class SessionBindResult:
+    """Serving-request verdict — the release the session is pinned to
+    plus the compatibility report. An incompatible pair surfaces as a
+    MODEL_INCOMPATIBLE error entry, never a warning."""
+
+    model_release: ModelReleaseInfo | None
+    validation: JSON | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
 @strawberry.type
 class LearningMutation:
     """Dataset snapshot commands (§17.2, CS-0601). Build/freeze/
@@ -2226,6 +2331,159 @@ class LearningMutation:
         except DomainError as exc:
             gql.db.rollback()
             return self._training_result(gql, None, [_err_payload(exc)], input.client_mutation_id)
+
+    # -------------------------------------------------- model registry
+
+    @staticmethod
+    def _models_service(gql: Any) -> ModelRegistryService:
+        return ModelRegistryService(gql.db, gql.service_ctx(), gql.settings)
+
+    @classmethod
+    def _release_result(
+        cls,
+        release: Any | None,
+        errors: list[DomainErrorPayload],
+        client_mutation_id: str | None,
+    ) -> ModelReleaseResult:
+        return ModelReleaseResult(
+            model_release=(ModelReleaseInfo.from_row(release) if release is not None else None),
+            errors=errors,
+            client_mutation_id=client_mutation_id,
+        )
+
+    @strawberry.mutation
+    def model_release_register(
+        self, info: strawberry.Info, input: ModelReleaseRegisterInput
+    ) -> ModelReleaseResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.training_run_id, "TrainingRun", "trainingRunId")
+            t_uuid = (
+                _gid_uuid(input.task_id, "Task", "taskId") if input.task_id is not None else None
+            )
+            release = self._models_service(gql).register(
+                training_run_id=r_uuid,
+                name=input.name,
+                task_id=t_uuid,
+                serving_format=input.serving_format or "peft-adapter",
+            )
+            gql.db.commit()
+            return self._release_result(release, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._release_result(None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def model_release_validate(
+        self, info: strawberry.Info, input: ModelReleaseIdInput
+    ) -> ModelReleaseResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.model_release_id, "ModelRelease", "modelReleaseId")
+            release = self._models_service(gql).validate_release(r_uuid)
+            gql.db.commit()
+            return self._release_result(release, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._release_result(None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def model_release_convert(
+        self, info: strawberry.Info, input: ModelReleaseConvertInput
+    ) -> ModelReleaseResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.model_release_id, "ModelRelease", "modelReleaseId")
+            release = self._models_service(gql).convert(
+                r_uuid, target_format=input.target_format or "serving-bundle-v1"
+            )
+            gql.db.commit()
+            return self._release_result(release, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._release_result(None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def model_release_approve(
+        self, info: strawberry.Info, input: ModelReleaseApproveInput
+    ) -> ModelReleaseResult:
+        """Human grant for a release — ``approve_model`` capability
+        only; agents can never call this (grant() enforces it)."""
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.model_release_id, "ModelRelease", "modelReleaseId")
+            svc = self._models_service(gql)
+            svc.approve(r_uuid, rationale=input.rationale)
+            release = svc.get(r_uuid)
+            gql.db.commit()
+            return self._release_result(release, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._release_result(None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def model_release_promote(
+        self, info: strawberry.Info, input: ModelReleaseIdInput
+    ) -> ModelReleaseResult:
+        """Atomic approved serving-pointer move (§18.4): one
+        transaction re-validates approval + compatibility, supersedes
+        the previous release, and moves the pointer."""
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.model_release_id, "ModelRelease", "modelReleaseId")
+            release = self._models_service(gql).promote(r_uuid)
+            gql.db.commit()
+            return self._release_result(release, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._release_result(None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def model_release_rollback(
+        self, info: strawberry.Info, input: ModelReleaseRollbackInput
+    ) -> ModelReleaseResult:
+        """Atomic rollback to a known-good release — the pointer moves
+        in the same transaction; no schema/data rollback."""
+        gql = gql_ctx(info)
+        try:
+            r_uuid = (
+                _gid_uuid(input.model_release_id, "ModelRelease", "modelReleaseId")
+                if input.model_release_id is not None
+                else None
+            )
+            release = self._models_service(gql).rollback(r_uuid)
+            gql.db.commit()
+            return self._release_result(release, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._release_result(None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def session_model_bind(
+        self, info: strawberry.Info, input: SessionModelBindInput
+    ) -> SessionBindResult:
+        """Serving request for one session — resolves its pinned
+        release and requires a fresh compatible verdict
+        (AT-0802-1/2)."""
+        gql = gql_ctx(info)
+        try:
+            s_uuid = _gid_uuid(input.session_id, "ResearchSession", "sessionId")
+            release, report = self._models_service(gql).bind_session(s_uuid)
+            gql.db.commit()
+            return SessionBindResult(
+                model_release=ModelReleaseInfo.from_row(release),
+                validation=JSON(report.model_dump(mode="json")),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return SessionBindResult(
+                model_release=None,
+                validation=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
 
 
 def graphql_app(settings: Settings) -> GraphQLRouter:

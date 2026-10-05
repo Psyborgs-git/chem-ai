@@ -2078,3 +2078,138 @@ class AnalyticalComparison(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
     spec_digest: Mapped[str] = mapped_column(String(64), nullable=False)
     creation_key: Mapped[str] = mapped_column(String(100), nullable=False)
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+
+
+# ---------------------------------------------------------- model registry
+
+MODEL_RELEASE_STATES = (
+    "registered",
+    "validated",
+    "promoted",
+    "superseded",
+    "rejected",
+    "revoked",
+)
+
+
+class ModelRelease(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """One registered model release (§17.5, CS-0802).
+
+    Records the full serving lineage — dataset snapshot → training run →
+    adapter → release — plus the base/tokenizer identities and the
+    adapter's training-time base binding that compatibility validation
+    is judged against. ``conversions`` lists derived serving-format
+    artifacts, each with its own checksum and parity evaluation; the
+    latest ``LoadValidationReport`` verdict sits in ``validation``.
+    All artifact references are vault-scoped and confidential."""
+
+    __tablename__ = "model_releases"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "task_id"],
+            ["research_tasks.workspace_id", "research_tasks.id"],
+            name="fk_model_releases_scope_task",
+        ),
+        ForeignKeyConstraint(
+            ["training_run_id"],
+            ["training_runs.id"],
+            name="fk_model_releases_run",
+        ),
+        ForeignKeyConstraint(
+            ["snapshot_id"],
+            ["dataset_snapshots.id"],
+            name="fk_model_releases_snapshot",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "created_by"],
+            ["principals.workspace_id", "principals.id"],
+            name="fk_model_releases_scope_creator",
+        ),
+        CheckConstraint(f"state IN {MODEL_RELEASE_STATES!r}", name="model_release_state"),
+        Index("ix_model_releases_scope", "workspace_id", "state", "created_at", "id"),
+    )
+
+    task_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    state: Mapped[str] = mapped_column(String(24), nullable=False, default="registered")
+    # Lineage — never implied.
+    snapshot_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    training_run_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    adapter_artifact_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    # Base model + tokenizer identities (registry record).
+    base_model_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    architecture: Mapped[str] = mapped_column(String(80), nullable=False)
+    init_seed: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    base_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    license_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    parameter_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    tokenizer_kind: Mapped[str] = mapped_column(String(80), nullable=False)
+    tokenizer_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Adapter reference + its training-time base binding.
+    adapter_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    adapter_method: Mapped[str] = mapped_column(String(40), nullable=False)
+    adapter_config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    adapter_base_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    adapter_tokenizer_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    adapter_architecture: Mapped[str] = mapped_column(String(80), nullable=False)
+    # Serving format + derived conversion artifacts (each:
+    # {conversionId, artifactId, format, checksum, steps, parity}).
+    serving_format: Mapped[str] = mapped_column(String(80), nullable=False)
+    conversions: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+    # Latest LoadValidationReport verdict + capability labels.
+    validation: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    capability: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    approval_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+
+class ServingPointer(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """The workspace's atomic serving pointer (§18.4).
+
+    Exactly one row per workspace (``uq_serving_pointer_scope``);
+    ``revision`` bumps on every move so promotion and rollback are
+    single-row, single-transaction updates. ``release_id`` NULL means
+    nothing is being served."""
+
+    __tablename__ = "serving_pointers"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", name="uq_serving_pointer_scope"),
+        ForeignKeyConstraint(
+            ["release_id"], ["model_releases.id"], name="fk_serving_pointer_release"
+        ),
+    )
+
+    release_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    revision: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    # Why the pointer sits here: 'promote' | 'rollback' | 'revoke'.
+    reason: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+
+class SessionModelPin(Base, UUIDPrimaryKey, WorkspaceScoped):
+    """The release a research session pins at start (§17.5).
+
+    Created by ``TaskMemoryService.start_session`` capturing the serving
+    pointer at that instant; a pointer move afterwards never mutates an
+    existing pin (AT-0802-2). ``release_id`` NULL means no release was
+    serving when the session began — the first successful serving bind
+    latches the effective release so later binds stay pinned too."""
+
+    __tablename__ = "session_model_pins"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "session_id", name="uq_session_model_pin"),
+        ForeignKeyConstraint(
+            ["workspace_id", "session_id"],
+            ["research_sessions.workspace_id", "research_sessions.id"],
+            name="fk_session_pins_scope_session",
+        ),
+        ForeignKeyConstraint(["release_id"], ["model_releases.id"], name="fk_session_pins_release"),
+        Index("ix_session_model_pins_release", "workspace_id", "release_id"),
+    )
+
+    session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    release_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
