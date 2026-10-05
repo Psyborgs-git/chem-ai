@@ -12,14 +12,14 @@ from chem_studio_policy.capabilities import (
     CAP_REQUEST_COMPUTE,
     CAP_REVIEW_SCIENCE,
 )
-from engine_adapter_baybe import CampaignSpec, EngineFailure
-from engine_adapter_baybe.validation import point, same_point
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from workers.optimization.campaign import Campaign, ReplayState
 from workers.optimization.runtime import IsolatedBayBE
 
+from engine_adapter_baybe import CampaignSpec, EngineFailure
+from engine_adapter_baybe.validation import point, same_point
 from studio.application.idempotency import request_digest
 from studio.audit.log import record
 from studio.auth.context import ServiceContext
@@ -125,11 +125,15 @@ class OptimizationService:
                 ErrorCode.ENGINE_UNSUPPORTED_INPUT,
                 "contract-level hard constraints need a reviewed mapping; none were dropped",
             )
-        matching = [m for m in metrics if (
-            m.get("id") == spec.target.name
-            and m.get("unit") == spec.target.unit
-            and str(m.get("method_revision_id")) == spec.target.method
-        )]
+        matching = [
+            m
+            for m in metrics
+            if (
+                m.get("id") == spec.target.name
+                and m.get("unit") == spec.target.unit
+                and str(m.get("method_revision_id")) == spec.target.method
+            )
+        ]
         if len(matching) != 1 or matching[0].get("value_kind") != "numeric":
             raise DomainError(
                 ErrorCode.VALIDATION,

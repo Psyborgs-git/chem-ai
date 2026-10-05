@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pytest
 from chem_studio_policy.capabilities import capabilities_for_role
-from engine_adapter_baybe.contracts import Recommendation
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
@@ -16,6 +15,7 @@ from starlette.testclient import TestClient
 from strawberry import relay
 from workers.optimization.runtime import IsolatedBayBE
 
+from engine_adapter_baybe.contracts import Recommendation
 from studio.api.app import create_app
 from studio.auth.context import ServiceContext, load_context
 from studio.config.settings import Settings

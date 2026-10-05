@@ -118,7 +118,7 @@ test-engines: ## Engine adapter tests; explicit unavailability is honest
 	  echo "UNAVAILABLE: no native rdkit and no chem-studio-rdkit image"; \
 	  echo "  build: docker buildx build --platform linux/amd64 -t chem-studio-rdkit:2026.3.6 infra/images/rdkit"; \
 	  echo "  see docs/dependencies.lock.md platform matrix"; exit 2; }
-	$(PYTEST) services/studio-api/tests/engines -m engine --timeout 600
+	$(PYTEST) services/studio-api/tests/engines tests/engines -m engine --timeout 600
 
 .PHONY: eval-smoke
 eval-smoke: ## Evaluation smoke (fixture-only; non-scientific)

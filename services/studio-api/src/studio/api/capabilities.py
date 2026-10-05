@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import importlib.util
 import platform
-import shutil
 from typing import Any
 
 from studio.config.settings import Settings
@@ -57,14 +56,21 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
         profiles["optimization"] = {"status": "disabled", "detail": "profile off"}
 
     if settings.profile_quantum:
-        xtb = shutil.which("xtb")
-        psi4 = shutil.which("psi4")
-        found = [e for e in (xtb, psi4) if e]
+        from workers.chemistry.quantum.runtime import IMAGE as QUANTUM_IMAGE
+        from workers.chemistry.quantum.runtime import available, capability
+
+        ok = available()
+        probe = capability() if ok else None
+        detail = QUANTUM_IMAGE
+        if probe:
+            states = {name: state["state"] for name, state in (probe.get("programs") or {}).items()}
+            detail = f"{QUANTUM_IMAGE}; programs: {states}"
         profiles["quantum"] = {
-            "status": "available" if found else "unavailable",
-            "detail": f"binaries found: {found}"
-            if found
-            else "no xtb/psi4 binaries on PATH; quantum profile cannot execute",
+            "status": "available" if ok else "unavailable",
+            "detail": detail
+            if ok
+            else "pinned QCEngine worker image unavailable; "
+            "build workers/chemistry/quantum/Dockerfile",
         }
     else:
         profiles["quantum"] = {"status": "disabled", "detail": "profile off"}
@@ -104,6 +110,37 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
                 "version": None,
                 "detail": "engine adapter package not importable",
             }
+        }
+
+    # QCEngine adapter: per-program §16.1 labels probed inside the
+    # pinned image — never claimed available when it is not.
+    try:
+        from workers.chemistry.quantum.runtime import capability as _qc_probe
+
+        _qc = _qc_probe()
+        if _qc is None:
+            engines["qcengine"] = {
+                "status": "unavailable",
+                "version": None,
+                "detail": "pinned QCEngine worker image not installed on this host",
+            }
+        else:
+            worst = "available"
+            parts = []
+            for name, p in sorted((_qc.get("programs") or {}).items()):
+                parts.append(f"{name}={p['state']}")
+                if p["state"] != "available_tested":
+                    worst = "degraded"
+            engines["qcengine"] = {
+                "status": worst,
+                "version": _qc.get("qcengine_version"),
+                "detail": f"qcengine-adapter/v1; {', '.join(parts)}",
+            }
+    except ImportError:
+        engines["qcengine"] = {
+            "status": "unavailable",
+            "version": None,
+            "detail": "engine adapter package not importable",
         }
 
     return {

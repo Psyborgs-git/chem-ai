@@ -6,6 +6,8 @@ import uuid
 from decimal import Decimal
 from typing import Any, Literal, Protocol
 
+from pydantic import Field
+
 from engine_adapter_baybe.contracts import (
     ADAPTER_VERSION,
     ENGINE_VERSION,
@@ -15,7 +17,6 @@ from engine_adapter_baybe.contracts import (
     StrictModel,
 )
 from engine_adapter_baybe.validation import point, same_point, validate_batch
-from pydantic import Field
 
 
 class Experiment(StrictModel):

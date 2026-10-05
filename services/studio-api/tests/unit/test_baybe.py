@@ -8,11 +8,12 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
+from workers.optimization.campaign import Campaign, ReplayState
+
 from engine_adapter_baybe import CampaignSpec
 from engine_adapter_baybe.contracts import Recommendation
 from engine_adapter_baybe.validation import point, same_point, validate_batch
-from pydantic import ValidationError
-from workers.optimization.campaign import Campaign, ReplayState
 
 
 def spec_raw() -> dict[str, Any]:
