@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0.0",
+  "id": "00000000-0000-0000-0000-0000000003e8",
+  "state": "blocked",
+  "source_snapshot_id": "00000000-0000-0000-0000-00000000044c",
+  "payload_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "transformation_version": "1.0.0",
+  "sensitivity": "proprietary",
+  "alias_map_location": "local_only",
+  "local_feasibility": "unknown",
+  "feasibility_report_id": null,
+  "residual_disclosure": [
+    "Ratios and processing context may remain commercially sensitive"
+  ],
+  "provider": null,
+  "account": null,
+  "region": null,
+  "runtime_digest": null,
+  "spend_cap": null,
+  "approval_id": null,
+  "approved_payload_sha256": null,
+  "expires_at": null,
+  "block_reasons": [
+    "Local infeasibility not established",
+    "Provider and payload not approved"
+  ],
+  "fixture_only": true
+}

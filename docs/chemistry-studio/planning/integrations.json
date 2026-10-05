@@ -1,0 +1,257 @@
+{
+  "schema_version": "1.0.0",
+  "integrations": [
+    {
+      "id": "engine.rdkit",
+      "name": "RDKit",
+      "phase": "P04",
+      "role": "structure/descriptors",
+      "source_ids": [
+        "S01"
+      ],
+      "prerequisite": "Known supported molecular input",
+      "limitation": "No synthesis/safety/performance proof",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "engine.baybe",
+      "name": "BayBE",
+      "phase": "P06",
+      "role": "experiment selection",
+      "source_ids": [
+        "S09"
+      ],
+      "prerequisite": "Reviewed supported parameter/target/constraint mapping",
+      "limitation": "Unsupported hybrid constraints must fail; no dropped constraints",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "engine.chemprop",
+      "name": "Chemprop",
+      "phase": "P06",
+      "role": "molecular property models",
+      "source_ids": [
+        "S10"
+      ],
+      "prerequisite": "Relevant licensed labels and validated representation",
+      "limitation": "Not a ready-made textile predictor",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "engine.qcengine",
+      "name": "QCEngine + QCElemental",
+      "phase": "P07",
+      "role": "typed quantum execution",
+      "source_ids": [
+        "S06"
+      ],
+      "prerequisite": "Tested engine/library/method versions",
+      "limitation": "Old/dev docs do not establish installed API compatibility",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "engine.xtb",
+      "name": "xTB",
+      "phase": "P07",
+      "role": "semiempirical molecular calculations",
+      "source_ids": [
+        "S07"
+      ],
+      "prerequisite": "Geometry/charge/spin/method/domain verified",
+      "limitation": "Converged calculation is a prediction",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "engine.psi4",
+      "name": "Psi4",
+      "phase": "P07",
+      "role": "quantum calculations",
+      "source_ids": [
+        "S08"
+      ],
+      "prerequisite": "Supported selected method and benchmark",
+      "limitation": "No unknown polymer/mixture substitution",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "engine.thermo",
+      "name": "thermo",
+      "phase": "P07",
+      "role": "thermodynamics, optional",
+      "source_ids": [
+        "S18"
+      ],
+      "prerequisite": "Known parameters and endpoint justification",
+      "limitation": "Equilibrium is not storage lifetime",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "engine.lammps",
+      "name": "LAMMPS",
+      "phase": "P07",
+      "role": "materials dynamics, optional",
+      "source_ids": [
+        "S19"
+      ],
+      "prerequisite": "Reviewed force field/parameters/sampling",
+      "limitation": "No invented force-field parameters",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "engine.reinvent",
+      "name": "REINVENT 4",
+      "phase": "P09",
+      "role": "small-molecule design, optional",
+      "source_ids": [
+        "S11"
+      ],
+      "prerequisite": "Licensed models; eligible molecular target",
+      "limitation": "Not arbitrary formulations or polymer distributions",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "engine.aizynthfinder",
+      "name": "AiZynthFinder",
+      "phase": "P09",
+      "role": "retrosynthesis, optional",
+      "source_ids": [
+        "S12"
+      ],
+      "prerequisite": "Licensed policies and stock data",
+      "limitation": "A route is not experimentally verified synthesis",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "runtime.llamacpp",
+      "name": "llama.cpp candidate",
+      "phase": "P04",
+      "role": "local assistant inference",
+      "source_ids": [
+        "S21"
+      ],
+      "prerequisite": "Model/license/template/checksum/tool compatibility",
+      "limitation": "Actual serving adapter parity requires testing",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "training.peft",
+      "name": "PEFT/LoRA candidate",
+      "phase": "P08",
+      "role": "local model adaptation",
+      "source_ids": [
+        "S13"
+      ],
+      "prerequisite": "Dataset rights, supported runtime, real training smoke",
+      "limitation": "Loss reduction is not scientific validation",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "training.trl",
+      "name": "TRL",
+      "phase": "P09",
+      "role": "controlled RL training",
+      "source_ids": [
+        "S14"
+      ],
+      "prerequisite": "Stable environment/rewards and hidden independent eval",
+      "limitation": "No live autonomous physical experiments",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "workflow.procrastinate",
+      "name": "Procrastinate",
+      "phase": "P04",
+      "role": "queue/retry/locks",
+      "source_ids": [
+        "S05"
+      ],
+      "prerequisite": "PostgreSQL version and queue compatibility",
+      "limitation": "Application Run remains canonical; no duplicate retries",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "workflow.aiida",
+      "name": "AiiDA, optional",
+      "phase": "P07",
+      "role": "complex science workflows",
+      "source_ids": [
+        "S17"
+      ],
+      "prerequisite": "Defined need and one scheduler owner",
+      "limitation": "Do not double-orchestrate the same calculation",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "lab.elabftw",
+      "name": "eLabFTW, optional",
+      "phase": "P05",
+      "role": "explicit ELN exchange",
+      "source_ids": [
+        "S16"
+      ],
+      "prerequisite": "Owner-configured account and ownership model",
+      "limitation": "No silent bidirectional sync",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "knowledge.ord",
+      "name": "Open Reaction Database, optional",
+      "phase": "P03",
+      "role": "reaction evidence",
+      "source_ids": [
+        "S25"
+      ],
+      "prerequisite": "Rights and snapshot review",
+      "limitation": "Not a general product formulation database",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    },
+    {
+      "id": "knowledge.comptox",
+      "name": "EPA CompTox, optional",
+      "phase": "P03",
+      "role": "chemical screening evidence",
+      "source_ids": [
+        "S24"
+      ],
+      "prerequisite": "Approved lookup and provenance",
+      "limitation": "No compliance/safety certificate",
+      "implementation_status": "not_implemented",
+      "scientific_status": "not_configured",
+      "pinned_version": null
+    }
+  ]
+}

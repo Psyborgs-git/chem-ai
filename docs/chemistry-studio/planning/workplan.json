@@ -1,0 +1,2550 @@
+{
+  "schema_version": "1.0.0",
+  "status": "specification_not_implementation",
+  "controller_owned": [
+    "migrations",
+    "shared contracts",
+    "authorization",
+    "global IDs",
+    "route registry",
+    "dependency locks",
+    "release gates"
+  ],
+  "max_parallel_workers_default": 3,
+  "phases": [
+    {
+      "id": "P00",
+      "title": "Baseline and dependency decisions",
+      "ticket_ids": [
+        "CS-0001",
+        "CS-0002",
+        "CS-0003"
+      ]
+    },
+    {
+      "id": "P01",
+      "title": "Contracts, persistence and security",
+      "ticket_ids": [
+        "CS-0101",
+        "CS-0102",
+        "CS-0103",
+        "CS-0104",
+        "CS-0105"
+      ]
+    },
+    {
+      "id": "P02",
+      "title": "Tasks, materials and UI foundation",
+      "ticket_ids": [
+        "CS-0201",
+        "CS-0202",
+        "CS-0203",
+        "CS-0204",
+        "CS-0205",
+        "CS-0206"
+      ]
+    },
+    {
+      "id": "P03",
+      "title": "Ingestion and evidence",
+      "ticket_ids": [
+        "CS-0301",
+        "CS-0302",
+        "CS-0303",
+        "CS-0304",
+        "CS-0305"
+      ]
+    },
+    {
+      "id": "P04",
+      "title": "Runs, local AI and core tools",
+      "ticket_ids": [
+        "CS-0401",
+        "CS-0402",
+        "CS-0403",
+        "CS-0404",
+        "CS-0405",
+        "CS-0406"
+      ]
+    },
+    {
+      "id": "P05",
+      "title": "Lab and pilot closeout",
+      "ticket_ids": [
+        "CS-0501",
+        "CS-0502",
+        "CS-0503",
+        "CS-0504",
+        "CS-0505",
+        "CS-0506"
+      ]
+    },
+    {
+      "id": "P06",
+      "title": "Optimization and property learning",
+      "ticket_ids": [
+        "CS-0601",
+        "CS-0602",
+        "CS-0603",
+        "CS-0604"
+      ]
+    },
+    {
+      "id": "P07",
+      "title": "Targeted science adapters",
+      "ticket_ids": [
+        "CS-0701",
+        "CS-0702",
+        "CS-0703"
+      ]
+    },
+    {
+      "id": "P08",
+      "title": "Local assistant fine-tuning",
+      "ticket_ids": [
+        "CS-0801",
+        "CS-0802",
+        "CS-0803"
+      ]
+    },
+    {
+      "id": "P09",
+      "title": "Research RL and molecular design",
+      "ticket_ids": [
+        "CS-0901",
+        "CS-0902",
+        "CS-0903"
+      ]
+    },
+    {
+      "id": "P10",
+      "title": "Protected cloud fallback",
+      "ticket_ids": [
+        "CS-1001",
+        "CS-1002",
+        "CS-1003",
+        "CS-1004"
+      ]
+    },
+    {
+      "id": "P11",
+      "title": "Release hardening",
+      "ticket_ids": [
+        "CS-1101",
+        "CS-1102",
+        "CS-1103",
+        "CS-1104"
+      ]
+    }
+  ],
+  "tickets": [
+    {
+      "id": "CS-0001",
+      "phase": "P00",
+      "title": "Inspect baseline and map current repository",
+      "status": "not_started",
+      "depends_on": [],
+      "owner_role": "controller",
+      "write_scope": [
+        "docs/execution/",
+        "analysis.md",
+        "plan.md",
+        "tech-specs.md",
+        "tasks.md"
+      ],
+      "handoff_sections": [
+        "1",
+        "3"
+      ],
+      "implementation_steps": [
+        "Read repository instructions, branch/HEAD/worktree and existing architecture before editing.",
+        "Record existing/preserve/modify/new/blocked/deferred components and current test results.",
+        "Map proposed paths to actual paths; preserve unrelated work and newer fixes."
+      ],
+      "acceptance_test_ids": [
+        "AT-0001-1",
+        "AT-0001-2",
+        "AT-0001-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0001"
+      ]
+    },
+    {
+      "id": "CS-0002",
+      "phase": "P00",
+      "title": "Pin compatible dependencies and profiles",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0001"
+      ],
+      "owner_role": "controller",
+      "write_scope": [
+        "pyproject.toml",
+        "uv.lock",
+        "package.json",
+        "pnpm-lock.yaml",
+        "infra/local/",
+        "docs/dependencies.lock.md"
+      ],
+      "handoff_sections": [
+        "4",
+        "16",
+        "26"
+      ],
+      "implementation_steps": [
+        "Check official version-specific APIs, OS support, licenses and model/data rights.",
+        "Create isolated core, local_ai, optimization, quantum and training profiles.",
+        "Document install checks and avoid importing scientific GPU dependencies in core startup."
+      ],
+      "acceptance_test_ids": [
+        "AT-0002-1",
+        "AT-0002-2",
+        "AT-0002-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0002"
+      ]
+    },
+    {
+      "id": "CS-0003",
+      "phase": "P00",
+      "title": "Create CI, fixtures and command contract",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0002"
+      ],
+      "owner_role": "controller",
+      "write_scope": [
+        "infra/ci/",
+        ".github/workflows/",
+        "fixtures/synthetic/",
+        "Makefile"
+      ],
+      "handoff_sections": [
+        "23",
+        "25",
+        "26"
+      ],
+      "implementation_steps": [
+        "Implement documented commands and separate core, engine and training suites.",
+        "Use synthetic labels/measurements only and mark fixture thresholds non-scientific.",
+        "Add job timeouts, concurrency cancellation, least-privilege permissions and no private caches."
+      ],
+      "acceptance_test_ids": [
+        "AT-0003-1",
+        "AT-0003-2",
+        "AT-0003-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0003"
+      ]
+    },
+    {
+      "id": "CS-0101",
+      "phase": "P01",
+      "title": "Implement canonical persistence and revision foundation",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0003"
+      ],
+      "owner_role": "controller",
+      "write_scope": [
+        "migrations/",
+        "services/studio-api/src/studio/persistence/",
+        "packages/contracts/"
+      ],
+      "handoff_sections": [
+        "5",
+        "6",
+        "7"
+      ],
+      "implementation_steps": [
+        "Create scoped IDs, common revision metadata, optimistic locking and reference constraints.",
+        "Create migration tests against empty and populated disposable databases.",
+        "Store decimal quantities as NUMERIC and immutable accepted payloads with versioned hashes."
+      ],
+      "acceptance_test_ids": [
+        "AT-0101-1",
+        "AT-0101-2",
+        "AT-0101-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0101"
+      ]
+    },
+    {
+      "id": "CS-0102",
+      "phase": "P01",
+      "title": "Enforce principal capabilities and loopback security",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0101"
+      ],
+      "owner_role": "security",
+      "write_scope": [
+        "services/studio-api/src/studio/auth/",
+        "packages/policy/"
+      ],
+      "handoff_sections": [
+        "21"
+      ],
+      "implementation_steps": [
+        "Implement owner setup, sessions, role capabilities and scoped service contexts.",
+        "Enforce same-origin/host protections and artifact/API/event authentication.",
+        "Use restricted DB runtime credentials and tests for RLS/service-layer scope."
+      ],
+      "acceptance_test_ids": [
+        "AT-0102-1",
+        "AT-0102-2",
+        "AT-0102-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0102"
+      ]
+    },
+    {
+      "id": "CS-0103",
+      "phase": "P01",
+      "title": "Implement private artifact vault",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0101",
+        "CS-0102"
+      ],
+      "owner_role": "storage",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/evidence/",
+        "services/studio-api/src/studio/api/transfers/"
+      ],
+      "handoff_sections": [
+        "5",
+        "9",
+        "21"
+      ],
+      "implementation_steps": [
+        "Create scoped opaque storage keys, streaming upload/download, checksums and quarantine status.",
+        "Keep artifacts outside repository/web roots and enforce file/path/decompression limits.",
+        "Record confidentiality/rights and implement staged cleanup without orphaning committed records."
+      ],
+      "acceptance_test_ids": [
+        "AT-0103-1",
+        "AT-0103-2",
+        "AT-0103-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0103"
+      ]
+    },
+    {
+      "id": "CS-0104",
+      "phase": "P01",
+      "title": "Build GraphQL Node and Relay foundation",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0101",
+        "CS-0102"
+      ],
+      "owner_role": "api",
+      "write_scope": [
+        "services/studio-api/src/studio/api/graphql/",
+        "apps/studio-web/src/relay/"
+      ],
+      "handoff_sections": [
+        "8"
+      ],
+      "implementation_steps": [
+        "Export the schema with global IDs, Node/nodes queries and bounded cursor connections.",
+        "Implement scoped request DataLoaders and typed mutation errors.",
+        "Create one Relay environment/network layer and code-generation/drift checks."
+      ],
+      "acceptance_test_ids": [
+        "AT-0104-1",
+        "AT-0104-2",
+        "AT-0104-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0104"
+      ]
+    },
+    {
+      "id": "CS-0105",
+      "phase": "P01",
+      "title": "Implement commands, approvals base and outbox",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0101",
+        "CS-0102"
+      ],
+      "owner_role": "controller",
+      "write_scope": [
+        "services/studio-api/src/studio/application/",
+        "services/studio-api/src/studio/events/",
+        "services/studio-api/src/studio/audit/"
+      ],
+      "handoff_sections": [
+        "7",
+        "8"
+      ],
+      "implementation_steps": [
+        "Implement idempotency records in the same transaction as state/outbox changes.",
+        "Create approval envelopes binding exact input digest, actor, scope, expiry and policy.",
+        "Publish outbox events at least once; deduplicate consumers and audit minimal metadata."
+      ],
+      "acceptance_test_ids": [
+        "AT-0105-1",
+        "AT-0105-2",
+        "AT-0105-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0105"
+      ]
+    },
+    {
+      "id": "CS-0201",
+      "phase": "P02",
+      "title": "Implement project/task/success-contract lifecycle",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0104",
+        "CS-0105"
+      ],
+      "owner_role": "domain",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/projects/",
+        "services/studio-api/src/studio/domain/tasks/"
+      ],
+      "handoff_sections": [
+        "7",
+        "11",
+        "12"
+      ],
+      "implementation_steps": [
+        "Create three task modes, contract revisions, unresolved inputs and task/session ownership.",
+        "Implement active/paused/review/closed transitions with separate closure outcomes.",
+        "Keep old contract evaluations immutable when targets change or tasks reopen."
+      ],
+      "acceptance_test_ids": [
+        "AT-0201-1",
+        "AT-0201-2",
+        "AT-0201-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0201"
+      ]
+    },
+    {
+      "id": "CS-0202",
+      "phase": "P02",
+      "title": "Implement quantities, basis and missingness",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0101"
+      ],
+      "owner_role": "domain",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/materials/quantities.py",
+        "packages/contracts/"
+      ],
+      "handoff_sections": [
+        "6"
+      ],
+      "implementation_steps": [
+        "Create validated unit registry, decimal DTOs and recorded conversions.",
+        "Handle mass/volume/mole and active/as-supplied basis without guessing transforms.",
+        "Support numeric, interval, censored, ordinal, categorical and missing outcomes."
+      ],
+      "acceptance_test_ids": [
+        "AT-0202-1",
+        "AT-0202-2",
+        "AT-0202-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0202"
+      ]
+    },
+    {
+      "id": "CS-0203",
+      "phase": "P02",
+      "title": "Implement material, grade, lot and reference registry",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0202",
+        "CS-0104"
+      ],
+      "owner_role": "domain",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/materials/",
+        "apps/studio-web/src/features/materials/"
+      ],
+      "handoff_sections": [
+        "5",
+        "11"
+      ],
+      "implementation_steps": [
+        "Implement defined molecules, polymers, mixtures, unknown identities, aliases and reviewed matches.",
+        "Separate commercial grades/lots and claimed versus measured properties.",
+        "Support reference products with partial/unknown composition and evidence links."
+      ],
+      "acceptance_test_ids": [
+        "AT-0203-1",
+        "AT-0203-2",
+        "AT-0203-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0203"
+      ]
+    },
+    {
+      "id": "CS-0204",
+      "phase": "P02",
+      "title": "Implement formula/process/candidate revisions",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0201",
+        "CS-0202",
+        "CS-0203"
+      ],
+      "owner_role": "domain",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/candidates/",
+        "services/studio-api/src/studio/domain/materials/formulations.py"
+      ],
+      "handoff_sections": [
+        "5",
+        "6",
+        "11"
+      ],
+      "implementation_steps": [
+        "Implement incomplete drafts, accepted immutable revisions and linked process order.",
+        "Validate supported basis, totals, ranges and duplicate lines without auto-normalizing.",
+        "Implement candidate branches, proposal patches and revision-scoped evidence."
+      ],
+      "acceptance_test_ids": [
+        "AT-0204-1",
+        "AT-0204-2",
+        "AT-0204-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0204"
+      ]
+    },
+    {
+      "id": "CS-0205",
+      "phase": "P02",
+      "title": "Build atomic UI and canonical design map",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0104",
+        "CS-0202"
+      ],
+      "owner_role": "frontend",
+      "write_scope": [
+        "apps/studio-web/src/components/",
+        "apps/studio-web/src/styles/",
+        "docs/design/"
+      ],
+      "handoff_sections": [
+        "22"
+      ],
+      "implementation_steps": [
+        "Implement semantic tokens, atoms, quantity/basis controls, evidence labels and status distinctions.",
+        "Create shared error/loading/empty/conflict/unavailable/reduced-motion states.",
+        "Map stable component IDs to actual code and tests; leave absent Figma references null."
+      ],
+      "acceptance_test_ids": [
+        "AT-0205-1",
+        "AT-0205-2",
+        "AT-0205-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0205"
+      ]
+    },
+    {
+      "id": "CS-0206",
+      "phase": "P02",
+      "title": "Build task workspace and revision-aware UI",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0201",
+        "CS-0204",
+        "CS-0205"
+      ],
+      "owner_role": "frontend",
+      "write_scope": [
+        "apps/studio-web/src/features/tasks/",
+        "apps/studio-web/src/features/candidates/",
+        "apps/studio-web/src/routes/"
+      ],
+      "handoff_sections": [
+        "11",
+        "22"
+      ],
+      "implementation_steps": [
+        "Build task creation, contract editor, persistent sections and current blockers.",
+        "Implement revision diffs, scoped connections and correct Relay mutation updates.",
+        "Handle unsaved/API-offline/conflict states without false durable-save claims."
+      ],
+      "acceptance_test_ids": [
+        "AT-0206-1",
+        "AT-0206-2",
+        "AT-0206-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0206"
+      ]
+    },
+    {
+      "id": "CS-0301",
+      "phase": "P03",
+      "title": "Build quarantined document and table ingestion",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0103",
+        "CS-0203"
+      ],
+      "owner_role": "ingestion",
+      "write_scope": [
+        "workers/ingestion/",
+        "services/studio-api/src/studio/domain/evidence/imports.py"
+      ],
+      "handoff_sections": [
+        "9"
+      ],
+      "implementation_steps": [
+        "Integrate maintained parsers for PDF/DOCX/CSV/XLSX/text/JSON with no active content execution.",
+        "Preserve original artifacts and page/section/cell locators, units, original text and extraction confidence.",
+        "Deduplicate by scope/hash/parser version and retain newer source revisions."
+      ],
+      "acceptance_test_ids": [
+        "AT-0301-1",
+        "AT-0301-2",
+        "AT-0301-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0301"
+      ]
+    },
+    {
+      "id": "CS-0302",
+      "phase": "P03",
+      "title": "Build extraction review and evidence provenance",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0301",
+        "CS-0205",
+        "CS-0105"
+      ],
+      "owner_role": "evidence",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/evidence/",
+        "apps/studio-web/src/features/imports/",
+        "apps/studio-web/src/features/evidence/"
+      ],
+      "handoff_sections": [
+        "9",
+        "10"
+      ],
+      "implementation_steps": [
+        "Build side-by-side source/proposed-field review and per-field acceptance/rejection.",
+        "Create accepted claims with source locators, conditions, support/contradiction and review metadata.",
+        "Keep document claims, inferred suggestions and measured outcomes distinct."
+      ],
+      "acceptance_test_ids": [
+        "AT-0302-1",
+        "AT-0302-2",
+        "AT-0302-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0302"
+      ]
+    },
+    {
+      "id": "CS-0303",
+      "phase": "P03",
+      "title": "Implement scoped retrieval and source rights",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0302",
+        "CS-0102"
+      ],
+      "owner_role": "retrieval",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/evidence/retrieval.py",
+        "workers/ingestion/indexing/"
+      ],
+      "handoff_sections": [
+        "9",
+        "10",
+        "18",
+        "21"
+      ],
+      "implementation_steps": [
+        "Implement lexical retrieval first, optional local embeddings behind an evaluated interface.",
+        "Filter by ACL, rights, quality, snapshot and allowed evaluation context before return.",
+        "Key caches by scope/permissions/source-index/policy versions and record retrieval manifests."
+      ],
+      "acceptance_test_ids": [
+        "AT-0303-1",
+        "AT-0303-2",
+        "AT-0303-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0303"
+      ]
+    },
+    {
+      "id": "CS-0304",
+      "phase": "P03",
+      "title": "Implement durable task memory and session snapshots",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0201",
+        "CS-0303"
+      ],
+      "owner_role": "agent",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/tasks/memory.py",
+        "apps/studio-web/src/features/research/"
+      ],
+      "handoff_sections": [
+        "10",
+        "11"
+      ],
+      "implementation_steps": [
+        "Persist task decisions/open questions and session starting/ending snapshots.",
+        "Build token-budgeted context manifests preserving hard constraints and evidence IDs.",
+        "Mark summaries derived/stale; do not replace canonical measurements with chat summaries."
+      ],
+      "acceptance_test_ids": [
+        "AT-0304-1",
+        "AT-0304-2",
+        "AT-0304-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0304"
+      ]
+    },
+    {
+      "id": "CS-0305",
+      "phase": "P03",
+      "title": "Implement evidence revocation and data-quality reporting",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0302",
+        "CS-0303",
+        "CS-0304"
+      ],
+      "owner_role": "evidence",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/evidence/revocation.py",
+        "apps/studio-web/src/features/evidence/quality/"
+      ],
+      "handoff_sections": [
+        "9",
+        "17",
+        "21"
+      ],
+      "implementation_steps": [
+        "Create import coverage/exclusion reports by metric/method/source type.",
+        "Implement source supersession/revocation propagation into cache/index/dataset eligibility.",
+        "Identify downstream models/artifacts without claiming automatic unlearning."
+      ],
+      "acceptance_test_ids": [
+        "AT-0305-1",
+        "AT-0305-2",
+        "AT-0305-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0305"
+      ]
+    },
+    {
+      "id": "CS-0401",
+      "phase": "P04",
+      "title": "Integrate queue and authoritative Run records",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0105",
+        "CS-0305"
+      ],
+      "owner_role": "runtime",
+      "write_scope": [
+        "workers/common/",
+        "services/studio-api/src/studio/domain/runs/queue.py"
+      ],
+      "handoff_sections": [
+        "7",
+        "13"
+      ],
+      "implementation_steps": [
+        "Integrate Procrastinate; queue only scoped record IDs and bounded metadata.",
+        "Persist Run and attempt records, outbox enqueue and external IDs.",
+        "Implement terminal-state conflict handling, retries and reconciliation."
+      ],
+      "acceptance_test_ids": [
+        "AT-0401-1",
+        "AT-0401-2",
+        "AT-0401-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0401"
+      ]
+    },
+    {
+      "id": "CS-0402",
+      "phase": "P04",
+      "title": "Implement capabilities, admission and budgets",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0401"
+      ],
+      "owner_role": "runtime",
+      "write_scope": [
+        "workers/common/resources.py",
+        "services/studio-api/src/studio/domain/runs/admission.py",
+        "apps/studio-web/src/features/compute/"
+      ],
+      "handoff_sections": [
+        "13",
+        "20",
+        "23"
+      ],
+      "implementation_steps": [
+        "Detect actual hardware/runtime/isolation capabilities with unknown fields supported.",
+        "Estimate and reserve resources, enforce task/run budgets and leave system headroom.",
+        "Report blocked capability rather than routing to cloud or fabricating throughput."
+      ],
+      "acceptance_test_ids": [
+        "AT-0402-1",
+        "AT-0402-2",
+        "AT-0402-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0402"
+      ]
+    },
+    {
+      "id": "CS-0403",
+      "phase": "P04",
+      "title": "Build isolated execution, cancellation and run cache",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0402",
+        "CS-0103"
+      ],
+      "owner_role": "security",
+      "write_scope": [
+        "workers/common/executor.py",
+        "workers/common/cache.py",
+        "infra/local/worker-profiles/"
+      ],
+      "handoff_sections": [
+        "13",
+        "21"
+      ],
+      "implementation_steps": [
+        "Use approved subprocess/container isolation with allowlisted inputs, no shell interpolation and denied network.",
+        "Enforce time/memory/disk/output/process limits; cancel full child process tree.",
+        "Cache immutable results by full scientific context/version and scope; reconcile partial outputs."
+      ],
+      "acceptance_test_ids": [
+        "AT-0403-1",
+        "AT-0403-2",
+        "AT-0403-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0403"
+      ]
+    },
+    {
+      "id": "CS-0404",
+      "phase": "P04",
+      "title": "Integrate real RDKit and deterministic verifier",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0403",
+        "CS-0204"
+      ],
+      "owner_role": "chemistry",
+      "write_scope": [
+        "packages/engine-adapters/rdkit/",
+        "services/studio-api/src/studio/domain/candidates/verification.py"
+      ],
+      "handoff_sections": [
+        "12",
+        "13",
+        "16"
+      ],
+      "implementation_steps": [
+        "Implement structure parsing/sanitization/descriptors with typed outputs and exact engine version.",
+        "Combine deterministic formulation/identity/basis checks with eligibility findings.",
+        "Run upstream/benign reference cases and failure cases; never label check success as lab proof."
+      ],
+      "acceptance_test_ids": [
+        "AT-0404-1",
+        "AT-0404-2",
+        "AT-0404-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0404"
+      ]
+    },
+    {
+      "id": "CS-0405",
+      "phase": "P04",
+      "title": "Integrate local model runtime and safe agent tools",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0404",
+        "CS-0304",
+        "CS-0102"
+      ],
+      "owner_role": "agent",
+      "write_scope": [
+        "workers/inference/",
+        "services/studio-api/src/studio/application/agent_tools/"
+      ],
+      "handoff_sections": [
+        "10",
+        "13",
+        "17"
+      ],
+      "implementation_steps": [
+        "Implement model/runtime capability handshake with hashes/license/chat-template and actual structured-output tests.",
+        "Expose scoped typed research/proposal/request tools using domain services.",
+        "Bound tool/token/time budgets and block approvals/export/promotion by agent principal."
+      ],
+      "acceptance_test_ids": [
+        "AT-0405-1",
+        "AT-0405-2",
+        "AT-0405-3"
+      ],
+      "external_blocker_ids": [
+        "U08",
+        "U13"
+      ],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0405"
+      ]
+    },
+    {
+      "id": "CS-0406",
+      "phase": "P04",
+      "title": "Build streaming session/run UI and recovery",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0401",
+        "CS-0405",
+        "CS-0206"
+      ],
+      "owner_role": "frontend",
+      "write_scope": [
+        "apps/studio-web/src/features/research/",
+        "apps/studio-web/src/features/runs/",
+        "services/studio-api/src/studio/api/events/"
+      ],
+      "handoff_sections": [
+        "8",
+        "22"
+      ],
+      "implementation_steps": [
+        "Implement bounded event streams with sequence IDs, reconnect/resume and snapshot fallback.",
+        "Distinguish partial text, proposal, approval request and committed action.",
+        "Render queued/blocked/canceling/interrupted/output-unavailable states in Relay-owned data."
+      ],
+      "acceptance_test_ids": [
+        "AT-0406-1",
+        "AT-0406-2",
+        "AT-0406-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0406"
+      ]
+    },
+    {
+      "id": "CS-0501",
+      "phase": "P05",
+      "title": "Implement immutable experiment plans and review",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0204",
+        "CS-0404",
+        "CS-0105"
+      ],
+      "owner_role": "lab",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/lab/plans.py",
+        "apps/studio-web/src/features/lab/plans/"
+      ],
+      "handoff_sections": [
+        "14",
+        "21"
+      ],
+      "implementation_steps": [
+        "Draft plans bound to candidate/process/contract/method/sample requirements.",
+        "Implement authorized scientific review, hazard/unknown checks and approval digest.",
+        "Export a manual human packet only after approval; no equipment execution capability."
+      ],
+      "acceptance_test_ids": [
+        "AT-0501-1",
+        "AT-0501-2",
+        "AT-0501-3"
+      ],
+      "external_blocker_ids": [
+        "U04",
+        "U05"
+      ],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0501"
+      ]
+    },
+    {
+      "id": "CS-0502",
+      "phase": "P05",
+      "title": "Implement samples, executions and measurement review",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0501",
+        "CS-0202",
+        "CS-0302"
+      ],
+      "owner_role": "lab",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/lab/measurements.py",
+        "apps/studio-web/src/features/lab/results/"
+      ],
+      "handoff_sections": [
+        "6",
+        "14"
+      ],
+      "implementation_steps": [
+        "Record planned/actual materials/lots/process, independent batches, aliquots and repeat types.",
+        "Import raw/normalized measurements with methods, conditions, censored/missing handling and quality review.",
+        "Implement amendments instead of overwrites and eligibility propagation for deviations."
+      ],
+      "acceptance_test_ids": [
+        "AT-0502-1",
+        "AT-0502-2",
+        "AT-0502-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0502"
+      ]
+    },
+    {
+      "id": "CS-0503",
+      "phase": "P05",
+      "title": "Implement per-metric evaluator and task closeout",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0502",
+        "CS-0201",
+        "CS-0305"
+      ],
+      "owner_role": "science",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/tasks/evaluation.py",
+        "apps/studio-web/src/features/tasks/closeout/"
+      ],
+      "handoff_sections": [
+        "7",
+        "12",
+        "14"
+      ],
+      "implementation_steps": [
+        "Implement gate-first metric evaluation using frozen contract and permitted evidence.",
+        "Produce source-linked comparison tables and suggested outcome without auto-approval.",
+        "Create immutable closure packets with limitations and reassessment when evidence changes."
+      ],
+      "acceptance_test_ids": [
+        "AT-0503-1",
+        "AT-0503-2",
+        "AT-0503-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0503"
+      ]
+    },
+    {
+      "id": "CS-0504",
+      "phase": "P05",
+      "title": "Complete three pilot journeys and task reports",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0503",
+        "CS-0406",
+        "CS-0305"
+      ],
+      "owner_role": "frontend",
+      "write_scope": [
+        "apps/studio-web/src/features/tasks/",
+        "tests/e2e/",
+        "docs/execution/pilot/"
+      ],
+      "handoff_sections": [
+        "11",
+        "25",
+        "27"
+      ],
+      "implementation_steps": [
+        "Implement improve, functional/analytical reference match, and discovery journeys end to end.",
+        "Add task reports with contradictions, hypotheses, measurements, unknowns and review scope.",
+        "Run browser tests against real local backend/DB with synthetic data."
+      ],
+      "acceptance_test_ids": [
+        "AT-0504-1",
+        "AT-0504-2",
+        "AT-0504-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0504"
+      ]
+    },
+    {
+      "id": "CS-0505",
+      "phase": "P05",
+      "title": "Verify local privacy and pilot backup/restore",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0504",
+        "CS-0103"
+      ],
+      "owner_role": "operations",
+      "write_scope": [
+        "infra/local/",
+        "docs/operations/",
+        "tests/integration/recovery/"
+      ],
+      "handoff_sections": [
+        "21",
+        "26",
+        "27"
+      ],
+      "implementation_steps": [
+        "Create DB/artifact/key backup and restore commands with versioned manifests.",
+        "Verify local-only network behavior, secrets redaction and core no-model use.",
+        "Publish pilot gate report separating software fixtures from scientific validation."
+      ],
+      "acceptance_test_ids": [
+        "AT-0505-1",
+        "AT-0505-2",
+        "AT-0505-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0505"
+      ]
+    },
+    {
+      "id": "CS-0506",
+      "phase": "P05",
+      "title": "Add optional explicit ELN bridge",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0502",
+        "CS-0505"
+      ],
+      "owner_role": "integration",
+      "write_scope": [
+        "packages/engine-adapters/elabftw/",
+        "docs/operations/eln.md"
+      ],
+      "handoff_sections": [
+        "14"
+      ],
+      "implementation_steps": [
+        "Implement configured eLabFTW API adapter without making it a core dependency.",
+        "Document studio-versus-ELN record ownership; export/selectively import with version/hash mapping.",
+        "Handle conflicts/disconnection without silent bidirectional overwrites."
+      ],
+      "acceptance_test_ids": [
+        "AT-0506-1",
+        "AT-0506-2",
+        "AT-0506-3"
+      ],
+      "external_blocker_ids": [
+        "U16"
+      ],
+      "optional_integration": true,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0506"
+      ]
+    },
+    {
+      "id": "CS-0601",
+      "phase": "P06",
+      "title": "Build dataset snapshots and training eligibility",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0505",
+        "CS-0305"
+      ],
+      "owner_role": "learning",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/learning/datasets.py",
+        "apps/studio-web/src/features/learning/datasets/"
+      ],
+      "handoff_sections": [
+        "17"
+      ],
+      "implementation_steps": [
+        "Create purpose-specific immutable manifests with record IDs/hashes/rights/source classes.",
+        "Generate target-specific exclusions and retain missing/censored/failure semantics.",
+        "Review/freeze snapshots and identify changes requiring new approval."
+      ],
+      "acceptance_test_ids": [
+        "AT-0601-1",
+        "AT-0601-2",
+        "AT-0601-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0601"
+      ]
+    },
+    {
+      "id": "CS-0602",
+      "phase": "P06",
+      "title": "Implement leakage-safe splits and baseline evaluation",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0601",
+        "CS-0303"
+      ],
+      "owner_role": "evaluation",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/learning/splits.py",
+        "tests/eval/",
+        "workers/optimization/baselines/"
+      ],
+      "handoff_sections": [
+        "18"
+      ],
+      "implementation_steps": [
+        "Group revisions/batches/near-duplicates/derived documents and isolate final evaluation labels.",
+        "Implement separate train/development/calibration/final policies and fit transforms on allowed partitions.",
+        "Create matched baselines, evaluation context manifests and denominator/uncertainty reports."
+      ],
+      "acceptance_test_ids": [
+        "AT-0602-1",
+        "AT-0602-2",
+        "AT-0602-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0602"
+      ]
+    },
+    {
+      "id": "CS-0603",
+      "phase": "P06",
+      "title": "Integrate BayBE with independent constraint checks",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0602",
+        "CS-0403",
+        "CS-0502"
+      ],
+      "owner_role": "optimization",
+      "write_scope": [
+        "packages/engine-adapters/baybe/",
+        "workers/optimization/",
+        "apps/studio-web/src/features/optimization/"
+      ],
+      "handoff_sections": [
+        "15"
+      ],
+      "implementation_steps": [
+        "Map supported task/campaign parameters and targets to pinned BayBE APIs.",
+        "Reject unsupported hybrid/cardinality/batch constraints or document reviewed reparameterization.",
+        "Track pending observations, validate/deduplicate returned suggestions, and preserve seeds/version/state."
+      ],
+      "acceptance_test_ids": [
+        "AT-0603-1",
+        "AT-0603-2",
+        "AT-0603-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0603"
+      ]
+    },
+    {
+      "id": "CS-0604",
+      "phase": "P06",
+      "title": "Implement property models, calibration and applicability",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0602",
+        "CS-0603"
+      ],
+      "owner_role": "learning",
+      "write_scope": [
+        "workers/optimization/property_models/",
+        "packages/engine-adapters/chemprop/"
+      ],
+      "handoff_sections": [
+        "15",
+        "18"
+      ],
+      "implementation_steps": [
+        "Compare simple endpoint-appropriate baselines before molecular neural models.",
+        "Implement licensed/compatible Chemprop adapter only where representations/data justify it.",
+        "Publish uncertainty/calibration/applicability and refuse unsupported scientific claims."
+      ],
+      "acceptance_test_ids": [
+        "AT-0604-1",
+        "AT-0604-2",
+        "AT-0604-3"
+      ],
+      "external_blocker_ids": [
+        "U02",
+        "U14"
+      ],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0604"
+      ]
+    },
+    {
+      "id": "CS-0701",
+      "phase": "P07",
+      "title": "Integrate QCEngine and approved quantum templates",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0404",
+        "CS-0505"
+      ],
+      "owner_role": "chemistry",
+      "write_scope": [
+        "packages/engine-adapters/qcengine/",
+        "workers/chemistry/quantum/",
+        "tests/engines/quantum/"
+      ],
+      "handoff_sections": [
+        "16"
+      ],
+      "implementation_steps": [
+        "Pin tested QCEngine/QCElemental/xTB/Psi4 versions and explicit method support.",
+        "Validate geometry/charge/spin/units, persist input and parse outputs/convergence.",
+        "Run benign reference calculations and full failure/cancel/unsupported tests."
+      ],
+      "acceptance_test_ids": [
+        "AT-0701-1",
+        "AT-0701-2",
+        "AT-0701-3"
+      ],
+      "external_blocker_ids": [
+        "U08"
+      ],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0701"
+      ]
+    },
+    {
+      "id": "CS-0702",
+      "phase": "P07",
+      "title": "Add task-justified materials/thermodynamics adapter",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0701",
+        "CS-0604"
+      ],
+      "owner_role": "chemistry",
+      "write_scope": [
+        "packages/engine-adapters/materials/",
+        "docs/science/methods/"
+      ],
+      "handoff_sections": [
+        "12",
+        "16"
+      ],
+      "implementation_steps": [
+        "Choose one justified thermo/LAMMPS method only after defining endpoint and parameter requirements.",
+        "Record force-field/parameter/domain/version and approved benchmark.",
+        "Keep proxy output separate from product performance and validate supported conditions."
+      ],
+      "acceptance_test_ids": [
+        "AT-0702-1",
+        "AT-0702-2",
+        "AT-0702-3"
+      ],
+      "external_blocker_ids": [
+        "U03",
+        "U05",
+        "U14"
+      ],
+      "optional_integration": true,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0702"
+      ]
+    },
+    {
+      "id": "CS-0703",
+      "phase": "P07",
+      "title": "Add selected analytical-data processing adapter",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0502",
+        "CS-0701"
+      ],
+      "owner_role": "chemistry",
+      "write_scope": [
+        "packages/engine-adapters/analytics/",
+        "apps/studio-web/src/features/reference-analysis/"
+      ],
+      "handoff_sections": [
+        "16"
+      ],
+      "implementation_steps": [
+        "Select actual available instrument export formats; retain raw and transformed data.",
+        "Version preprocessing/alignment/similarity and calibration context.",
+        "Compare analytical/functional evidence separately without exact-composition inference."
+      ],
+      "acceptance_test_ids": [
+        "AT-0703-1",
+        "AT-0703-2",
+        "AT-0703-3"
+      ],
+      "external_blocker_ids": [
+        "U05"
+      ],
+      "optional_integration": true,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0703"
+      ]
+    },
+    {
+      "id": "CS-0801",
+      "phase": "P08",
+      "title": "Build approved local SFT dataset and trainer",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0601",
+        "CS-0602",
+        "CS-0405"
+      ],
+      "owner_role": "learning",
+      "write_scope": [
+        "workers/training/sft/",
+        "apps/studio-web/src/features/learning/training/"
+      ],
+      "handoff_sections": [
+        "17"
+      ],
+      "implementation_steps": [
+        "Create reviewed task/tool/citation examples without required hidden reasoning traces.",
+        "Integrate pinned PEFT/trainer with dataset/model/license/resource approval.",
+        "Run tiny actual synthetic fine-tuning, persist complete config and test cancel/resume."
+      ],
+      "acceptance_test_ids": [
+        "AT-0801-1",
+        "AT-0801-2",
+        "AT-0801-3"
+      ],
+      "external_blocker_ids": [
+        "U08",
+        "U13"
+      ],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0801"
+      ]
+    },
+    {
+      "id": "CS-0802",
+      "phase": "P08",
+      "title": "Implement model registry and serving compatibility",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0801"
+      ],
+      "owner_role": "learning",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/learning/models.py",
+        "workers/inference/model_loading/",
+        "apps/studio-web/src/features/learning/models/"
+      ],
+      "handoff_sections": [
+        "17",
+        "18"
+      ],
+      "implementation_steps": [
+        "Register base/tokenizer/adapter/format/lineage and derived conversion artifacts.",
+        "Validate load/checksum/compatibility in isolated runtime and pin sessions to releases.",
+        "Implement atomic approved serving pointer and rollback without changing data."
+      ],
+      "acceptance_test_ids": [
+        "AT-0802-1",
+        "AT-0802-2",
+        "AT-0802-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0802"
+      ]
+    },
+    {
+      "id": "CS-0803",
+      "phase": "P08",
+      "title": "Implement independent model evaluation and promotion gate",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0802",
+        "CS-0604"
+      ],
+      "owner_role": "evaluation",
+      "write_scope": [
+        "workers/training/evaluation/",
+        "services/studio-api/src/studio/domain/learning/promotion.py",
+        "apps/studio-web/src/features/learning/evaluations/"
+      ],
+      "handoff_sections": [
+        "18"
+      ],
+      "implementation_steps": [
+        "Run matched base-versus-adapted comparisons with frozen tools/evidence/budgets.",
+        "Check safety/privacy regressions, scientific thresholds and subgroup/uncertainty reports.",
+        "Require authorized human release decision and label unknown thresholds as blockers."
+      ],
+      "acceptance_test_ids": [
+        "AT-0803-1",
+        "AT-0803-2",
+        "AT-0803-3"
+      ],
+      "external_blocker_ids": [
+        "U14"
+      ],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0803"
+      ]
+    },
+    {
+      "id": "CS-0901",
+      "phase": "P09",
+      "title": "Build bounded research RL environment and rewards",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0803",
+        "CS-0403"
+      ],
+      "owner_role": "rl",
+      "write_scope": [
+        "workers/training/rl/environment/",
+        "workers/training/rl/rewards/"
+      ],
+      "handoff_sections": [
+        "19"
+      ],
+      "implementation_steps": [
+        "Implement reset/step/terminate with approved typed tools, replay provenance and hard budgets.",
+        "Separate gate eligibility, component rewards and independent hidden evaluation.",
+        "Build deliberate adversarial reward-hacking policies and denied-action tests."
+      ],
+      "acceptance_test_ids": [
+        "AT-0901-1",
+        "AT-0901-2",
+        "AT-0901-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0901"
+      ]
+    },
+    {
+      "id": "CS-0902",
+      "phase": "P09",
+      "title": "Integrate actual RL trainer behind release gates",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0901"
+      ],
+      "owner_role": "rl",
+      "write_scope": [
+        "workers/training/rl/trainer/",
+        "tests/training/rl/"
+      ],
+      "handoff_sections": [
+        "19"
+      ],
+      "implementation_steps": [
+        "Verify pinned TRL/environment API and select an appropriate supported algorithm.",
+        "Run bounded synthetic actual training and preserve reward components/checkpoints/resources.",
+        "Compare against supervised baseline using untouched independent evaluation."
+      ],
+      "acceptance_test_ids": [
+        "AT-0902-1",
+        "AT-0902-2",
+        "AT-0902-3"
+      ],
+      "external_blocker_ids": [
+        "U08",
+        "U13",
+        "U14"
+      ],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0902"
+      ]
+    },
+    {
+      "id": "CS-0903",
+      "phase": "P09",
+      "title": "Add approved molecular design and retrosynthesis adapters",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0901",
+        "CS-0701"
+      ],
+      "owner_role": "chemistry",
+      "write_scope": [
+        "packages/engine-adapters/reinvent/",
+        "packages/engine-adapters/aizynthfinder/"
+      ],
+      "handoff_sections": [
+        "16",
+        "19"
+      ],
+      "implementation_steps": [
+        "Validate licenses, pretrained models and supported small-molecule input kinds.",
+        "Integrate candidate/route outputs with structural/gate/evidence checks.",
+        "Keep synthesis plans as hypotheses requiring human review; no automatic execution."
+      ],
+      "acceptance_test_ids": [
+        "AT-0903-1",
+        "AT-0903-2",
+        "AT-0903-3"
+      ],
+      "external_blocker_ids": [
+        "U13"
+      ],
+      "optional_integration": true,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-0903"
+      ]
+    },
+    {
+      "id": "CS-1001",
+      "phase": "P10",
+      "title": "Implement local-infeasibility and fallback decision reports",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0803",
+        "CS-0402"
+      ],
+      "owner_role": "runtime",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/runs/feasibility.py",
+        "apps/studio-web/src/features/compute/fallback/"
+      ],
+      "handoff_sections": [
+        "20"
+      ],
+      "implementation_steps": [
+        "Evaluate compatible local configurations with bounded estimates/probes and declared uncertainty.",
+        "Record why approved local execution cannot proceed; do not equate slower with impossible.",
+        "Create an export proposal only, with no transfer or spending side effect."
+      ],
+      "acceptance_test_ids": [
+        "AT-1001-1",
+        "AT-1001-2",
+        "AT-1001-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-1001"
+      ]
+    },
+    {
+      "id": "CS-1002",
+      "phase": "P10",
+      "title": "Build minimal transformed payload and disclosure review",
+      "status": "not_started",
+      "depends_on": [
+        "CS-1001",
+        "CS-0601",
+        "CS-0305"
+      ],
+      "owner_role": "privacy",
+      "write_scope": [
+        "services/studio-api/src/studio/domain/learning/exports/transform.py",
+        "apps/studio-web/src/features/privacy/export-review/"
+      ],
+      "handoff_sections": [
+        "20",
+        "21"
+      ],
+      "implementation_steps": [
+        "Select minimum permitted records/fields and version explicit transformations.",
+        "Keep alias mapping local while scanning remaining ratios/structures/free text/metadata/derived values.",
+        "Display exact payload and residual-risk report; preserve classification unless reviewed change."
+      ],
+      "acceptance_test_ids": [
+        "AT-1002-1",
+        "AT-1002-2",
+        "AT-1002-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-1002"
+      ]
+    },
+    {
+      "id": "CS-1003",
+      "phase": "P10",
+      "title": "Implement approved broker, revocation and receipts",
+      "status": "not_started",
+      "depends_on": [
+        "CS-1002",
+        "CS-0105"
+      ],
+      "owner_role": "privacy",
+      "write_scope": [
+        "infra/cloud/broker/",
+        "services/studio-api/src/studio/domain/learning/exports/broker.py"
+      ],
+      "handoff_sections": [
+        "20"
+      ],
+      "implementation_steps": [
+        "Bind approval to exact payload/provider/account/region/environment/limits/expiry.",
+        "Enforce outbound policy in one broker; support dry-run, cancel, reconcile and deletion receipts.",
+        "Treat returned checkpoints/logs as confidential and untrusted until locally validated."
+      ],
+      "acceptance_test_ids": [
+        "AT-1003-1",
+        "AT-1003-2",
+        "AT-1003-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-1003"
+      ]
+    },
+    {
+      "id": "CS-1004",
+      "phase": "P10",
+      "title": "Implement one owner-approved confidential cloud adapter",
+      "status": "not_started",
+      "depends_on": [
+        "CS-1003"
+      ],
+      "owner_role": "cloud",
+      "write_scope": [
+        "infra/cloud/providers/",
+        "docs/operations/cloud-security.md"
+      ],
+      "handoff_sections": [
+        "20"
+      ],
+      "implementation_steps": [
+        "Obtain explicit provider/region/security approval before creating infrastructure.",
+        "Verify actual attestation/key-release/GPU/backend/network/retention behavior where applicable.",
+        "Run synthetic end-to-end submission/return/cancel/delete tests and document residual risks."
+      ],
+      "acceptance_test_ids": [
+        "AT-1004-1",
+        "AT-1004-2",
+        "AT-1004-3"
+      ],
+      "external_blocker_ids": [
+        "U08",
+        "U09",
+        "U11"
+      ],
+      "optional_integration": true,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-1004"
+      ]
+    },
+    {
+      "id": "CS-1101",
+      "phase": "P11",
+      "title": "Complete security and privacy regression review",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0505",
+        "CS-1003",
+        "CS-0803"
+      ],
+      "owner_role": "security",
+      "write_scope": [
+        "tests/security/",
+        "docs/execution/security/"
+      ],
+      "handoff_sections": [
+        "21",
+        "25",
+        "27"
+      ],
+      "implementation_steps": [
+        "Test scopes, injection, loaders, loopback origin, artifact access, workers, logs and egress.",
+        "Test revocation impact across retrieval/datasets/models/backups and permissions.",
+        "Record residual threats and block release on critical control failures."
+      ],
+      "acceptance_test_ids": [
+        "AT-1101-1",
+        "AT-1101-2",
+        "AT-1101-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-1101"
+      ]
+    },
+    {
+      "id": "CS-1102",
+      "phase": "P11",
+      "title": "Verify upgrades, recovery and data lifecycle",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0505",
+        "CS-1003",
+        "CS-0802"
+      ],
+      "owner_role": "operations",
+      "write_scope": [
+        "tests/integration/migrations/",
+        "docs/operations/recovery.md",
+        "infra/local/"
+      ],
+      "handoff_sections": [
+        "21",
+        "26"
+      ],
+      "implementation_steps": [
+        "Test populated upgrades and expand/migrate/contract compatibility.",
+        "Exercise restore of DB/artifacts/keys/model pointers and resumable backfills.",
+        "Document retention/deletion limits and avoid destructive rollback assumptions."
+      ],
+      "acceptance_test_ids": [
+        "AT-1102-1",
+        "AT-1102-2",
+        "AT-1102-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-1102"
+      ]
+    },
+    {
+      "id": "CS-1103",
+      "phase": "P11",
+      "title": "Measure performance and finish responsive accessibility",
+      "status": "not_started",
+      "depends_on": [
+        "CS-0504",
+        "CS-0603",
+        "CS-0803"
+      ],
+      "owner_role": "frontend",
+      "write_scope": [
+        "tests/e2e/",
+        "tests/performance/",
+        "apps/studio-web/src/",
+        "docs/execution/benchmarks/"
+      ],
+      "handoff_sections": [
+        "22",
+        "23"
+      ],
+      "implementation_steps": [
+        "Benchmark recorded synthetic dataset/machine with heavy worker contention.",
+        "Verify pagination/streaming/import backpressure and command budgets.",
+        "Exercise desktop/small-screen/themes/keyboard/reduced-motion states; fix shared components first."
+      ],
+      "acceptance_test_ids": [
+        "AT-1103-1",
+        "AT-1103-2",
+        "AT-1103-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-1103"
+      ]
+    },
+    {
+      "id": "CS-1104",
+      "phase": "P11",
+      "title": "Assemble release matrix, runbooks and final handoff",
+      "status": "not_started",
+      "depends_on": [
+        "CS-1101",
+        "CS-1102",
+        "CS-1103",
+        "CS-0902",
+        "CS-0701"
+      ],
+      "owner_role": "controller",
+      "write_scope": [
+        "docs/operations/",
+        "docs/execution/release/",
+        "README.md"
+      ],
+      "handoff_sections": [
+        "26",
+        "27",
+        "28"
+      ],
+      "implementation_steps": [
+        "Produce installation/user/admin/scientific/model/privacy/recovery runbooks.",
+        "Reconcile every ticket with runtime/test evidence and capability status.",
+        "List outstanding unknowns and optional live integrations honestly; do not equate pilot with full scientific platform."
+      ],
+      "acceptance_test_ids": [
+        "AT-1104-1",
+        "AT-1104-2",
+        "AT-1104-3"
+      ],
+      "external_blocker_ids": [],
+      "optional_integration": false,
+      "required_evidence": [
+        "Actual changed file paths and migration notes",
+        "Exact commands and exit status",
+        "Acceptance-test outputs linked to stable IDs",
+        "Known limitations and live/fixture/blocked capability status"
+      ],
+      "prohibited_shortcuts": [
+        "Do not weaken shared policy/contracts to make tests pass.",
+        "Do not claim mocked or skipped execution as a live integration."
+      ],
+      "evidence": [],
+      "requirement_ids": [
+        "REQ-1104"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+/* Component styles — semantic tokens only (see tokens.css). */
+
+.cs-field { display: flex; flex-direction: column; gap: var(--space-1); }
+.cs-field__label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+.cs-field__hint { font-size: 0.8rem; color: var(--text-muted); margin: 0; }
+.cs-field__error { font-size: 0.8rem; color: var(--status-danger); margin: 0; }
+
+.cs-input, .cs-select {
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.cs-input--decimal { font-family: var(--font-mono); }
+.cs-input[aria-invalid="true"] { border-color: var(--status-danger); }
+
+:where(.cs-input, .cs-select, .cs-btn, .cs-icon-btn, button, a, [tabindex]):focus-visible {
+  outline: var(--focus-ring-width) var(--focus-ring-style) var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.cs-btn {
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width) solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--motion-fast);
+}
+.cs-btn--primary { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+.cs-btn--danger { border-color: var(--status-danger); color: var(--status-danger); }
+.cs-btn--ghost { border-color: transparent; background: transparent; }
+.cs-icon-btn {
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Badges: text + shape so meaning isn't color-only */
+.cs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: var(--border-width) solid currentColor;
+}
+.cs-badge--info { color: var(--status-info); }
+.cs-badge--success { color: var(--status-success); }
+.cs-badge--warning { color: var(--status-warning); }
+.cs-badge--danger { color: var(--status-danger); }
+.cs-badge--neutral { color: var(--status-neutral); }
+
+/* Evidence labels — provenance axis, distinct shape from status */
+.cs-evidence {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cs-evidence--measured { color: var(--evidence-measured); }
+.cs-evidence--predicted { color: var(--evidence-predicted); }
+.cs-evidence--computed { color: var(--evidence-computed); }
+.cs-evidence--imported { color: var(--evidence-imported); }
+.cs-evidence--unknown { color: var(--evidence-unknown); }
+
+/* Workflow status — completion axis */
+.cs-status {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border-left: 3px solid currentColor;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.cs-status--draft, .cs-status--unknown { color: var(--status-neutral); }
+.cs-status--active, .cs-status--running, .cs-status--queued { color: var(--status-info); }
+.cs-status--awaiting_review, .cs-status--paused { color: var(--status-warning); }
+.cs-status--closed, .cs-status--completed { color: var(--status-success); }
+.cs-status--cancelled, .cs-status--failed { color: var(--status-danger); }
+
+.cs-tooltip { position: relative; display: inline-block; }
+.cs-tooltip__pop {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--text);
+  color: var(--surface);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.cs-checkbox { display: flex; align-items: center; gap: var(--space-2); }
+
+.cs-quantity { border: none; padding: 0; margin: 0; }
+.cs-quantity__row { display: flex; gap: var(--space-3); align-items: flex-end; }
+.cs-quantity__basis { font-size: 0.8rem; color: var(--text-muted); margin: var(--space-1) 0 0; }
+
+.cs-qdisplay { display: inline-flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
+.cs-qdisplay__value { font-family: var(--font-mono); }
+.cs-qdisplay__unit { color: var(--text-muted); }
+.cs-qdisplay__ctx { font-size: 0.8rem; color: var(--text-muted); }
+.cs-qdisplay__unknown { font-family: var(--font-mono); }
+.cs-qdisplay__unknown-reason { font-size: 0.75rem; color: var(--text-muted); }
+
+.cs-citation__kind { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+.cs-citation__loc { color: var(--text-muted); }
+
+.cs-metric-target { display: flex; gap: var(--space-3); align-items: flex-end; }
+.cs-metric-target__name { font-weight: 600; }
+.cs-metric-target__op { font-family: var(--font-mono); color: var(--text-muted); }
+
+.cs-constraint { display: flex; gap: var(--space-3); align-items: center; }
+.cs-constraint__sev { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+.cs-constraint__sev[data-severity="hard"] { color: var(--status-danger); }
+.cs-constraint__sev[data-severity="soft"] { color: var(--status-warning); }
+
+.cs-ingredient { display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; }
+.cs-ingredient__name { font-weight: 600; }
+.cs-ingredient__role { color: var(--text-muted); font-size: 0.85rem; }
+.cs-ingredient__finding { width: 100%; font-size: 0.8rem; color: var(--status-warning); margin: 0; }
+
+.cs-identity-picker__list { list-style: none; margin: var(--space-1) 0 0; padding: 0; }
+.cs-identity-picker__ids { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.8rem; }
+
+.cs-approval__fields { display: flex; gap: var(--space-6); margin: var(--space-2) 0 0; }
+.cs-approval__fields dt { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); }
+.cs-approval__fields dd { margin: 0; }
+.cs-mono { font-family: var(--font-mono); }
+
+.cs-budget { display: flex; gap: var(--space-4); align-items: baseline; }
+.cs-budget__label { font-weight: 600; }
+
+.cs-finding { margin: var(--space-1) 0; font-size: 0.85rem; }
+.cs-finding--error { color: var(--status-danger); }
+.cs-finding--warning { color: var(--status-warning); }
+.cs-finding--info { color: var(--status-info); }
+.cs-finding__sev { font-weight: 700; text-transform: uppercase; font-size: 0.75rem; }
+
+.cs-state { padding: var(--space-8); text-align: center; }
+.cs-state__title { font-weight: 600; margin: 0 0 var(--space-2); }
+.cs-state--error { background: var(--state-surface-error); }
+.cs-state--forbidden { background: var(--state-surface-warning); }
+.cs-state--loading .cs-state__spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin-right: var(--space-2);
+  animation: cs-spin var(--motion-med) linear infinite;
+}
+@keyframes cs-spin { to { transform: rotate(360deg); } }
+
+.cs-save { font-size: 0.8rem; font-weight: 600; }
+.cs-save--unsaved { color: var(--status-warning); }
+.cs-save--saving { color: var(--status-info); }
+.cs-save--saved { color: var(--status-success); }
+.cs-save--conflict { color: var(--status-danger); }
+.cs-save--read_only_revision { color: var(--status-neutral); }

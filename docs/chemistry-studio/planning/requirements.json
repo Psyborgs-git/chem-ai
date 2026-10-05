@@ -1,0 +1,733 @@
+{
+  "schema_version": "1.0.0",
+  "requirements": [
+    {
+      "id": "REQ-0001",
+      "title": "Inspect baseline and map current repository",
+      "normative_requirement": "Read repository instructions, branch/HEAD/worktree and existing architecture before editing. Record existing/preserve/modify/new/blocked/deferred components and current test results. Map proposed paths to actual paths; preserve unrelated work and newer fixes.",
+      "ticket_ids": [
+        "CS-0001"
+      ],
+      "acceptance_test_ids": [
+        "AT-0001-1",
+        "AT-0001-2",
+        "AT-0001-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0002",
+      "title": "Pin compatible dependencies and profiles",
+      "normative_requirement": "Check official version-specific APIs, OS support, licenses and model/data rights. Create isolated core, local_ai, optimization, quantum and training profiles. Document install checks and avoid importing scientific GPU dependencies in core startup.",
+      "ticket_ids": [
+        "CS-0002"
+      ],
+      "acceptance_test_ids": [
+        "AT-0002-1",
+        "AT-0002-2",
+        "AT-0002-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0003",
+      "title": "Create CI, fixtures and command contract",
+      "normative_requirement": "Implement documented commands and separate core, engine and training suites. Use synthetic labels/measurements only and mark fixture thresholds non-scientific. Add job timeouts, concurrency cancellation, least-privilege permissions and no private caches.",
+      "ticket_ids": [
+        "CS-0003"
+      ],
+      "acceptance_test_ids": [
+        "AT-0003-1",
+        "AT-0003-2",
+        "AT-0003-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0101",
+      "title": "Implement canonical persistence and revision foundation",
+      "normative_requirement": "Create scoped IDs, common revision metadata, optimistic locking and reference constraints. Create migration tests against empty and populated disposable databases. Store decimal quantities as NUMERIC and immutable accepted payloads with versioned hashes.",
+      "ticket_ids": [
+        "CS-0101"
+      ],
+      "acceptance_test_ids": [
+        "AT-0101-1",
+        "AT-0101-2",
+        "AT-0101-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0102",
+      "title": "Enforce principal capabilities and loopback security",
+      "normative_requirement": "Implement owner setup, sessions, role capabilities and scoped service contexts. Enforce same-origin/host protections and artifact/API/event authentication. Use restricted DB runtime credentials and tests for RLS/service-layer scope.",
+      "ticket_ids": [
+        "CS-0102"
+      ],
+      "acceptance_test_ids": [
+        "AT-0102-1",
+        "AT-0102-2",
+        "AT-0102-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0103",
+      "title": "Implement private artifact vault",
+      "normative_requirement": "Create scoped opaque storage keys, streaming upload/download, checksums and quarantine status. Keep artifacts outside repository/web roots and enforce file/path/decompression limits. Record confidentiality/rights and implement staged cleanup without orphaning committed records.",
+      "ticket_ids": [
+        "CS-0103"
+      ],
+      "acceptance_test_ids": [
+        "AT-0103-1",
+        "AT-0103-2",
+        "AT-0103-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0104",
+      "title": "Build GraphQL Node and Relay foundation",
+      "normative_requirement": "Export the schema with global IDs, Node/nodes queries and bounded cursor connections. Implement scoped request DataLoaders and typed mutation errors. Create one Relay environment/network layer and code-generation/drift checks.",
+      "ticket_ids": [
+        "CS-0104"
+      ],
+      "acceptance_test_ids": [
+        "AT-0104-1",
+        "AT-0104-2",
+        "AT-0104-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0105",
+      "title": "Implement commands, approvals base and outbox",
+      "normative_requirement": "Implement idempotency records in the same transaction as state/outbox changes. Create approval envelopes binding exact input digest, actor, scope, expiry and policy. Publish outbox events at least once; deduplicate consumers and audit minimal metadata.",
+      "ticket_ids": [
+        "CS-0105"
+      ],
+      "acceptance_test_ids": [
+        "AT-0105-1",
+        "AT-0105-2",
+        "AT-0105-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0201",
+      "title": "Implement project/task/success-contract lifecycle",
+      "normative_requirement": "Create three task modes, contract revisions, unresolved inputs and task/session ownership. Implement active/paused/review/closed transitions with separate closure outcomes. Keep old contract evaluations immutable when targets change or tasks reopen.",
+      "ticket_ids": [
+        "CS-0201"
+      ],
+      "acceptance_test_ids": [
+        "AT-0201-1",
+        "AT-0201-2",
+        "AT-0201-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0202",
+      "title": "Implement quantities, basis and missingness",
+      "normative_requirement": "Create validated unit registry, decimal DTOs and recorded conversions. Handle mass/volume/mole and active/as-supplied basis without guessing transforms. Support numeric, interval, censored, ordinal, categorical and missing outcomes.",
+      "ticket_ids": [
+        "CS-0202"
+      ],
+      "acceptance_test_ids": [
+        "AT-0202-1",
+        "AT-0202-2",
+        "AT-0202-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0203",
+      "title": "Implement material, grade, lot and reference registry",
+      "normative_requirement": "Implement defined molecules, polymers, mixtures, unknown identities, aliases and reviewed matches. Separate commercial grades/lots and claimed versus measured properties. Support reference products with partial/unknown composition and evidence links.",
+      "ticket_ids": [
+        "CS-0203"
+      ],
+      "acceptance_test_ids": [
+        "AT-0203-1",
+        "AT-0203-2",
+        "AT-0203-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0204",
+      "title": "Implement formula/process/candidate revisions",
+      "normative_requirement": "Implement incomplete drafts, accepted immutable revisions and linked process order. Validate supported basis, totals, ranges and duplicate lines without auto-normalizing. Implement candidate branches, proposal patches and revision-scoped evidence.",
+      "ticket_ids": [
+        "CS-0204"
+      ],
+      "acceptance_test_ids": [
+        "AT-0204-1",
+        "AT-0204-2",
+        "AT-0204-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0205",
+      "title": "Build atomic UI and canonical design map",
+      "normative_requirement": "Implement semantic tokens, atoms, quantity/basis controls, evidence labels and status distinctions. Create shared error/loading/empty/conflict/unavailable/reduced-motion states. Map stable component IDs to actual code and tests; leave absent Figma references null.",
+      "ticket_ids": [
+        "CS-0205"
+      ],
+      "acceptance_test_ids": [
+        "AT-0205-1",
+        "AT-0205-2",
+        "AT-0205-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0206",
+      "title": "Build task workspace and revision-aware UI",
+      "normative_requirement": "Build task creation, contract editor, persistent sections and current blockers. Implement revision diffs, scoped connections and correct Relay mutation updates. Handle unsaved/API-offline/conflict states without false durable-save claims.",
+      "ticket_ids": [
+        "CS-0206"
+      ],
+      "acceptance_test_ids": [
+        "AT-0206-1",
+        "AT-0206-2",
+        "AT-0206-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0301",
+      "title": "Build quarantined document and table ingestion",
+      "normative_requirement": "Integrate maintained parsers for PDF/DOCX/CSV/XLSX/text/JSON with no active content execution. Preserve original artifacts and page/section/cell locators, units, original text and extraction confidence. Deduplicate by scope/hash/parser version and retain newer source revisions.",
+      "ticket_ids": [
+        "CS-0301"
+      ],
+      "acceptance_test_ids": [
+        "AT-0301-1",
+        "AT-0301-2",
+        "AT-0301-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0302",
+      "title": "Build extraction review and evidence provenance",
+      "normative_requirement": "Build side-by-side source/proposed-field review and per-field acceptance/rejection. Create accepted claims with source locators, conditions, support/contradiction and review metadata. Keep document claims, inferred suggestions and measured outcomes distinct.",
+      "ticket_ids": [
+        "CS-0302"
+      ],
+      "acceptance_test_ids": [
+        "AT-0302-1",
+        "AT-0302-2",
+        "AT-0302-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0303",
+      "title": "Implement scoped retrieval and source rights",
+      "normative_requirement": "Implement lexical retrieval first, optional local embeddings behind an evaluated interface. Filter by ACL, rights, quality, snapshot and allowed evaluation context before return. Key caches by scope/permissions/source-index/policy versions and record retrieval manifests.",
+      "ticket_ids": [
+        "CS-0303"
+      ],
+      "acceptance_test_ids": [
+        "AT-0303-1",
+        "AT-0303-2",
+        "AT-0303-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0304",
+      "title": "Implement durable task memory and session snapshots",
+      "normative_requirement": "Persist task decisions/open questions and session starting/ending snapshots. Build token-budgeted context manifests preserving hard constraints and evidence IDs. Mark summaries derived/stale; do not replace canonical measurements with chat summaries.",
+      "ticket_ids": [
+        "CS-0304"
+      ],
+      "acceptance_test_ids": [
+        "AT-0304-1",
+        "AT-0304-2",
+        "AT-0304-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0305",
+      "title": "Implement evidence revocation and data-quality reporting",
+      "normative_requirement": "Create import coverage/exclusion reports by metric/method/source type. Implement source supersession/revocation propagation into cache/index/dataset eligibility. Identify downstream models/artifacts without claiming automatic unlearning.",
+      "ticket_ids": [
+        "CS-0305"
+      ],
+      "acceptance_test_ids": [
+        "AT-0305-1",
+        "AT-0305-2",
+        "AT-0305-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0401",
+      "title": "Integrate queue and authoritative Run records",
+      "normative_requirement": "Integrate Procrastinate; queue only scoped record IDs and bounded metadata. Persist Run and attempt records, outbox enqueue and external IDs. Implement terminal-state conflict handling, retries and reconciliation.",
+      "ticket_ids": [
+        "CS-0401"
+      ],
+      "acceptance_test_ids": [
+        "AT-0401-1",
+        "AT-0401-2",
+        "AT-0401-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0402",
+      "title": "Implement capabilities, admission and budgets",
+      "normative_requirement": "Detect actual hardware/runtime/isolation capabilities with unknown fields supported. Estimate and reserve resources, enforce task/run budgets and leave system headroom. Report blocked capability rather than routing to cloud or fabricating throughput.",
+      "ticket_ids": [
+        "CS-0402"
+      ],
+      "acceptance_test_ids": [
+        "AT-0402-1",
+        "AT-0402-2",
+        "AT-0402-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0403",
+      "title": "Build isolated execution, cancellation and run cache",
+      "normative_requirement": "Use approved subprocess/container isolation with allowlisted inputs, no shell interpolation and denied network. Enforce time/memory/disk/output/process limits; cancel full child process tree. Cache immutable results by full scientific context/version and scope; reconcile partial outputs.",
+      "ticket_ids": [
+        "CS-0403"
+      ],
+      "acceptance_test_ids": [
+        "AT-0403-1",
+        "AT-0403-2",
+        "AT-0403-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0404",
+      "title": "Integrate real RDKit and deterministic verifier",
+      "normative_requirement": "Implement structure parsing/sanitization/descriptors with typed outputs and exact engine version. Combine deterministic formulation/identity/basis checks with eligibility findings. Run upstream/benign reference cases and failure cases; never label check success as lab proof.",
+      "ticket_ids": [
+        "CS-0404"
+      ],
+      "acceptance_test_ids": [
+        "AT-0404-1",
+        "AT-0404-2",
+        "AT-0404-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0405",
+      "title": "Integrate local model runtime and safe agent tools",
+      "normative_requirement": "Implement model/runtime capability handshake with hashes/license/chat-template and actual structured-output tests. Expose scoped typed research/proposal/request tools using domain services. Bound tool/token/time budgets and block approvals/export/promotion by agent principal.",
+      "ticket_ids": [
+        "CS-0405"
+      ],
+      "acceptance_test_ids": [
+        "AT-0405-1",
+        "AT-0405-2",
+        "AT-0405-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0406",
+      "title": "Build streaming session/run UI and recovery",
+      "normative_requirement": "Implement bounded event streams with sequence IDs, reconnect/resume and snapshot fallback. Distinguish partial text, proposal, approval request and committed action. Render queued/blocked/canceling/interrupted/output-unavailable states in Relay-owned data.",
+      "ticket_ids": [
+        "CS-0406"
+      ],
+      "acceptance_test_ids": [
+        "AT-0406-1",
+        "AT-0406-2",
+        "AT-0406-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0501",
+      "title": "Implement immutable experiment plans and review",
+      "normative_requirement": "Draft plans bound to candidate/process/contract/method/sample requirements. Implement authorized scientific review, hazard/unknown checks and approval digest. Export a manual human packet only after approval; no equipment execution capability.",
+      "ticket_ids": [
+        "CS-0501"
+      ],
+      "acceptance_test_ids": [
+        "AT-0501-1",
+        "AT-0501-2",
+        "AT-0501-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0502",
+      "title": "Implement samples, executions and measurement review",
+      "normative_requirement": "Record planned/actual materials/lots/process, independent batches, aliquots and repeat types. Import raw/normalized measurements with methods, conditions, censored/missing handling and quality review. Implement amendments instead of overwrites and eligibility propagation for deviations.",
+      "ticket_ids": [
+        "CS-0502"
+      ],
+      "acceptance_test_ids": [
+        "AT-0502-1",
+        "AT-0502-2",
+        "AT-0502-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0503",
+      "title": "Implement per-metric evaluator and task closeout",
+      "normative_requirement": "Implement gate-first metric evaluation using frozen contract and permitted evidence. Produce source-linked comparison tables and suggested outcome without auto-approval. Create immutable closure packets with limitations and reassessment when evidence changes.",
+      "ticket_ids": [
+        "CS-0503"
+      ],
+      "acceptance_test_ids": [
+        "AT-0503-1",
+        "AT-0503-2",
+        "AT-0503-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0504",
+      "title": "Complete three pilot journeys and task reports",
+      "normative_requirement": "Implement improve, functional/analytical reference match, and discovery journeys end to end. Add task reports with contradictions, hypotheses, measurements, unknowns and review scope. Run browser tests against real local backend/DB with synthetic data.",
+      "ticket_ids": [
+        "CS-0504"
+      ],
+      "acceptance_test_ids": [
+        "AT-0504-1",
+        "AT-0504-2",
+        "AT-0504-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0505",
+      "title": "Verify local privacy and pilot backup/restore",
+      "normative_requirement": "Create DB/artifact/key backup and restore commands with versioned manifests. Verify local-only network behavior, secrets redaction and core no-model use. Publish pilot gate report separating software fixtures from scientific validation.",
+      "ticket_ids": [
+        "CS-0505"
+      ],
+      "acceptance_test_ids": [
+        "AT-0505-1",
+        "AT-0505-2",
+        "AT-0505-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0506",
+      "title": "Add optional explicit ELN bridge",
+      "normative_requirement": "Implement configured eLabFTW API adapter without making it a core dependency. Document studio-versus-ELN record ownership; export/selectively import with version/hash mapping. Handle conflicts/disconnection without silent bidirectional overwrites.",
+      "ticket_ids": [
+        "CS-0506"
+      ],
+      "acceptance_test_ids": [
+        "AT-0506-1",
+        "AT-0506-2",
+        "AT-0506-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0601",
+      "title": "Build dataset snapshots and training eligibility",
+      "normative_requirement": "Create purpose-specific immutable manifests with record IDs/hashes/rights/source classes. Generate target-specific exclusions and retain missing/censored/failure semantics. Review/freeze snapshots and identify changes requiring new approval.",
+      "ticket_ids": [
+        "CS-0601"
+      ],
+      "acceptance_test_ids": [
+        "AT-0601-1",
+        "AT-0601-2",
+        "AT-0601-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0602",
+      "title": "Implement leakage-safe splits and baseline evaluation",
+      "normative_requirement": "Group revisions/batches/near-duplicates/derived documents and isolate final evaluation labels. Implement separate train/development/calibration/final policies and fit transforms on allowed partitions. Create matched baselines, evaluation context manifests and denominator/uncertainty reports.",
+      "ticket_ids": [
+        "CS-0602"
+      ],
+      "acceptance_test_ids": [
+        "AT-0602-1",
+        "AT-0602-2",
+        "AT-0602-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0603",
+      "title": "Integrate BayBE with independent constraint checks",
+      "normative_requirement": "Map supported task/campaign parameters and targets to pinned BayBE APIs. Reject unsupported hybrid/cardinality/batch constraints or document reviewed reparameterization. Track pending observations, validate/deduplicate returned suggestions, and preserve seeds/version/state.",
+      "ticket_ids": [
+        "CS-0603"
+      ],
+      "acceptance_test_ids": [
+        "AT-0603-1",
+        "AT-0603-2",
+        "AT-0603-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0604",
+      "title": "Implement property models, calibration and applicability",
+      "normative_requirement": "Compare simple endpoint-appropriate baselines before molecular neural models. Implement licensed/compatible Chemprop adapter only where representations/data justify it. Publish uncertainty/calibration/applicability and refuse unsupported scientific claims.",
+      "ticket_ids": [
+        "CS-0604"
+      ],
+      "acceptance_test_ids": [
+        "AT-0604-1",
+        "AT-0604-2",
+        "AT-0604-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0701",
+      "title": "Integrate QCEngine and approved quantum templates",
+      "normative_requirement": "Pin tested QCEngine/QCElemental/xTB/Psi4 versions and explicit method support. Validate geometry/charge/spin/units, persist input and parse outputs/convergence. Run benign reference calculations and full failure/cancel/unsupported tests.",
+      "ticket_ids": [
+        "CS-0701"
+      ],
+      "acceptance_test_ids": [
+        "AT-0701-1",
+        "AT-0701-2",
+        "AT-0701-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0702",
+      "title": "Add task-justified materials/thermodynamics adapter",
+      "normative_requirement": "Choose one justified thermo/LAMMPS method only after defining endpoint and parameter requirements. Record force-field/parameter/domain/version and approved benchmark. Keep proxy output separate from product performance and validate supported conditions.",
+      "ticket_ids": [
+        "CS-0702"
+      ],
+      "acceptance_test_ids": [
+        "AT-0702-1",
+        "AT-0702-2",
+        "AT-0702-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0703",
+      "title": "Add selected analytical-data processing adapter",
+      "normative_requirement": "Select actual available instrument export formats; retain raw and transformed data. Version preprocessing/alignment/similarity and calibration context. Compare analytical/functional evidence separately without exact-composition inference.",
+      "ticket_ids": [
+        "CS-0703"
+      ],
+      "acceptance_test_ids": [
+        "AT-0703-1",
+        "AT-0703-2",
+        "AT-0703-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0801",
+      "title": "Build approved local SFT dataset and trainer",
+      "normative_requirement": "Create reviewed task/tool/citation examples without required hidden reasoning traces. Integrate pinned PEFT/trainer with dataset/model/license/resource approval. Run tiny actual synthetic fine-tuning, persist complete config and test cancel/resume.",
+      "ticket_ids": [
+        "CS-0801"
+      ],
+      "acceptance_test_ids": [
+        "AT-0801-1",
+        "AT-0801-2",
+        "AT-0801-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0802",
+      "title": "Implement model registry and serving compatibility",
+      "normative_requirement": "Register base/tokenizer/adapter/format/lineage and derived conversion artifacts. Validate load/checksum/compatibility in isolated runtime and pin sessions to releases. Implement atomic approved serving pointer and rollback without changing data.",
+      "ticket_ids": [
+        "CS-0802"
+      ],
+      "acceptance_test_ids": [
+        "AT-0802-1",
+        "AT-0802-2",
+        "AT-0802-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0803",
+      "title": "Implement independent model evaluation and promotion gate",
+      "normative_requirement": "Run matched base-versus-adapted comparisons with frozen tools/evidence/budgets. Check safety/privacy regressions, scientific thresholds and subgroup/uncertainty reports. Require authorized human release decision and label unknown thresholds as blockers.",
+      "ticket_ids": [
+        "CS-0803"
+      ],
+      "acceptance_test_ids": [
+        "AT-0803-1",
+        "AT-0803-2",
+        "AT-0803-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0901",
+      "title": "Build bounded research RL environment and rewards",
+      "normative_requirement": "Implement reset/step/terminate with approved typed tools, replay provenance and hard budgets. Separate gate eligibility, component rewards and independent hidden evaluation. Build deliberate adversarial reward-hacking policies and denied-action tests.",
+      "ticket_ids": [
+        "CS-0901"
+      ],
+      "acceptance_test_ids": [
+        "AT-0901-1",
+        "AT-0901-2",
+        "AT-0901-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0902",
+      "title": "Integrate actual RL trainer behind release gates",
+      "normative_requirement": "Verify pinned TRL/environment API and select an appropriate supported algorithm. Run bounded synthetic actual training and preserve reward components/checkpoints/resources. Compare against supervised baseline using untouched independent evaluation.",
+      "ticket_ids": [
+        "CS-0902"
+      ],
+      "acceptance_test_ids": [
+        "AT-0902-1",
+        "AT-0902-2",
+        "AT-0902-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-0903",
+      "title": "Add approved molecular design and retrosynthesis adapters",
+      "normative_requirement": "Validate licenses, pretrained models and supported small-molecule input kinds. Integrate candidate/route outputs with structural/gate/evidence checks. Keep synthesis plans as hypotheses requiring human review; no automatic execution.",
+      "ticket_ids": [
+        "CS-0903"
+      ],
+      "acceptance_test_ids": [
+        "AT-0903-1",
+        "AT-0903-2",
+        "AT-0903-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-1001",
+      "title": "Implement local-infeasibility and fallback decision reports",
+      "normative_requirement": "Evaluate compatible local configurations with bounded estimates/probes and declared uncertainty. Record why approved local execution cannot proceed; do not equate slower with impossible. Create an export proposal only, with no transfer or spending side effect.",
+      "ticket_ids": [
+        "CS-1001"
+      ],
+      "acceptance_test_ids": [
+        "AT-1001-1",
+        "AT-1001-2",
+        "AT-1001-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-1002",
+      "title": "Build minimal transformed payload and disclosure review",
+      "normative_requirement": "Select minimum permitted records/fields and version explicit transformations. Keep alias mapping local while scanning remaining ratios/structures/free text/metadata/derived values. Display exact payload and residual-risk report; preserve classification unless reviewed change.",
+      "ticket_ids": [
+        "CS-1002"
+      ],
+      "acceptance_test_ids": [
+        "AT-1002-1",
+        "AT-1002-2",
+        "AT-1002-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-1003",
+      "title": "Implement approved broker, revocation and receipts",
+      "normative_requirement": "Bind approval to exact payload/provider/account/region/environment/limits/expiry. Enforce outbound policy in one broker; support dry-run, cancel, reconcile and deletion receipts. Treat returned checkpoints/logs as confidential and untrusted until locally validated.",
+      "ticket_ids": [
+        "CS-1003"
+      ],
+      "acceptance_test_ids": [
+        "AT-1003-1",
+        "AT-1003-2",
+        "AT-1003-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-1004",
+      "title": "Implement one owner-approved confidential cloud adapter",
+      "normative_requirement": "Obtain explicit provider/region/security approval before creating infrastructure. Verify actual attestation/key-release/GPU/backend/network/retention behavior where applicable. Run synthetic end-to-end submission/return/cancel/delete tests and document residual risks.",
+      "ticket_ids": [
+        "CS-1004"
+      ],
+      "acceptance_test_ids": [
+        "AT-1004-1",
+        "AT-1004-2",
+        "AT-1004-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-1101",
+      "title": "Complete security and privacy regression review",
+      "normative_requirement": "Test scopes, injection, loaders, loopback origin, artifact access, workers, logs and egress. Test revocation impact across retrieval/datasets/models/backups and permissions. Record residual threats and block release on critical control failures.",
+      "ticket_ids": [
+        "CS-1101"
+      ],
+      "acceptance_test_ids": [
+        "AT-1101-1",
+        "AT-1101-2",
+        "AT-1101-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-1102",
+      "title": "Verify upgrades, recovery and data lifecycle",
+      "normative_requirement": "Test populated upgrades and expand/migrate/contract compatibility. Exercise restore of DB/artifacts/keys/model pointers and resumable backfills. Document retention/deletion limits and avoid destructive rollback assumptions.",
+      "ticket_ids": [
+        "CS-1102"
+      ],
+      "acceptance_test_ids": [
+        "AT-1102-1",
+        "AT-1102-2",
+        "AT-1102-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-1103",
+      "title": "Measure performance and finish responsive accessibility",
+      "normative_requirement": "Benchmark recorded synthetic dataset/machine with heavy worker contention. Verify pagination/streaming/import backpressure and command budgets. Exercise desktop/small-screen/themes/keyboard/reduced-motion states; fix shared components first.",
+      "ticket_ids": [
+        "CS-1103"
+      ],
+      "acceptance_test_ids": [
+        "AT-1103-1",
+        "AT-1103-2",
+        "AT-1103-3"
+      ],
+      "status": "specified_not_implemented"
+    },
+    {
+      "id": "REQ-1104",
+      "title": "Assemble release matrix, runbooks and final handoff",
+      "normative_requirement": "Produce installation/user/admin/scientific/model/privacy/recovery runbooks. Reconcile every ticket with runtime/test evidence and capability status. List outstanding unknowns and optional live integrations honestly; do not equate pilot with full scientific platform.",
+      "ticket_ids": [
+        "CS-1104"
+      ],
+      "acceptance_test_ids": [
+        "AT-1104-1",
+        "AT-1104-2",
+        "AT-1104-3"
+      ],
+      "status": "specified_not_implemented"
+    }
+  ]
+}

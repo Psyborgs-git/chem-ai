@@ -1,0 +1,360 @@
+{
+  "schema_version": 1,
+  "design_status": "logical-specification-only",
+  "figma_file": null,
+  "note": "No Figma file was supplied or created (handoff section 22.2). figma_node_id is null everywhere; no claims of visual equivalence to a supplied design may be added.",
+  "screens": [
+    {
+      "screen_id": "project-home",
+      "title": "project/task home",
+      "route": "/projects",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "project-detail",
+      "title": "project detail",
+      "route": "/projects/:projectId",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "task-wizard",
+      "title": "task wizard/contract editor",
+      "route": "/projects/:projectId/tasks/new",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "task-overview",
+      "title": "task overview",
+      "route": "/tasks/:taskId",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "research-session",
+      "title": "research session",
+      "route": "/tasks/:taskId/research",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "candidate-editor",
+      "title": "candidate editor",
+      "route": "/tasks/:taskId/candidates/:candidateId",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "candidate-comparison",
+      "title": "candidate comparison",
+      "route": "/tasks/:taskId/candidates/compare",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "reference-product-detail",
+      "title": "reference-product detail",
+      "route": "/products/:productId",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "material-detail",
+      "title": "material detail",
+      "route": "/materials/:materialId",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "evidence-viewer",
+      "title": "evidence viewer",
+      "route": "/evidence/:evidenceId",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "import-review",
+      "title": "import review",
+      "route": "/imports/:importId/review",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "experiment-plan-review",
+      "title": "experiment-plan review",
+      "route": "/experiments/:experimentId/review",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "execution-capture",
+      "title": "execution/sample capture",
+      "route": "/runs/:runId/execute",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "measurement-review",
+      "title": "measurement-quality review",
+      "route": "/measurements/review",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "run-detail",
+      "title": "job/run detail",
+      "route": "/runs/:runId",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "compute-settings",
+      "title": "capability/compute settings",
+      "route": "/settings/compute",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "dataset-builder",
+      "title": "dataset builder",
+      "route": "/datasets/builder",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "training-run-detail",
+      "title": "training-run detail",
+      "route": "/training/:runId",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "evaluation-report",
+      "title": "evaluation report",
+      "route": "/evaluations/:reportId",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "model-registry",
+      "title": "model registry",
+      "route": "/models",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "export-review",
+      "title": "cloud-export review",
+      "route": "/exports/:exportId/review",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "workspace-settings",
+      "title": "workspace/access settings",
+      "route": "/settings/workspace",
+      "status": "not_started",
+      "figma_node_id": null
+    },
+    {
+      "screen_id": "task-closeout",
+      "title": "task closeout packet",
+      "route": "/tasks/:taskId/closeout",
+      "status": "not_started",
+      "figma_node_id": null
+    }
+  ],
+  "components": [
+    {
+      "component_id": "atom.button",
+      "code_path": "apps/studio-web/src/components/atoms/Button.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.icon-button",
+      "code_path": "apps/studio-web/src/components/atoms/IconButton.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.text-field",
+      "code_path": "apps/studio-web/src/components/atoms/TextField.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.decimal-field",
+      "code_path": "apps/studio-web/src/components/atoms/DecimalField.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.unit-select",
+      "code_path": "apps/studio-web/src/components/atoms/UnitSelect.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.badge",
+      "code_path": "apps/studio-web/src/components/atoms/Badge.tsx",
+      "test_path": "apps/studio-web/src/components/atoms/Badge.test.tsx",
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.evidence-type-label",
+      "code_path": "apps/studio-web/src/components/atoms/EvidenceTypeLabel.tsx",
+      "test_path": "apps/studio-web/src/components/atoms/Badge.test.tsx",
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.status-indicator",
+      "code_path": "apps/studio-web/src/components/atoms/StatusIndicator.tsx",
+      "test_path": "apps/studio-web/src/components/atoms/Badge.test.tsx",
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.tooltip",
+      "code_path": "apps/studio-web/src/components/atoms/Tooltip.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.checkbox",
+      "code_path": "apps/studio-web/src/components/atoms/Checkbox.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "atom.focus-ring",
+      "code_path": "apps/studio-web/src/components/atoms/FocusRing.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.quantity-input",
+      "code_path": "apps/studio-web/src/components/molecules/QuantityInput.tsx",
+      "test_path": "apps/studio-web/src/components/molecules/QuantityInput.keyboard.test.tsx",
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.quantity-display",
+      "code_path": "apps/studio-web/src/components/molecules/QuantityDisplay.tsx",
+      "test_path": "apps/studio-web/src/components/molecules/QuantityDisplay.test.tsx",
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.source-citation",
+      "code_path": "apps/studio-web/src/components/molecules/SourceCitation.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.metric-target-editor",
+      "code_path": "apps/studio-web/src/components/molecules/MetricTargetEditor.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.constraint-row",
+      "code_path": "apps/studio-web/src/components/molecules/ConstraintRow.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.ingredient-line",
+      "code_path": "apps/studio-web/src/components/molecules/IngredientLine.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.identity-picker",
+      "code_path": "apps/studio-web/src/components/molecules/IdentityPicker.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.approval-summary",
+      "code_path": "apps/studio-web/src/components/molecules/ApprovalSummary.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.resource-budget",
+      "code_path": "apps/studio-web/src/components/molecules/ResourceBudget.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "molecule.inline-finding",
+      "code_path": "apps/studio-web/src/components/molecules/InlineFinding.tsx",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "state.loading",
+      "code_path": "apps/studio-web/src/components/states/states.tsx#LoadingState",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "state.empty",
+      "code_path": "apps/studio-web/src/components/states/states.tsx#EmptyState",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "state.error",
+      "code_path": "apps/studio-web/src/components/states/states.tsx#ErrorState",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "state.forbidden",
+      "code_path": "apps/studio-web/src/components/states/states.tsx#ForbiddenState",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "state.unavailable-capability",
+      "code_path": "apps/studio-web/src/components/states/states.tsx#UnavailableCapabilityState",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    },
+    {
+      "component_id": "state.save-status",
+      "code_path": "apps/studio-web/src/components/states/states.tsx#SaveStatus",
+      "test_path": null,
+      "status": "implemented",
+      "figma_node_id": null
+    }
+  ]
+}

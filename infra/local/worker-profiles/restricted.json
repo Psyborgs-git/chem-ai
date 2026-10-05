@@ -1,0 +1,15 @@
+{
+  "name": "restricted",
+  "description": "Preferred profile for untrusted/proprietary work: container isolation.",
+  "backend": "container",
+  "image": "python:3.12-slim",
+  "enforced_when_available": {
+    "argv_only_no_shell": true,
+    "env_scrubbed": true,
+    "home_isolated": true,
+    "network_denied": true,
+    "filesystem_read_only": true,
+    "process_tree_kill": true
+  },
+  "notes": "docker run --network none --read-only, scratch bind-mount only, cap-drop ALL, no-new-privileges, unprivileged user. If the image is not locally present this profile is unavailable — it is never silently downgraded."
+}

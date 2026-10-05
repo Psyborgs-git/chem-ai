@@ -1,0 +1,10 @@
+{
+  "canonical_source": "docs/chemistry-studio/contracts/",
+  "sync": "checksum-verified copy; do not edit here \u2014 edit the pack and re-sync",
+  "schemas": {
+    "acceptance-tests.schema.json": "ceab6911ebfa7b07458cf2964e2526539d305282c7d626054b6f53f11a15dcf7",
+    "design-map.schema.json": "8ae3295d45b8d7c08fbc753893dca77d5577d0fcc693c960640a5c2cfb56dded",
+    "domain.schema.json": "a4372f00b8129d1fefbe964758cb9ee7968f83c531ec6db4bc07a2768717fbbc",
+    "workplan.schema.json": "210fb703b6ad8a987d321f011579cdd77c1048e8c1d53e84135f5868a03cdf17"
+  }
+}

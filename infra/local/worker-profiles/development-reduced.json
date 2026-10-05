@@ -1,0 +1,14 @@
+{
+  "name": "development-reduced",
+  "description": "Reduced-isolation development profile for public/synthetic workloads only (§13.3).",
+  "backend": "restricted-subprocess",
+  "enforced": {
+    "argv_only_no_shell": true,
+    "env_scrubbed": true,
+    "home_isolated": true,
+    "network_denied": false,
+    "filesystem_read_only": false,
+    "process_tree_kill": true
+  },
+  "notes": "rlimits are applied where the platform supports them and the applied set is recorded per run. Network egress is NOT denied — proprietary or untrusted work requiring that control is blocked, not executed under this profile."
+}

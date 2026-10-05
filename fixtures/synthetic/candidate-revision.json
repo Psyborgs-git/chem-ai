@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0.0",
+  "id": "00000000-0000-0000-0000-000000000190",
+  "task_id": "00000000-0000-0000-0000-000000000064",
+  "revision": 1,
+  "parent_revision_id": null,
+  "contract_revision_id": "00000000-0000-0000-0000-000000000065",
+  "entity_kind": "formulation",
+  "entity_revision_id": "00000000-0000-0000-0000-0000000000c8",
+  "hypothesis": "Synthetic test candidate only",
+  "status": "accepted_for_research",
+  "eligibility": "not_assessed",
+  "evidence_ids": [],
+  "fixture_only": true
+}

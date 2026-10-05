@@ -1,0 +1,14 @@
+{
+  "name": "chemistry-studio",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Chemistry Studio workspace root (web app lives in apps/studio-web)",
+  "scripts": {
+    "dev:web": "pnpm --filter studio-web dev",
+    "build:web": "pnpm --filter studio-web build",
+    "typecheck": "pnpm --filter studio-web typecheck",
+    "test:web": "pnpm --filter studio-web test",
+    "relay": "pnpm --filter studio-web relay"
+  },
+  "packageManager": "pnpm@10.18.3"
+}

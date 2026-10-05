@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "id": "00000000-0000-0000-0000-0000000000c8",
+  "formulation_id": "00000000-0000-0000-0000-0000000000c9",
+  "revision": 1,
+  "parent_revision_id": null,
+  "status": "accepted",
+  "basis": "mass_fraction_as_supplied",
+  "declared_total": "1",
+  "ingredients": [
+    {
+      "line_id": "line.a",
+      "material_revision_id": "00000000-0000-0000-0000-0000000000d2",
+      "grade_revision_id": null,
+      "fraction": "0.4",
+      "identity_status": "known",
+      "source_ids": []
+    },
+    {
+      "line_id": "line.b",
+      "material_revision_id": "00000000-0000-0000-0000-0000000000d3",
+      "grade_revision_id": null,
+      "fraction": "0.8",
+      "identity_status": "known",
+      "source_ids": []
+    }
+  ],
+  "process_revision_id": "00000000-0000-0000-0000-0000000000dc",
+  "unknowns": [],
+  "source_ids": [],
+  "fixture_only": true
+}

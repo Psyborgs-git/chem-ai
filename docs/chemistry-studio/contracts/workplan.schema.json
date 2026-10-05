@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "status": {
+      "type": "string"
+    },
+    "controller_owned": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 0
+    },
+    "max_parallel_workers_default": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "phases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "ticket_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "ticket_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "tickets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "not_started",
+              "in_progress",
+              "blocked",
+              "implemented_unverified",
+              "verified",
+              "deferred"
+            ]
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "owner_role": {
+            "type": "string"
+          },
+          "write_scope": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "handoff_sections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "implementation_steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 3
+          },
+          "acceptance_test_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "external_blocker_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "optional_integration": {
+            "type": "boolean"
+          },
+          "required_evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "prohibited_shortcuts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "requirement_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "id",
+          "phase",
+          "title",
+          "status",
+          "depends_on",
+          "owner_role",
+          "write_scope",
+          "handoff_sections",
+          "implementation_steps",
+          "acceptance_test_ids",
+          "external_blocker_ids",
+          "optional_integration",
+          "required_evidence",
+          "prohibited_shortcuts",
+          "evidence",
+          "requirement_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "controller_owned",
+    "max_parallel_workers_default",
+    "phases",
+    "tickets"
+  ],
+  "additionalProperties": false
+}

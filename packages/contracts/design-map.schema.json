@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "primary_source": {
+      "const": "logical_json"
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "change": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "change"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "tokens": {
+      "type": "object",
+      "properties": {
+        "font": {
+          "type": "string"
+        },
+        "spacing_unit_px": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "focus_visible": {
+          "type": "boolean"
+        },
+        "semantic_roles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "themes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "brand_status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "font",
+        "spacing_unit_px",
+        "focus_visible",
+        "semantic_roles",
+        "themes",
+        "brand_status"
+      ],
+      "additionalProperties": false
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "composes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "themes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "status": {
+            "type": "string"
+          },
+          "code_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "figma_node_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "composes",
+          "variants",
+          "themes",
+          "status",
+          "code_path",
+          "figma_node_id"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "screens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "route": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "ticket_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "data_dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "relay_fragment": {
+            "type": "string"
+          },
+          "primary_action": {
+            "type": "string"
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "responsive_rules": {
+            "type": "object",
+            "properties": {
+              "desktop": {
+                "type": "string"
+              },
+              "small_screen": {
+                "type": "string"
+              },
+              "reduced_motion": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "desktop",
+              "small_screen",
+              "reduced_motion"
+            ],
+            "additionalProperties": false
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          },
+          "analytics_policy": {
+            "type": "string"
+          },
+          "figma_node_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "code_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "acceptance_test_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "route",
+          "phase",
+          "ticket_ids",
+          "data_dependencies",
+          "permissions",
+          "components",
+          "relay_fragment",
+          "primary_action",
+          "states",
+          "responsive_rules",
+          "events",
+          "analytics_policy",
+          "figma_node_id",
+          "code_path",
+          "status",
+          "acceptance_test_ids"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "primary_source",
+    "history",
+    "tokens",
+    "components",
+    "screens"
+  ],
+  "additionalProperties": false
+}

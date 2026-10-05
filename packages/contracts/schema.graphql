@@ -1,0 +1,1140 @@
+input ActualsRecordInput {
+  executionId: ID!
+  actual: JSON = null
+  deviations: JSON = null
+  observations: String = null
+  clientMutationId: String = null
+}
+
+input BatchAddInput {
+  executionId: ID!
+  label: String!
+  payload: JSON = null
+  clientMutationId: String = null
+}
+
+type BatchResult {
+  batch: LabBatch
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type CandidateConnection {
+  edges: [CandidateEdge!]!
+  pageInfo: PageInfo!
+}
+
+input CandidateCreateInput {
+  taskId: ID!
+  entityKind: String!
+  entityRevisionId: String = null
+  hypothesis: String = null
+  proposedDifferences: JSON = null
+  evidenceIds: JSON = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type CandidateEdge {
+  cursor: String!
+  node: CandidateRevision!
+}
+
+input CandidatePatchProposeInput {
+  candidateId: ID!
+  patch: JSON!
+  reason: String = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type CandidatePatchResult {
+  patchId: String
+  status: String
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input CandidatePatchReviewInput {
+  patchId: String!
+  accept: Boolean!
+  rejectionReason: String = null
+  clientMutationId: String = null
+}
+
+input CandidateReviewInput {
+  candidateId: ID!
+  accept: Boolean!
+  clientMutationId: String = null
+}
+
+type CandidateRevision implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  revision: Int!
+  status: String!
+  eligibility: String!
+  entityKind: String!
+  hypothesis: String
+  payload: JSON!
+  parentRevisionId: String
+  entityRevisionId: String
+  createdAt: DateTime!
+}
+
+type CandidateRevisionResult {
+  candidate: CandidateRevision
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input CandidateSubmitInput {
+  candidateId: ID!
+  clientMutationId: String = null
+}
+
+type CandidatesMutation {
+  create(input: CandidateCreateInput!): CandidateRevisionResult!
+  submit(input: CandidateSubmitInput!): CandidateRevisionResult!
+  review(input: CandidateReviewInput!): CandidateRevisionResult!
+  patchPropose(input: CandidatePatchProposeInput!): CandidatePatchResult!
+  patchReview(input: CandidatePatchReviewInput!): CandidatePatchResult!
+}
+
+type CapabilityStatus {
+  status: String!
+  detail: String!
+}
+
+input ClaimCreateInput {
+  kind: String!
+  subject: JSON!
+  statement: JSON!
+  locator: JSON = null
+  originalText: String = null
+  conditions: JSON = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type ClaimLink {
+  fromClaimId: String!
+  toClaimId: String!
+  relation: String!
+  note: String
+}
+
+input ClaimLinkInput {
+  fromClaimId: ID!
+  toClaimId: ID!
+  relation: String!
+  note: String = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type ClaimLinkResult {
+  link: ClaimLink
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input ClaimReviewInput {
+  claimId: ID!
+  decision: String!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type ContextManifest {
+  id: String!
+  compilerVersion: String!
+  tokenBudget: Int!
+  tokenEstimate: Int!
+  overBudget: Boolean!
+  items: JSON!
+  omitted: JSON!
+  warnings: JSON!
+  createdAt: DateTime!
+}
+
+input ContractDraftCreateInput {
+  taskId: ID!
+  payload: JSON!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+input ContractFreezeInput {
+  revisionId: ID!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type ContractRevision implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  revision: Int!
+  status: String!
+  contentHash: String!
+  createdAt: DateTime!
+}
+
+type ContractRevisionResult {
+  contractRevision: ContractRevision
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+type Decision implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  kind: String!
+  payload: JSON!
+  createdAt: DateTime!
+  decidedBy: User
+}
+
+type DecisionConnection {
+  edges: [DecisionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type DecisionEdge {
+  cursor: String!
+  node: Decision!
+}
+
+type DomainErrorPayload {
+  code: String!
+  message: String!
+  fieldPath: String
+  retryable: Boolean!
+  safeDetails: JSON!
+}
+
+type EvidenceClaim implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  kind: String!
+  status: String!
+  subject: JSON!
+  statement: JSON!
+  locator: JSON
+  originalText: String
+  conditions: JSON
+  sourceRecordId: String
+  reviewedAt: DateTime
+  createdAt: DateTime!
+}
+
+type EvidenceClaimConnection {
+  edges: [EvidenceClaimEdge!]!
+  pageInfo: PageInfo!
+}
+
+type EvidenceClaimEdge {
+  cursor: String!
+  node: EvidenceClaim!
+}
+
+type EvidenceClaimResult {
+  claim: EvidenceClaim
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type EvidenceMutation {
+  claimCreate(input: ClaimCreateInput!): EvidenceClaimResult!
+  claimReview(input: ClaimReviewInput!): EvidenceClaimResult!
+  claimLink(input: ClaimLinkInput!): ClaimLinkResult!
+}
+
+input ExecutionCloseInput {
+  executionId: ID!
+  status: String! = "completed"
+  clientMutationId: String = null
+}
+
+input ExecutionHistoricalInput {
+  taskId: ID!
+  payload: JSON!
+  clientMutationId: String = null
+}
+
+input ExecutionOpenInput {
+  planId: ID!
+  clientMutationId: String = null
+}
+
+type ExecutionResult {
+  execution: LabExecution
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type ExperimentPlan implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  taskId: String!
+  title: String!
+  status: String!
+  contentDigest: String!
+  blockers: JSON!
+  payload: JSON!
+  approvalId: String
+  packet: JSON
+  createdAt: DateTime!
+}
+
+type ExperimentPlanConnection {
+  edges: [ExperimentPlanEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ExperimentPlanEdge {
+  cursor: String!
+  node: ExperimentPlan!
+}
+
+type ExtractedRecord implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  batchId: String!
+  kind: String!
+  locator: JSON!
+  originalText: String!
+  payload: JSON
+  flags: [String!]!
+  confidence: Float!
+  status: String!
+  createdAt: DateTime!
+}
+
+type ExtractedRecordConnection {
+  edges: [ExtractedRecordEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ExtractedRecordEdge {
+  cursor: String!
+  node: ExtractedRecord!
+}
+
+type ExtractedRecordResult {
+  record: ExtractedRecord
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type HardwareCapabilities {
+  os: String!
+  arch: String!
+  gpu: String!
+}
+
+input ImportArtifactInput {
+  artifactId: String!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type ImportBatch implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  originalName: String!
+  detectedType: String!
+  parserName: String!
+  parserVersion: String!
+  sourceRevision: Int!
+  status: String!
+  recordCount: Int!
+  findings: JSON!
+  createdAt: DateTime!
+}
+
+type ImportBatchConnection {
+  edges: [ImportBatchEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ImportBatchEdge {
+  cursor: String!
+  node: ImportBatch!
+}
+
+type ImportBatchResult {
+  batch: ImportBatch
+  deduplicated: Boolean!
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type ImportsMutation {
+  sourceRevoke(input: SourceRevokeInput!): SourceRevokeResult!
+  artifactImport(input: ImportArtifactInput!): ImportBatchResult!
+  recordReview(input: ReviewRecordInput!): ExtractedRecordResult!
+  recordPromote(input: PromoteRecordInput!): EvidenceClaimResult!
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
+"""
+scalar JSON @specifiedBy(url: "https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf")
+
+type LabBatch implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  executionId: String!
+  label: String!
+  payload: JSON!
+  createdAt: DateTime!
+  samples: [LabSample!]!
+}
+
+type LabExecution implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  planId: String
+  status: String!
+  historical: Boolean!
+  actual: JSON!
+  deviations: JSON!
+  observations: String
+  closedAt: DateTime
+  createdAt: DateTime!
+  batches: [LabBatch!]!
+}
+
+type LabMeasurementsMutation {
+  executionOpen(input: ExecutionOpenInput!): ExecutionResult!
+  executionHistoricalImport(input: ExecutionHistoricalInput!): ExecutionResult!
+  executionClose(input: ExecutionCloseInput!): ExecutionResult!
+  actualsRecord(input: ActualsRecordInput!): ExecutionResult!
+  batchAdd(input: BatchAddInput!): BatchResult!
+  sampleAdd(input: SampleAddInput!): SampleResult!
+  measurementRecord(input: MeasurementRecordInput!): MeasurementResult!
+  measurementReview(input: MeasurementReviewInput!): MeasurementResult!
+  measurementApplicability(input: MeasurementApplicabilityInput!): MeasurementResult!
+  measurementAmend(input: MeasurementAmendInput!): MeasurementResult!
+}
+
+type LabMutation {
+  planCreate(input: PlanCreateInput!): PlanResult!
+  planUpdate(input: PlanUpdateInput!): PlanResult!
+  planSubmit(input: PlanIdInput!): PlanResult!
+  planReview(input: PlanReviewInput!): PlanResult!
+  packetExport(input: PlanIdInput!): PacketResult!
+  measurements: LabMeasurementsMutation!
+}
+
+type LabSample implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  batchId: String!
+  label: String!
+  kind: String!
+  payload: JSON!
+  createdAt: DateTime!
+  measurements: [Measurement!]!
+}
+
+type MaterialGrade implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  supplier: String!
+  gradeName: String!
+  activeContent: JSON
+  specifications: JSON!
+  reconciledInto: ID
+  createdAt: DateTime!
+}
+
+input MaterialGradeCreateInput {
+  materialId: ID!
+  supplier: String!
+  gradeName: String!
+  activeContent: JSON = null
+  specifications: JSON = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+input MaterialGradeReconcileInput {
+  keepGradeId: ID!
+  mergeGradeId: ID!
+  reason: String!
+  clientMutationId: String = null
+}
+
+type MaterialGradeResult {
+  grade: MaterialGrade
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type MaterialIdentity implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  kind: String!
+  name: String!
+  structureStatus: String!
+  evidenceStatus: String!
+  identifiers: JSON!
+  aliases: JSON!
+  createdAt: DateTime!
+}
+
+input MaterialIdentityCreateInput {
+  kind: String!
+  name: String!
+  identifiers: JSON = null
+  aliases: JSON = null
+  structure: String = null
+  structureFormat: String = null
+  confidentiality: String! = "internal"
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type MaterialIdentityResult {
+  identity: MaterialIdentity
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input MaterialMatchProposeInput {
+  sourceIdentityId: ID!
+  candidateIdentityId: ID!
+  confidence: String = null
+  rationale: String = null
+  proposedBy: String! = "user"
+  clientMutationId: String = null
+}
+
+input MaterialMatchReviewInput {
+  matchId: ID!
+  decision: String!
+  rationale: String = null
+  clientMutationId: String = null
+}
+
+input MaterialStructureReviewInput {
+  identityId: ID!
+  clientMutationId: String = null
+}
+
+type MaterialsMutation {
+  identityCreate(input: MaterialIdentityCreateInput!): MaterialIdentityResult!
+  structureReview(input: MaterialStructureReviewInput!): MaterialIdentityResult!
+  matchPropose(input: MaterialMatchProposeInput!): MaterialIdentityResult!
+  matchReview(input: MaterialMatchReviewInput!): MaterialIdentityResult!
+  gradeCreate(input: MaterialGradeCreateInput!): MaterialGradeResult!
+  gradeReconcile(input: MaterialGradeReconcileInput!): MaterialGradeResult!
+  referenceProductCreate(input: ReferenceProductCreateInput!): ReferenceProductResult!
+  referenceRevisionDraft(input: ReferenceRevisionDraftInput!): ReferenceRevisionResult!
+  referenceRevisionFreeze(input: ReferenceRevisionFreezeInput!): ReferenceRevisionResult!
+}
+
+type Measurement implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  sampleId: String!
+  method: String!
+  repeatType: String!
+  metric: String
+  valueType: String!
+  value: JSON!
+  conditions: JSON!
+  applicable: Boolean!
+  applicabilityNote: String
+  status: String!
+  reviewNote: String
+  pipelineVersion: String
+  supersededBy: String
+  createdAt: DateTime!
+  amendments: JSON!
+}
+
+input MeasurementAmendInput {
+  measurementId: ID!
+  reason: String!
+  value: JSON!
+  source: String = null
+  conditions: JSON = null
+  clientMutationId: String = null
+}
+
+input MeasurementApplicabilityInput {
+  measurementId: ID!
+  applicable: Boolean!
+  note: String = null
+  clientMutationId: String = null
+}
+
+input MeasurementRecordInput {
+  sampleId: ID!
+  method: String!
+  repeatType: String!
+  value: JSON!
+  metric: String = null
+  valueType: String = null
+  conditions: JSON = null
+  pipelineVersion: String = null
+  clientMutationId: String = null
+}
+
+type MeasurementResult {
+  measurement: Measurement
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input MeasurementReviewInput {
+  measurementId: ID!
+  decision: String!
+  note: String = null
+  clientMutationId: String = null
+}
+
+input MessagePostInput {
+  sessionId: ID!
+  role: String!
+  content: String!
+  kind: String = null
+  refs: JSON = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type Mutation {
+  projectCreate(input: ProjectCreateInput!): ProjectResult!
+  taskCreate(input: TaskCreateInput!): TaskCreateResult!
+  taskTransition(input: TaskTransitionInput!): TaskResult!
+  taskClose(input: TaskCloseInput!): TaskResult!
+  taskReopen(input: TaskReopenInput!): TaskResult!
+  contractDraftCreate(input: ContractDraftCreateInput!): ContractRevisionResult!
+  contractFreeze(input: ContractFreezeInput!): ContractRevisionResult!
+  materials: MaterialsMutation!
+  candidates: CandidatesMutation!
+  imports: ImportsMutation!
+  evidence: EvidenceMutation!
+  research: ResearchMutation!
+  runs: RunsMutation!
+  lab: LabMutation!
+}
+
+"""An object with a Globally Unique ID"""
+interface Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+}
+
+type PacketResult {
+  packet: JSON
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+input PlanCreateInput {
+  taskId: ID!
+  title: String!
+  payload: JSON!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+input PlanIdInput {
+  planId: ID!
+  clientMutationId: String = null
+}
+
+type PlanResult {
+  plan: ExperimentPlan
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input PlanReviewInput {
+  planId: ID!
+  decision: String!
+  rationale: String = null
+  clientMutationId: String = null
+}
+
+input PlanUpdateInput {
+  planId: ID!
+  payload: JSON!
+  clientMutationId: String = null
+}
+
+type ProfileCapabilities {
+  core: CapabilityStatus!
+  localAi: CapabilityStatus!
+  optimization: CapabilityStatus!
+  quantum: CapabilityStatus!
+  training: CapabilityStatus!
+}
+
+type Project implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  slug: String!
+  name: String!
+  status: String!
+  description: String
+  createdAt: DateTime!
+}
+
+type ProjectConnection {
+  edges: [ProjectEdge!]!
+  pageInfo: PageInfo!
+}
+
+input ProjectCreateInput {
+  slug: String!
+  name: String!
+  description: String = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type ProjectEdge {
+  cursor: String!
+  node: Project!
+}
+
+type ProjectResult {
+  project: Project
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input PromoteRecordInput {
+  recordId: ID!
+  subject: JSON!
+  statement: JSON!
+  conditions: JSON = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type Query {
+  node(
+    """The ID of the object."""
+    id: ID!
+  ): Node
+  nodes(ids: [ID!]!): [Node]!
+  viewer: User!
+  workspace: Workspace!
+  projects(first: Int = null, after: String = null, last: Int = null, before: String = null): ProjectConnection!
+  projectTasks(projectId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): TaskConnection!
+  taskDecisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): DecisionConnection!
+  taskCandidateRevisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): CandidateConnection!
+  researchTask(id: ID!): Task
+  taskSessions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ResearchSessionConnection!
+  taskRuns(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): RunConnection!
+  taskPlans(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ExperimentPlanConnection!
+  planExecutions(planId: ID!): [LabExecution!]!
+  taskExecutions(taskId: ID!): [LabExecution!]!
+  replicationSummary(executionId: ID!): JSON!
+  measurementContractCheck(measurementId: ID!, metric: JSON!): JSON!
+  taskEvaluation(taskId: ID!): JSON!
+  taskCloseoutPacket(taskId: ID!): JSON!
+  taskReassessmentStatus(taskId: ID!): JSON!
+  taskReport(taskId: ID!): JSON!
+  sessionMessages(sessionId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): SessionMessageConnection!
+  taskQuestions(taskId: ID!): [TaskQuestion!]!
+  taskSummaries(taskId: ID!): [TaskSummary!]!
+  dataQualityReport(batchId: ID = null): JSON!
+  revocationImpact(artifactId: String!): JSON!
+  sourceRevocations(artifactId: String = null): JSON!
+  engineCapabilities: ProfileCapabilities!
+  hardwareCapabilities: HardwareCapabilities!
+  computeResources: JSON!
+  importBatches(first: Int = null, after: String = null, last: Int = null, before: String = null): ImportBatchConnection!
+  importRecords(batchId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ExtractedRecordConnection!
+  evidenceClaims(kind: String = null, status: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): EvidenceClaimConnection!
+  claimLinks(claimId: ID!): [ClaimLink!]!
+}
+
+input QuestionRaiseInput {
+  taskId: ID!
+  question: String!
+  blocking: Boolean = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+input QuestionResolveInput {
+  questionId: ID!
+  resolution: String!
+  clientMutationId: String = null
+}
+
+type ReferenceProduct implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  name: String!
+  supplier: String
+  category: String
+  compositionKnowledge: String!
+  aliases: JSON!
+  createdAt: DateTime!
+}
+
+input ReferenceProductCreateInput {
+  name: String!
+  supplier: String = null
+  category: String = null
+  compositionKnowledge: String! = "unknown"
+  aliases: JSON = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type ReferenceProductResult {
+  product: ReferenceProduct
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type ReferenceProductRevision implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  revision: Int!
+  status: String!
+  contentHash: String!
+  createdAt: DateTime!
+}
+
+input ReferenceRevisionDraftInput {
+  productId: ID!
+  payload: JSON!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+input ReferenceRevisionFreezeInput {
+  revisionId: ID!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type ReferenceRevisionResult {
+  revision: ReferenceProductRevision
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type ResearchMutation {
+  sessionStart(input: SessionStartInput!): ResearchSessionResult!
+  sessionEnd(input: SessionEndInput!): ResearchSessionResult!
+  messagePost(input: MessagePostInput!): SessionMessageResult!
+  questionRaise(input: QuestionRaiseInput!): TaskQuestionResult!
+  questionResolve(input: QuestionResolveInput!): TaskQuestionResult!
+  summaryCreate(input: SummaryCreateInput!): TaskSummaryResult!
+}
+
+type ResearchSession implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  status: String!
+  startContractRevisionId: String
+  endSnapshot: JSON
+  createdAt: DateTime!
+  endedAt: DateTime
+  startManifest: ContextManifest
+}
+
+type ResearchSessionConnection {
+  edges: [ResearchSessionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ResearchSessionEdge {
+  cursor: String!
+  node: ResearchSession!
+}
+
+type ResearchSessionResult {
+  session: ResearchSession
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input ReviewRecordInput {
+  recordId: ID!
+  decision: String!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type Run implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  kind: String!
+  status: String!
+  attemptCount: Int!
+  maxAttempts: Int!
+  queuedAt: DateTime
+  startedAt: DateTime
+  finishedAt: DateTime
+  cancelRequestedAt: DateTime
+  deadlineAt: DateTime
+  error: JSON
+  resultSummary: JSON
+  attempts: [RunAttempt!]!
+}
+
+type RunAttempt implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  status: String!
+  queue: String!
+  workerId: String
+  attemptNumber: Int!
+  enqueuedAt: DateTime!
+  startedAt: DateTime
+  finishedAt: DateTime
+  error: JSON
+}
+
+input RunCancelInput {
+  runId: ID!
+  clientMutationId: String = null
+}
+
+type RunConnection {
+  edges: [RunEdge!]!
+  pageInfo: PageInfo!
+}
+
+type RunEdge {
+  cursor: String!
+  node: Run!
+}
+
+input RunRequestInput {
+  taskId: ID!
+  kind: String!
+  request: JSON = null
+  maxAttempts: Int = null
+  requiresApproval: Boolean! = false
+  clientMutationId: String = null
+  idempotencyKey: String! = ""
+}
+
+type RunResult {
+  run: Run
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type RunsMutation {
+  request(input: RunRequestInput!): RunResult!
+  requestCancel(input: RunCancelInput!): RunResult!
+}
+
+input SampleAddInput {
+  batchId: ID!
+  label: String!
+  kind: String! = "aliquot"
+  payload: JSON = null
+  clientMutationId: String = null
+}
+
+type SampleResult {
+  sample: LabSample
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input SessionEndInput {
+  sessionId: ID!
+  clientMutationId: String = null
+}
+
+type SessionMessage {
+  id: String!
+  role: String!
+  kind: String!
+  content: String!
+  refs: JSON!
+  createdAt: DateTime!
+}
+
+type SessionMessageConnection {
+  edges: [SessionMessageEdge!]!
+  pageInfo: PageInfo!
+}
+
+type SessionMessageEdge {
+  cursor: String!
+  node: SessionMessage!
+}
+
+type SessionMessageResult {
+  message: SessionMessage
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input SessionStartInput {
+  taskId: ID!
+  tokenBudget: Int = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+input SourceRevokeInput {
+  artifactId: String!
+  reason: String!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type SourceRevokeResult {
+  report: JSON
+  revocationId: String
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input SummaryCreateInput {
+  taskId: ID!
+  body: String!
+  sourceIds: [String!]!
+  generator: String!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type Task implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  title: String!
+  mode: String!
+  workflowState: String!
+  targetKind: String!
+  objective: String
+  closureDecision: String
+  evaluationCycle: Int!
+  unresolvedInputs: [String!]!
+  createdAt: DateTime!
+  project: Project
+}
+
+input TaskCloseInput {
+  taskId: ID!
+  closureDecision: String!
+  packet: JSON = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type TaskConnection {
+  edges: [TaskEdge!]!
+  pageInfo: PageInfo!
+}
+
+input TaskCreateInput {
+  projectId: ID!
+  title: String!
+  mode: String!
+  objective: String = null
+  targetKind: String = null
+  modeInputs: JSON = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type TaskCreateResult {
+  task: Task
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type TaskEdge {
+  cursor: String!
+  node: Task!
+}
+
+type TaskQuestion implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  question: String!
+  blocking: Boolean!
+  status: String!
+  resolution: String
+  createdAt: DateTime!
+}
+
+type TaskQuestionResult {
+  question: TaskQuestion
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input TaskReopenInput {
+  taskId: ID!
+  reason: String!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type TaskResult {
+  task: Task
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type TaskSummary {
+  id: String!
+  body: String!
+  sourceIds: JSON!
+  coverage: JSON!
+  generator: String!
+  contractRevisionId: String
+  stale: Boolean!
+  createdAt: DateTime!
+}
+
+type TaskSummaryResult {
+  summaryId: String
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input TaskTransitionInput {
+  taskId: ID!
+  toState: String!
+  reason: String = null
+  expectedVersion: Int = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type User implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  displayName: String!
+  kind: String!
+}
+
+type Workspace implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  slug: String!
+  displayName: String!
+}

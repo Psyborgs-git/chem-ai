@@ -1,0 +1,1623 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:chemistry-studio:domain:1.0.0",
+  "title": "Chemistry Studio initial DTO contracts",
+  "description": "Strict interchange DTOs. Application authorization, reference integrity and scientific invariants are additional requirements.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SuccessContract"
+    },
+    {
+      "$ref": "#/$defs/FormulationRevision"
+    },
+    {
+      "$ref": "#/$defs/ReferenceProduct"
+    },
+    {
+      "$ref": "#/$defs/CandidateRevision"
+    },
+    {
+      "$ref": "#/$defs/Measurement"
+    },
+    {
+      "$ref": "#/$defs/ToolResult"
+    },
+    {
+      "$ref": "#/$defs/ExportManifest"
+    },
+    {
+      "$ref": "#/$defs/TrainingRun"
+    },
+    {
+      "$ref": "#/$defs/DatasetSnapshot"
+    }
+  ],
+  "$defs": {
+    "Quantity": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "basis": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "original_text": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "unit",
+        "basis",
+        "original_text"
+      ],
+      "additionalProperties": false
+    },
+    "Metric": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "value_kind": {
+          "enum": [
+            "numeric",
+            "ordinal",
+            "categorical"
+          ]
+        },
+        "operator": {
+          "enum": [
+            "gte",
+            "lte",
+            "between",
+            "eq",
+            "within_tolerance",
+            "categorical_match"
+          ]
+        },
+        "target_values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "method_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conditions": {
+          "type": "object",
+          "properties": {
+            "substrate_revision_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "substrate_revision_id",
+            "description"
+          ],
+          "additionalProperties": false
+        },
+        "required_evidence": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "lab_measurement",
+              "replication",
+              "source_report",
+              "physics_prediction",
+              "learned_prediction"
+            ]
+          },
+          "minItems": 1
+        },
+        "aggregation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "replication_rule": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "required",
+        "value_kind",
+        "operator",
+        "target_values",
+        "unit",
+        "method_revision_id",
+        "conditions",
+        "required_evidence",
+        "aggregation",
+        "replication_rule"
+      ],
+      "additionalProperties": false
+    },
+    "HardConstraint": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "composition",
+            "ingredient_exclusion",
+            "process_limit",
+            "identity",
+            "safety_review",
+            "rights",
+            "custom_registered"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "rule_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "description",
+        "rule_revision_id"
+      ],
+      "additionalProperties": false
+    },
+    "SuccessContract": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "task_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mode": {
+          "enum": [
+            "improve",
+            "match_reference",
+            "discover"
+          ]
+        },
+        "target_kind": {
+          "enum": [
+            "formulation",
+            "material",
+            "molecule",
+            "unknown"
+          ]
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "frozen",
+            "superseded"
+          ]
+        },
+        "objective": {
+          "type": "string"
+        },
+        "baseline_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "matching_scope": {
+          "enum": [
+            null,
+            "functional",
+            "analytical",
+            "functional_and_analytical"
+          ]
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Metric"
+          },
+          "minItems": 0
+        },
+        "hard_constraints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HardConstraint"
+          },
+          "minItems": 0
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "approval_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fixture_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "task_id",
+        "revision",
+        "mode",
+        "target_kind",
+        "status",
+        "objective",
+        "baseline_revision_id",
+        "reference_revision_id",
+        "matching_scope",
+        "metrics",
+        "hard_constraints",
+        "unknowns",
+        "approval_id",
+        "fixture_only"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "frozen"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "metrics": {
+                "minItems": 1
+              },
+              "approval_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "unknowns": {
+                "maxItems": 0
+              },
+              "target_kind": {
+                "enum": [
+                  "formulation",
+                  "material",
+                  "molecule"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "frozen"
+              },
+              "mode": {
+                "const": "improve"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "baseline_revision_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "frozen"
+              },
+              "mode": {
+                "const": "match_reference"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reference_revision_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "matching_scope": {
+                "enum": [
+                  "functional",
+                  "analytical",
+                  "functional_and_analytical"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "IngredientLine": {
+      "type": "object",
+      "properties": {
+        "line_id": {
+          "type": "string"
+        },
+        "material_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "grade_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fraction": {
+          "type": "string",
+          "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+        },
+        "identity_status": {
+          "enum": [
+            "known",
+            "partial",
+            "unknown"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "line_id",
+        "material_revision_id",
+        "grade_revision_id",
+        "fraction",
+        "identity_status",
+        "source_ids"
+      ],
+      "additionalProperties": false
+    },
+    "FormulationRevision": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "formulation_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "parent_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "accepted",
+            "superseded"
+          ]
+        },
+        "basis": {
+          "enum": [
+            "mass_fraction_as_supplied",
+            "legacy_unconverted"
+          ]
+        },
+        "declared_total": {
+          "type": "string",
+          "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/IngredientLine"
+          },
+          "minItems": 1
+        },
+        "process_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        },
+        "fixture_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "formulation_id",
+        "revision",
+        "parent_revision_id",
+        "status",
+        "basis",
+        "declared_total",
+        "ingredients",
+        "process_revision_id",
+        "unknowns",
+        "source_ids",
+        "fixture_only"
+      ],
+      "additionalProperties": false
+    },
+    "ReferenceProduct": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "composition_knowledge": {
+          "enum": [
+            "known",
+            "partial",
+            "unknown"
+          ]
+        },
+        "formulation_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claimed_property_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        },
+        "measured_property_evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        },
+        "fixture_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "revision",
+        "label",
+        "composition_knowledge",
+        "formulation_revision_id",
+        "claimed_property_evidence_ids",
+        "measured_property_evidence_ids",
+        "source_ids",
+        "fixture_only"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "composition_knowledge": {
+                "const": "unknown"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "formulation_revision_id": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "CandidateRevision": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "task_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "parent_revision_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "contract_revision_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "entity_kind": {
+          "enum": [
+            "formulation",
+            "material",
+            "molecule"
+          ]
+        },
+        "entity_revision_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "hypothesis": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "submitted",
+            "accepted_for_research",
+            "rejected"
+          ]
+        },
+        "eligibility": {
+          "enum": [
+            "not_assessed",
+            "eligible_for_computation",
+            "needs_review",
+            "blocked",
+            "eligible_for_approved_experiment"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        },
+        "fixture_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "task_id",
+        "revision",
+        "parent_revision_id",
+        "contract_revision_id",
+        "entity_kind",
+        "entity_revision_id",
+        "hypothesis",
+        "status",
+        "eligibility",
+        "evidence_ids",
+        "fixture_only"
+      ],
+      "additionalProperties": false
+    },
+    "MeasuredValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "numeric"
+            },
+            "quantity": {
+              "$ref": "#/$defs/Quantity"
+            }
+          },
+          "required": [
+            "kind",
+            "quantity"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "interval"
+            },
+            "lower": {
+              "$ref": "#/$defs/Quantity"
+            },
+            "upper": {
+              "$ref": "#/$defs/Quantity"
+            }
+          },
+          "required": [
+            "kind",
+            "lower",
+            "upper"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "below_detection",
+                "above_quantification"
+              ]
+            },
+            "limit": {
+              "$ref": "#/$defs/Quantity"
+            }
+          },
+          "required": [
+            "kind",
+            "limit"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "ordinal",
+                "categorical"
+              ]
+            },
+            "label": {
+              "type": "string"
+            },
+            "scale_revision_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "kind",
+            "label",
+            "scale_revision_id"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "missing"
+            },
+            "reason": {
+              "enum": [
+                "not_measured",
+                "instrument_failure",
+                "sample_lost",
+                "unknown",
+                "cancelled"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Measurement": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sample_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "execution_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "metric_id": {
+          "type": "string"
+        },
+        "method_revision_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "value": {
+          "$ref": "#/$defs/MeasuredValue"
+        },
+        "conditions": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            },
+            "substrate_revision_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "description",
+            "substrate_revision_id"
+          ],
+          "additionalProperties": false
+        },
+        "repeat_kind": {
+          "enum": [
+            "same_sample_reading",
+            "independent_batch",
+            "independent_lab",
+            "timepoint"
+          ]
+        },
+        "quality_status": {
+          "enum": [
+            "uploaded",
+            "quality_review",
+            "accepted",
+            "rejected",
+            "superseded"
+          ]
+        },
+        "evidence_type": {
+          "enum": [
+            "lab_measurement",
+            "replication",
+            "source_report",
+            "physics_prediction",
+            "learned_prediction"
+          ]
+        },
+        "raw_artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        },
+        "uncertainty_description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reviewer_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "supersedes_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fixture_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "sample_id",
+        "execution_id",
+        "metric_id",
+        "method_revision_id",
+        "value",
+        "conditions",
+        "repeat_kind",
+        "quality_status",
+        "evidence_type",
+        "raw_artifact_ids",
+        "uncertainty_description",
+        "reviewer_id",
+        "supersedes_id",
+        "fixture_only"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "quality_status": {
+                "const": "accepted"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reviewer_id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ToolResult": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "run_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "engine_id": {
+          "type": "string"
+        },
+        "engine_version": {
+          "type": "string"
+        },
+        "adapter_version": {
+          "type": "string"
+        },
+        "input_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "execution_status": {
+          "enum": [
+            "succeeded",
+            "failed",
+            "timed_out",
+            "cancelled",
+            "blocked",
+            "interrupted"
+          ]
+        },
+        "evidence_type": {
+          "enum": [
+            "descriptor",
+            "physics_prediction",
+            "learned_prediction",
+            "source_report"
+          ]
+        },
+        "applicability": {
+          "enum": [
+            "supported",
+            "out_of_domain",
+            "unknown"
+          ]
+        },
+        "acceptance": {
+          "enum": [
+            "meets",
+            "misses",
+            "inconclusive",
+            "not_evaluated"
+          ]
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "quantity": {
+                "$ref": "#/$defs/Quantity"
+              }
+            },
+            "required": [
+              "name",
+              "quantity"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        },
+        "error_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "fixture_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "run_id",
+        "attempt",
+        "engine_id",
+        "engine_version",
+        "adapter_version",
+        "input_sha256",
+        "execution_status",
+        "evidence_type",
+        "applicability",
+        "acceptance",
+        "outputs",
+        "artifact_ids",
+        "error_code",
+        "limitations",
+        "fixture_only"
+      ],
+      "additionalProperties": false
+    },
+    "ExportManifest": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "state": {
+          "enum": [
+            "draft",
+            "blocked",
+            "awaiting_approval",
+            "approved",
+            "transferring",
+            "running",
+            "completed",
+            "revoked",
+            "failed"
+          ]
+        },
+        "source_snapshot_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "transformation_version": {
+          "type": "string"
+        },
+        "sensitivity": {
+          "enum": [
+            "public",
+            "internal",
+            "proprietary",
+            "crown_jewel"
+          ]
+        },
+        "alias_map_location": {
+          "const": "local_only"
+        },
+        "local_feasibility": {
+          "enum": [
+            "unknown",
+            "feasible",
+            "infeasible"
+          ]
+        },
+        "feasibility_report_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "residual_disclosure": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "provider": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "account": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "region": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "runtime_digest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "spend_cap": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Quantity"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approved_payload_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "block_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "fixture_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "state",
+        "source_snapshot_id",
+        "payload_sha256",
+        "transformation_version",
+        "sensitivity",
+        "alias_map_location",
+        "local_feasibility",
+        "feasibility_report_id",
+        "residual_disclosure",
+        "provider",
+        "account",
+        "region",
+        "runtime_digest",
+        "spend_cap",
+        "approval_id",
+        "approved_payload_sha256",
+        "expires_at",
+        "block_reasons",
+        "fixture_only"
+      ],
+      "additionalProperties": false
+    },
+    "TrainingRun": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "enum": [
+            "property_model",
+            "assistant_sft",
+            "preference",
+            "agent_rl"
+          ]
+        },
+        "state": {
+          "enum": [
+            "draft",
+            "dataset_validated",
+            "awaiting_approval",
+            "queued",
+            "running",
+            "completed",
+            "evaluating",
+            "candidate_release",
+            "promoted",
+            "rejected",
+            "failed",
+            "cancelled",
+            "blocked"
+          ]
+        },
+        "dataset_snapshot_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "base_model_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tokenizer_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "configuration_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "split_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "runtime_profile": {
+          "type": "string"
+        },
+        "execution_location": {
+          "enum": [
+            "local",
+            "approved_cloud"
+          ]
+        },
+        "approval_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "export_manifest_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evaluation_report_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output_artifact_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        },
+        "block_reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 0
+        },
+        "fixture_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "kind",
+        "state",
+        "dataset_snapshot_id",
+        "base_model_id",
+        "tokenizer_id",
+        "configuration_sha256",
+        "split_manifest_sha256",
+        "runtime_profile",
+        "execution_location",
+        "approval_id",
+        "export_manifest_id",
+        "evaluation_report_id",
+        "output_artifact_ids",
+        "block_reasons",
+        "fixture_only"
+      ],
+      "additionalProperties": false
+    },
+    "DatasetSnapshot": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "purpose": {
+          "enum": [
+            "property",
+            "assistant_sft",
+            "preference",
+            "agent_rl"
+          ]
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "reviewed",
+            "frozen",
+            "revoked"
+          ]
+        },
+        "record_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 0
+        },
+        "record_hashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "minItems": 0
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "record_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "record_id",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "split_groups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "group_id": {
+                "type": "string"
+              },
+              "record_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "minItems": 1
+              },
+              "partition": {
+                "enum": [
+                  "train",
+                  "development",
+                  "calibration",
+                  "final_evaluation"
+                ]
+              }
+            },
+            "required": [
+              "group_id",
+              "record_ids",
+              "partition"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "rights_reviewed": {
+          "type": "boolean"
+        },
+        "transformation_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "approval_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fixture_only": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "purpose",
+        "status",
+        "record_ids",
+        "record_hashes",
+        "exclusions",
+        "split_groups",
+        "rights_reviewed",
+        "transformation_sha256",
+        "approval_id",
+        "fixture_only"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

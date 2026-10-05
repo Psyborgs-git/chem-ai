@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0.0",
+  "notice": "All data synthetic. References illustrate interchange, not a complete populated database. No real chemistry validation or manufacturing recipe.",
+  "fixtures": [
+    {
+      "path": "fixtures/contract-improve.json",
+      "definition": "SuccessContract",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/contract-match.json",
+      "definition": "SuccessContract",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/contract-discover-draft.json",
+      "definition": "SuccessContract",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/formulation-synthetic.json",
+      "definition": "FormulationRevision",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/reference-unknown.json",
+      "definition": "ReferenceProduct",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/candidate-revision.json",
+      "definition": "CandidateRevision",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/measurement-synthetic.json",
+      "definition": "Measurement",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/measurement-instrument-failure.json",
+      "definition": "Measurement",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/tool-result-failed.json",
+      "definition": "ToolResult",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/export-blocked.json",
+      "definition": "ExportManifest",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/training-draft.json",
+      "definition": "TrainingRun",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/dataset-draft.json",
+      "definition": "DatasetSnapshot",
+      "expected_valid": true,
+      "expected_issue": null
+    },
+    {
+      "path": "fixtures/invalid-improve-without-baseline.json",
+      "definition": "SuccessContract",
+      "expected_valid": false,
+      "expected_issue": "Frozen improve contract has no baseline"
+    },
+    {
+      "path": "fixtures/invalid-formula-total.json",
+      "definition": "FormulationRevision",
+      "expected_valid": false,
+      "expected_issue": "Accepted composition total is invalid"
+    },
+    {
+      "path": "fixtures/invalid-unknown-reference-recipe.json",
+      "definition": "ReferenceProduct",
+      "expected_valid": false,
+      "expected_issue": "Unknown reference cannot claim known recipe"
+    },
+    {
+      "path": "fixtures/invalid-export-approval.json",
+      "definition": "ExportManifest",
+      "expected_valid": false,
+      "expected_issue": "Approved export lacks exact authorized local-infeasible payload/recipient/expiry"
+    },
+    {
+      "path": "fixtures/invalid-missing-zero.json",
+      "definition": "Measurement",
+      "expected_valid": false,
+      "expected_issue": "Missing measurement must not carry numeric zero"
+    },
+    {
+      "path": "fixtures/invalid-split-leakage.json",
+      "definition": "DatasetSnapshot",
+      "expected_valid": false,
+      "expected_issue": "Same lineage group/record crosses partitions"
+    },
+    {
+      "path": "fixtures/invalid-failed-run-meets.json",
+      "definition": "ToolResult",
+      "expected_valid": false,
+      "expected_issue": "Failed run cannot meet target"
+    },
+    {
+      "path": "fixtures/quantity-decimal.json",
+      "definition": "Quantity",
+      "expected_valid": true,
+      "expected_issue": null
+    }
+  ]
+}

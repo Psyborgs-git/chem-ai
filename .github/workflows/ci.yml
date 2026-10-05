@@ -1,0 +1,121 @@
+# Chemistry Studio CI — bounded, least-privilege, no private caches or
+# proprietary uploads (handoff §25.1, AT-0003-1). Every job has a
+# timeout; every run cancels superseded PR runs.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  UV_FROZEN: "1"
+
+jobs:
+  lint-typecheck:
+    name: lint + typecheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: uv sync --python 3.12 --group dev --frozen
+      - run: pnpm install --frozen-lockfile
+      - run: make lint
+      - run: make typecheck
+
+  contracts:
+    name: contracts + fixtures
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --python 3.12 --group dev --frozen
+      - run: make contracts-check
+
+  unit:
+    name: unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --python 3.12 --group dev --frozen
+      - run: make test-unit
+
+  integration:
+    name: integration tests (disposable postgres)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16.10-alpine
+        env:
+          POSTGRES_USER: studio
+          POSTGRES_PASSWORD: studio
+          POSTGRES_DB: studio
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U studio -d studio"
+          --health-interval 2s --health-timeout 3s --health-retries 30
+    env:
+      STUDIO_DATABASE_URL: postgresql://studio:studio@127.0.0.1:54329/studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --python 3.12 --group dev --frozen
+      - run: make test-integration
+      - run: make test-security
+
+  frontend:
+    name: frontend tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter studio-web test
+      - run: pnpm --filter studio-web relay --validate
+
+  engines:
+    name: engine adapter tests (explicit unavailability)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync --python 3.12 --group dev --extra engines --frozen
+      - run: make test-engines

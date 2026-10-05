@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0.0",
+  "id": "00000000-0000-0000-0000-00000000044c",
+  "purpose": "property",
+  "status": "draft",
+  "record_ids": [
+    "00000000-0000-0000-0000-0000000001f4"
+  ],
+  "record_hashes": [
+    "4444444444444444444444444444444444444444444444444444444444444444"
+  ],
+  "exclusions": [
+    {
+      "record_id": "00000000-0000-0000-0000-0000000001f7",
+      "reason": "instrument_failure is not a performance label"
+    }
+  ],
+  "split_groups": [
+    {
+      "group_id": "group.synthetic.family-a",
+      "record_ids": [
+        "00000000-0000-0000-0000-0000000001f4"
+      ],
+      "partition": "train"
+    },
+    {
+      "group_id": "group.synthetic.family-a",
+      "record_ids": [
+        "00000000-0000-0000-0000-0000000001f4"
+      ],
+      "partition": "final_evaluation"
+    }
+  ],
+  "rights_reviewed": false,
+  "transformation_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+  "approval_id": null,
+  "fixture_only": true
+}

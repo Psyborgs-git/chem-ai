@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "id": "00000000-0000-0000-0000-00000000012c",
+  "revision": 1,
+  "label": "Synthetic purchased reference; composition unavailable",
+  "composition_knowledge": "unknown",
+  "formulation_revision_id": null,
+  "claimed_property_evidence_ids": [],
+  "measured_property_evidence_ids": [],
+  "source_ids": [],
+  "fixture_only": true
+}

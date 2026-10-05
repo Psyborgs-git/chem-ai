@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "id": "00000000-0000-0000-0000-0000000004b0",
+  "kind": "assistant_sft",
+  "state": "draft",
+  "dataset_snapshot_id": "00000000-0000-0000-0000-00000000044c",
+  "base_model_id": null,
+  "tokenizer_id": null,
+  "configuration_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+  "split_manifest_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+  "runtime_profile": "training",
+  "execution_location": "local",
+  "approval_id": null,
+  "export_manifest_id": null,
+  "evaluation_report_id": null,
+  "output_artifact_ids": [],
+  "block_reasons": [
+    "Model/runtime/hardware/rights not yet approved"
+  ],
+  "fixture_only": true
+}

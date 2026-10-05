@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0.0",
+  "locked": [
+    {
+      "id": "D01",
+      "decision": "Standalone chemistry-only application",
+      "constraint": "Do not turn the application into a general AI studio or broad plugin marketplace.",
+      "authority": "user_decision"
+    },
+    {
+      "id": "D02",
+      "decision": "Improve, match_reference, and discover task modes",
+      "constraint": "All three modes appear in the first useful pilot; engine capabilities can be gated separately.",
+      "authority": "user_decision"
+    },
+    {
+      "id": "D03",
+      "decision": "Open portfolio of scoped research tasks",
+      "constraint": "Projects contain tasks; each task owns sessions, metrics, revisions and evidence.",
+      "authority": "user_decision"
+    },
+    {
+      "id": "D04",
+      "decision": "Use authorized historical successes and failures",
+      "constraint": "Unknown purchased-product recipes remain unknown; every record does not automatically qualify for training.",
+      "authority": "user_decision"
+    },
+    {
+      "id": "D05",
+      "decision": "Workflow-first sequencing A",
+      "constraint": "Build the useful deterministic/assisted loop before requiring assistant fine-tuning or RL.",
+      "authority": "user_decision"
+    },
+    {
+      "id": "D06",
+      "decision": "Manual approval and laboratory execution initially",
+      "constraint": "No autonomous physical experiments, dispensing, equipment operation or purchasing.",
+      "authority": "user_decision"
+    },
+    {
+      "id": "D07",
+      "decision": "Hardware unknown; local-first dynamic execution",
+      "constraint": "Do not select a purchased machine or silently send work to cloud.",
+      "authority": "user_decision"
+    },
+    {
+      "id": "D08",
+      "decision": "Cloud fallback with minimized reviewed data",
+      "constraint": "Local infeasibility plus exact export approval required; aliases do not guarantee secrecy.",
+      "authority": "user_decision"
+    },
+    {
+      "id": "D09",
+      "decision": "Keep unspecified facts unknown",
+      "constraint": "Block dependent execution claims only; continue safe synthetic implementation.",
+      "authority": "user_decision"
+    },
+    {
+      "id": "D10",
+      "decision": "Independent evidence for model upgrades",
+      "constraint": "Training reward/loss alone cannot promote a model or establish scientific benefit.",
+      "authority": "user_decision"
+    }
+  ],
+  "engineering_defaults": [
+    {
+      "id": "E01",
+      "decision": "Modular Python backend plus local browser React UI",
+      "constraint": "Change only through an ADR; standalone does not require a native wrapper.",
+      "authority": "proposed_engineering_default"
+    },
+    {
+      "id": "E02",
+      "decision": "PostgreSQL, private filesystem artifacts, existing PostgreSQL queue",
+      "constraint": "No separate Redis/vector server required for core.",
+      "authority": "proposed_engineering_default"
+    },
+    {
+      "id": "E03",
+      "decision": "GraphQL/Relay canonical application data",
+      "constraint": "Follow the established canonical IDs/Node/connections/no duplicate cache rules.",
+      "authority": "proposed_engineering_default"
+    },
+    {
+      "id": "E04",
+      "decision": "Loopback single-workspace first; scoped access internally",
+      "constraint": "Team/LAN access requires real auth/TLS/roles; actual assignments unknown.",
+      "authority": "proposed_engineering_default"
+    },
+    {
+      "id": "E05",
+      "decision": "Core installation does not require model/GPU",
+      "constraint": "Profiles independently enabled after capability checks.",
+      "authority": "proposed_engineering_default"
+    },
+    {
+      "id": "E06",
+      "decision": "At most three parallel coding workers initially",
+      "constraint": "Only when tools support delegation and shared contracts are frozen.",
+      "authority": "proposed_engineering_default"
+    },
+    {
+      "id": "E07",
+      "decision": "Latest compatible stable dependencies pinned at bootstrap",
+      "constraint": "No blindly copied stale APIs or unbounded version constraints.",
+      "authority": "proposed_engineering_default"
+    },
+    {
+      "id": "E08",
+      "decision": "Drafts and accepted revisions are separate",
+      "constraint": "Accepted content immutable; corrections create superseding revisions.",
+      "authority": "proposed_engineering_default"
+    }
+  ]
+}

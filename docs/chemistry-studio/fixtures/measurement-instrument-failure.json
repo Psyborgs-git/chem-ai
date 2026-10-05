@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "id": "00000000-0000-0000-0000-0000000001f7",
+  "sample_id": "00000000-0000-0000-0000-0000000001f5",
+  "execution_id": "00000000-0000-0000-0000-0000000001f6",
+  "metric_id": "metric.synthetic-performance",
+  "method_revision_id": "00000000-0000-0000-0000-000000000385",
+  "value": {
+    "kind": "missing",
+    "reason": "instrument_failure"
+  },
+  "conditions": {
+    "description": "Synthetic test conditions",
+    "substrate_revision_id": "00000000-0000-0000-0000-000000000386"
+  },
+  "repeat_kind": "same_sample_reading",
+  "quality_status": "quality_review",
+  "evidence_type": "lab_measurement",
+  "raw_artifact_ids": [
+    "00000000-0000-0000-0000-0000000002bc"
+  ],
+  "uncertainty_description": null,
+  "reviewer_id": null,
+  "supersedes_id": null,
+  "fixture_only": true
+}

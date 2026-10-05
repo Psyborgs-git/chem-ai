@@ -1,0 +1,123 @@
+[project]
+name = "chemistry-studio"
+version = "0.1.0"
+description = "Chemistry Studio — standalone local-first chemistry research application (core profile)"
+requires-python = ">=3.12,<3.13"
+readme = "docs/chemistry-studio/README.md"
+license = { text = "Proprietary" }
+
+# Core profile ONLY. No GPU, model, or science-engine imports may appear
+# here — they belong to profile extras below (handoff §4.3, decision E05).
+dependencies = [
+    "fastapi>=0.142.0,<0.143",
+    "uvicorn[standard]>=0.54.0,<0.55",
+    "strawberry-graphql[fastapi]>=0.330.0,<0.331",
+    "pydantic>=2.13.0,<2.14",
+    "sqlalchemy>=2.1.0,<2.2",
+    "alembic>=1.20.0,<1.21",
+    "psycopg[binary]>=3.3.0,<3.4",
+    "procrastinate>=3.10.0,<3.11",
+    "pint>=0.26.0,<0.27",
+    "jsonschema>=4.26.0,<5",
+    "python-multipart>=0.0.32,<0.1",
+    "argon2-cffi>=25.1.0,<26",
+    "structlog>=26.1.0,<27",
+    "openpyxl>=3.1.5,<3.2",
+    "python-docx>=1.2.0,<1.3",
+    "pypdf>=6.19.0,<6.20",
+]
+
+[project.optional-dependencies]
+# Engine adapters (P04+). rdkit ships no macOS x86_64 wheels — see
+# docs/dependencies.lock.md for the platform matrix.
+engines = [
+    "rdkit>=2026.3.1,<2026.4",
+]
+# Local assistant inference (P04/P05+); blocked on U08/U13 for live use.
+local_ai = [
+    "llama-cpp-python>=0.3.30,<0.4",
+]
+# Optimization / property models (P06).
+optimization = [
+    "baybe>=0.15.0,<0.16",
+    "chemprop>=2.3.0,<2.4",
+]
+# Typed quantum execution (P07). xtb/psi4 binaries are conda/system —
+# documented in docs/dependencies.lock.md, not pip-installed here.
+quantum = [
+    "qcengine>=0.51.0,<0.52",
+    "qcelemental>=0.51.0,<0.52",
+]
+# Local adaptation / RL (P08/P09); blocked on U08/U13/U14 for live use.
+training = [
+    "torch>=2.14,<2.15",
+    "peft>=0.21,<0.22",
+    "trl>=1.14,<1.15",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.0,<10",
+    "pytest-asyncio>=1.4.0,<2",
+    "pytest-timeout>=2.4,<3",
+    "httpx>=0.28.0,<0.29",
+    "testcontainers[postgres]>=4.15.0,<5",
+    "mypy>=2.4.0,<3",
+    "ruff>=0.16.0,<0.17",
+    "types-openpyxl>=3.1.5.20250920",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["services/studio-api/src/studio", "packages/policy/chem_studio_policy", "packages/engine-adapters/rdkit/engine_adapter_rdkit", "workers"]
+
+[tool.uv]
+package = true
+
+[tool.pytest.ini_options]
+testpaths = ["services/studio-api/tests", "tests"]
+addopts = "-q"
+markers = [
+    "integration: needs a database (skipped unless available)",
+    "security: authorization/safety tests",
+    "engine: needs an optional science engine",
+    "contract: schema/specification conformance",
+    "e2e: browser end-to-end",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "workers"]
+# Vendored spec package + its validation venv, execution evidence: not
+# project code — lint gates apply to first-party sources only.
+extend-exclude = ["docs", "**/.venv-validation", "**/.venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S", "ASYNC", "RUF"]
+# S101 (assert) is fine inside tests; per-file ignores below.
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S106"]
+"**/migrations/**" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "workers"]
+packages = ["studio", "chem_studio_policy", "engine_adapter_rdkit", "workers"]
+strict = true
+plugins = ["pydantic.mypy"]
+
+# Optional engine deps aren't installed in the base profile — the
+# adapter imports them lazily and reports ENGINE_UNAVAILABLE instead.
+[[tool.mypy.overrides]]
+module = ["rdkit", "rdkit.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["jsonschema", "jsonschema.*"]
+ignore_missing_imports = true

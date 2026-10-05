@@ -1,0 +1,156 @@
+{
+  "schema_version": "1.0.0",
+  "checked_on": "2026-10-05",
+  "sources": [
+    {
+      "id": "S01",
+      "title": "RDKit: Getting Started in Python",
+      "url": "https://www.rdkit.org/docs/GettingStartedInPython.html",
+      "verification_note": "Parsing, sanitization, and molecular operations; not proof of synthesis, safety, or application performance."
+    },
+    {
+      "id": "S02",
+      "title": "RDKit overview",
+      "url": "https://www.rdkit.org/docs/Overview.html",
+      "verification_note": "Core cheminformatics capabilities; verify installed build and license."
+    },
+    {
+      "id": "S03",
+      "title": "Relay GraphQL server specification",
+      "url": "https://relay.dev/docs/guides/graphql-server-specification/",
+      "verification_note": "Canonical object IDs, Node refetching and cursor connections."
+    },
+    {
+      "id": "S04",
+      "title": "Strawberry Relay guide",
+      "url": "https://strawberry.rocks/docs/guides/relay",
+      "verification_note": "Backend Relay integration; use version-specific API documentation."
+    },
+    {
+      "id": "S05",
+      "title": "Procrastinate documentation",
+      "url": "https://procrastinate.readthedocs.io/en/stable/",
+      "verification_note": "PostgreSQL-backed queue, retries and locks; resource policy remains application responsibility."
+    },
+    {
+      "id": "S06",
+      "title": "QCEngine program executor documentation",
+      "url": "https://molssi.github.io/QCEngine/dev/",
+      "verification_note": "The accessible route contains older/development examples. Capability reference only; pin and verify current packages/harnesses before implementation. Alternative QCArchive documentation route could not be fetched during preparation."
+    },
+    {
+      "id": "S07",
+      "title": "xTB user guide",
+      "url": "https://xtb-docs.readthedocs.io/en/latest/",
+      "verification_note": "Semiempirical quantum methods and interfaces. Some page news is old; do not infer latest release from it."
+    },
+    {
+      "id": "S08",
+      "title": "Psi4 official site",
+      "url": "https://psicode.org/",
+      "verification_note": "Quantum chemistry capabilities and license overview; benchmark selected method and build."
+    },
+    {
+      "id": "S09",
+      "title": "BayBE constraints",
+      "url": "https://emdgroup.github.io/baybe/latest/components/constraints.html",
+      "verification_note": "Version-sensitive constraint support and limitations. latest is a development documentation route; verify chosen stable version before coding."
+    },
+    {
+      "id": "S10",
+      "title": "Chemprop prediction, uncertainty and calibration",
+      "url": "https://chemprop.readthedocs.io/en/main/tutorial/cli/predict.html",
+      "verification_note": "Prediction and uncertainty tooling; proprietary endpoint models require relevant data and validation."
+    },
+    {
+      "id": "S11",
+      "title": "REINVENT 4 official repository",
+      "url": "https://github.com/MolecularAI/REINVENT4",
+      "verification_note": "Small-molecule design/optimization tool; code, pretrained models and data require separate review."
+    },
+    {
+      "id": "S12",
+      "title": "AiZynthFinder documentation",
+      "url": "https://molecularai.github.io/aizynthfinder/",
+      "verification_note": "Retrosynthetic planning, not experimental synthesis verification."
+    },
+    {
+      "id": "S13",
+      "title": "Hugging Face PEFT LoRA documentation",
+      "url": "https://huggingface.co/docs/peft/main/en/conceptual_guides/lora",
+      "verification_note": "Parameter-efficient adaptation; main may differ from a released package."
+    },
+    {
+      "id": "S14",
+      "title": "Hugging Face TRL GRPO trainer",
+      "url": "https://huggingface.co/docs/trl/en/grpo_trainer",
+      "verification_note": "Existing trainer/reward infrastructure; application environment and evaluation remain custom."
+    },
+    {
+      "id": "S15",
+      "title": "NIST SP 800-188",
+      "url": "https://csrc.nist.gov/pubs/sp/800/188/final",
+      "verification_note": "De-identification risk/governance reference. Its original scope is datasets/privacy, not a guarantee of chemical trade-secret protection."
+    },
+    {
+      "id": "S16",
+      "title": "eLabFTW API documentation",
+      "url": "https://doc.elabftw.net/docs/usage/api/",
+      "verification_note": "Existing ELN API integration; no live user ELN inspected."
+    },
+    {
+      "id": "S17",
+      "title": "AiiDA documentation",
+      "url": "https://aiida.readthedocs.io/projects/aiida-core/en/stable/",
+      "verification_note": "Scientific workflow/provenance infrastructure; optional, not an additional default scheduler."
+    },
+    {
+      "id": "S18",
+      "title": "thermo documentation",
+      "url": "https://thermo.readthedocs.io/",
+      "verification_note": "Thermodynamic/phase-equilibrium models; supported parameters and validity matter."
+    },
+    {
+      "id": "S19",
+      "title": "LAMMPS overview",
+      "url": "https://docs.lammps.org/Intro_overview.html",
+      "verification_note": "Molecular/materials dynamics engine; correct parameterization required."
+    },
+    {
+      "id": "S20",
+      "title": "Carlini et al.: Extracting Training Data from Large Language Models",
+      "url": "https://arxiv.org/abs/2012.07805",
+      "verification_note": "Primary research demonstrating extraction risk; not a claim every checkpoint necessarily leaks every record."
+    },
+    {
+      "id": "S21",
+      "title": "llama.cpp official repository",
+      "url": "https://github.com/ggml-org/llama.cpp",
+      "verification_note": "Local inference runtime candidate; actual model/tool/adapter compatibility requires testing."
+    },
+    {
+      "id": "S22",
+      "title": "Google Cloud Confidential VM overview",
+      "url": "https://docs.cloud.google.com/confidential-computing/confidential-vm/docs/confidential-vm-overview",
+      "verification_note": "Example of confidential-computing capabilities, not a selected provider or approved architecture."
+    },
+    {
+      "id": "S23",
+      "title": "PostgreSQL row security",
+      "url": "https://www.postgresql.org/docs/current/ddl-rowsecurity.html",
+      "verification_note": "RLS behavior and role caveats; pin documentation to deployed major version."
+    },
+    {
+      "id": "S24",
+      "title": "EPA CompTox resource hub",
+      "url": "https://www.epa.gov/comptox-tools/comptox-chemicals-dashboard-resource-hub",
+      "verification_note": "Chemical evidence source with measured/predicted information; not safety certification."
+    },
+    {
+      "id": "S25",
+      "title": "Open Reaction Database documentation",
+      "url": "https://docs.open-reaction-database.org/en/latest/",
+      "verification_note": "Reaction data/schema resource, not a universal formulation database."
+    }
+  ]
+}

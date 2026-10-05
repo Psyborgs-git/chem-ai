@@ -1,0 +1,178 @@
+{
+  "schema_version": "1.0.0",
+  "checked_at_utc": "2026-10-05T10:28:54.205202+00:00",
+  "scope": "Specification consistency only; no application tests, chemistry engines, training jobs or laboratory experiments executed.",
+  "passed": true,
+  "counts": {
+    "tickets": 52,
+    "tests": 156,
+    "requirements": 52,
+    "phases": 12,
+    "screens": 23,
+    "components": 30,
+    "sources": 25,
+    "unknowns": 16,
+    "integrations": 18
+  },
+  "fixture_cases": 20,
+  "fixture_expectations_passed": 20,
+  "errors": [],
+  "fixtures": [
+    {
+      "path": "fixtures/contract-improve.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/contract-match.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/contract-discover-draft.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/formulation-synthetic.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/reference-unknown.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/candidate-revision.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/measurement-synthetic.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/measurement-instrument-failure.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/tool-result-failed.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/export-blocked.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/training-draft.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/dataset-draft.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    },
+    {
+      "path": "fixtures/invalid-improve-without-baseline.json",
+      "expected_valid": false,
+      "actual_valid": false,
+      "expectation_passed": true,
+      "validation_messages": [
+        "None is not of type 'string'"
+      ]
+    },
+    {
+      "path": "fixtures/invalid-formula-total.json",
+      "expected_valid": false,
+      "actual_valid": false,
+      "expectation_passed": true,
+      "validation_messages": [
+        "Accepted composition total is invalid"
+      ]
+    },
+    {
+      "path": "fixtures/invalid-unknown-reference-recipe.json",
+      "expected_valid": false,
+      "actual_valid": false,
+      "expectation_passed": true,
+      "validation_messages": [
+        "'00000000-0000-0000-0000-0000000000c8' is not of type 'null'"
+      ]
+    },
+    {
+      "path": "fixtures/invalid-export-approval.json",
+      "expected_valid": false,
+      "actual_valid": false,
+      "expectation_passed": true,
+      "validation_messages": [
+        "Approved export lacks local-infeasible finding and/or recipient, budget, approval or expiry",
+        "Exact payload is not approved or blockers remain"
+      ]
+    },
+    {
+      "path": "fixtures/invalid-missing-zero.json",
+      "expected_valid": false,
+      "actual_valid": false,
+      "expectation_passed": true,
+      "validation_messages": [
+        "{'kind': 'missing', 'reason': 'instrument_failure', 'quantity': {'value': '0', 'unit': 'dimensionless', 'basis': None, 'original_text': None}} is not valid under any of the given schemas"
+      ]
+    },
+    {
+      "path": "fixtures/invalid-split-leakage.json",
+      "expected_valid": false,
+      "actual_valid": false,
+      "expectation_passed": true,
+      "validation_messages": [
+        "Duplicate lineage group, including cross-partition leakage",
+        "Record assigned to multiple split groups/partitions"
+      ]
+    },
+    {
+      "path": "fixtures/invalid-failed-run-meets.json",
+      "expected_valid": false,
+      "actual_valid": false,
+      "expectation_passed": true,
+      "validation_messages": [
+        "Failed run cannot determine target acceptance"
+      ]
+    },
+    {
+      "path": "fixtures/quantity-decimal.json",
+      "expected_valid": true,
+      "actual_valid": true,
+      "expectation_passed": true,
+      "validation_messages": []
+    }
+  ]
+}

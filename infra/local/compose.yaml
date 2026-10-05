@@ -1,0 +1,25 @@
+# Local development dependencies for Chemistry Studio.
+# Loopback only; no published LAN ports, no telemetry, tiny volume.
+# Usage: docker compose -f infra/local/compose.yaml up -d postgres
+
+services:
+  postgres:
+    image: postgres:16.10-alpine
+    container_name: chem-studio-postgres
+    environment:
+      POSTGRES_USER: studio
+      POSTGRES_PASSWORD: studio
+      POSTGRES_DB: studio
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - chem-studio-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studio -d studio"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+volumes:
+  chem-studio-pgdata:

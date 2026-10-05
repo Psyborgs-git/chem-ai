@@ -1,0 +1,1709 @@
+{
+  "schema_version": "1.0.0",
+  "primary_source": "logical_json",
+  "history": [
+    {
+      "version": "1.0.0",
+      "change": "Initial logical map; no Figma or code implementation claimed."
+    }
+  ],
+  "tokens": {
+    "font": "system-ui",
+    "spacing_unit_px": 4,
+    "focus_visible": true,
+    "semantic_roles": [
+      "background",
+      "surface",
+      "text",
+      "muted",
+      "border",
+      "accent",
+      "danger",
+      "warning",
+      "success"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "brand_status": "proposed_not_user_locked"
+  },
+  "components": [
+    {
+      "id": "atom.button",
+      "name": "Button",
+      "composes": [],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.icon-button",
+      "name": "IconButton",
+      "composes": [
+        "atom.button"
+      ],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.text-field",
+      "name": "TextField",
+      "composes": [],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.decimal-field",
+      "name": "DecimalField",
+      "composes": [
+        "atom.text-field"
+      ],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.unit-select",
+      "name": "UnitSelect",
+      "composes": [],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.badge",
+      "name": "Badge",
+      "composes": [],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.evidence-label",
+      "name": "EvidenceTypeLabel",
+      "composes": [
+        "atom.badge"
+      ],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.status",
+      "name": "StatusIndicator",
+      "composes": [
+        "atom.badge"
+      ],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.tooltip",
+      "name": "Tooltip",
+      "composes": [],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.checkbox",
+      "name": "Checkbox",
+      "composes": [],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "atom.focus-ring",
+      "name": "FocusRing",
+      "composes": [],
+      "variants": [
+        "default",
+        "disabled",
+        "error"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "molecule.quantity-input",
+      "name": "QuantityInput",
+      "composes": [
+        "atom.decimal-field",
+        "atom.unit-select"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "molecule.source-citation",
+      "name": "SourceCitation",
+      "composes": [
+        "atom.button",
+        "atom.evidence-label"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "molecule.metric-target",
+      "name": "MetricTargetEditor",
+      "composes": [
+        "molecule.quantity-input",
+        "atom.text-field"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "molecule.constraint-row",
+      "name": "ConstraintRow",
+      "composes": [
+        "molecule.quantity-input",
+        "atom.checkbox"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "molecule.ingredient-line",
+      "name": "IngredientLine",
+      "composes": [
+        "molecule.quantity-input",
+        "atom.text-field"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "molecule.identity-picker",
+      "name": "IdentityPicker",
+      "composes": [
+        "atom.text-field",
+        "atom.badge"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "molecule.approval-summary",
+      "name": "ApprovalSummary",
+      "composes": [
+        "atom.status",
+        "atom.button"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "molecule.resource-budget",
+      "name": "ResourceBudget",
+      "composes": [
+        "molecule.quantity-input",
+        "atom.status"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "molecule.inline-finding",
+      "name": "InlineFinding",
+      "composes": [
+        "atom.status",
+        "atom.tooltip"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.contract-editor",
+      "name": "ContractEditor",
+      "composes": [
+        "molecule.metric-target",
+        "molecule.constraint-row",
+        "molecule.approval-summary"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.formulation-editor",
+      "name": "FormulationEditor",
+      "composes": [
+        "molecule.ingredient-line",
+        "molecule.identity-picker",
+        "molecule.inline-finding"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.evidence-panel",
+      "name": "EvidencePanel",
+      "composes": [
+        "molecule.source-citation",
+        "atom.evidence-label"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.candidate-diff",
+      "name": "CandidateDiff",
+      "composes": [
+        "organism.formulation-editor",
+        "atom.button"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.metric-comparison",
+      "name": "MetricComparisonTable",
+      "composes": [
+        "molecule.quantity-input",
+        "atom.evidence-label",
+        "molecule.source-citation"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.experiment-review",
+      "name": "ExperimentReview",
+      "composes": [
+        "molecule.approval-summary",
+        "organism.candidate-diff"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.measurement-grid",
+      "name": "MeasurementGrid",
+      "composes": [
+        "molecule.quantity-input",
+        "molecule.source-citation",
+        "atom.status"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.run-timeline",
+      "name": "RunTimeline",
+      "composes": [
+        "atom.status",
+        "molecule.resource-budget"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.dataset-review",
+      "name": "DatasetSplitReview",
+      "composes": [
+        "atom.badge",
+        "organism.evidence-panel"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    },
+    {
+      "id": "organism.export-review",
+      "name": "ExportPayloadReview",
+      "composes": [
+        "molecule.approval-summary",
+        "organism.evidence-panel",
+        "molecule.resource-budget"
+      ],
+      "variants": [
+        "default",
+        "read_only",
+        "partial"
+      ],
+      "themes": [
+        "light",
+        "dark"
+      ],
+      "status": "logical_specification_only",
+      "code_path": null,
+      "figma_node_id": null
+    }
+  ],
+  "screens": [
+    {
+      "id": "screen.home",
+      "name": "Projects and tasks",
+      "route": "/",
+      "phase": "P02",
+      "ticket_ids": [
+        "CS-0206"
+      ],
+      "data_dependencies": [
+        "ResearchTaskConnection",
+        "ProjectConnection"
+      ],
+      "permissions": [
+        "read_project"
+      ],
+      "components": [
+        "atom.button",
+        "atom.status"
+      ],
+      "relay_fragment": "ProjectTaskHomeQuery",
+      "primary_action": "Create/resume task",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.home.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0206-1"
+      ]
+    },
+    {
+      "id": "screen.project",
+      "name": "Project detail",
+      "route": "/projects/:id",
+      "phase": "P02",
+      "ticket_ids": [
+        "CS-0206"
+      ],
+      "data_dependencies": [
+        "Project",
+        "ResearchTaskConnection"
+      ],
+      "permissions": [
+        "read_project"
+      ],
+      "components": [
+        "atom.button",
+        "atom.status"
+      ],
+      "relay_fragment": "ProjectDetail_project",
+      "primary_action": "Open scoped research tasks",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.project.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0206-1"
+      ]
+    },
+    {
+      "id": "screen.task-create",
+      "name": "Task and success contract",
+      "route": "/projects/:id/tasks/new",
+      "phase": "P02",
+      "ticket_ids": [
+        "CS-0206"
+      ],
+      "data_dependencies": [
+        "Project",
+        "SuccessContractRevision"
+      ],
+      "permissions": [
+        "edit_task"
+      ],
+      "components": [
+        "organism.contract-editor"
+      ],
+      "relay_fragment": "TaskCreate_project",
+      "primary_action": "Save exploratory or submit contract",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.task-create.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0206-1"
+      ]
+    },
+    {
+      "id": "screen.task-overview",
+      "name": "Task overview",
+      "route": "/tasks/:id",
+      "phase": "P02",
+      "ticket_ids": [
+        "CS-0206"
+      ],
+      "data_dependencies": [
+        "ResearchTask",
+        "SuccessContractRevision"
+      ],
+      "permissions": [
+        "read_project"
+      ],
+      "components": [
+        "organism.metric-comparison",
+        "atom.status"
+      ],
+      "relay_fragment": "TaskOverview_task",
+      "primary_action": "Inspect blockers and next action",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.task-overview.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0206-1"
+      ]
+    },
+    {
+      "id": "screen.research",
+      "name": "Research session",
+      "route": "/tasks/:id/research/:sessionId",
+      "phase": "P04",
+      "ticket_ids": [
+        "CS-0406"
+      ],
+      "data_dependencies": [
+        "ResearchSession",
+        "ResearchTask",
+        "EvidenceConnection"
+      ],
+      "permissions": [
+        "edit_task"
+      ],
+      "components": [
+        "organism.evidence-panel",
+        "organism.candidate-diff"
+      ],
+      "relay_fragment": "ResearchSession_session",
+      "primary_action": "Research, cite and propose changes",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.research.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0406-1"
+      ]
+    },
+    {
+      "id": "screen.candidate",
+      "name": "Candidate revision editor",
+      "route": "/tasks/:id/candidates/:revisionId",
+      "phase": "P02",
+      "ticket_ids": [
+        "CS-0206"
+      ],
+      "data_dependencies": [
+        "CandidateRevision",
+        "FormulationRevision",
+        "ProcessRevision"
+      ],
+      "permissions": [
+        "propose_candidate"
+      ],
+      "components": [
+        "organism.formulation-editor",
+        "organism.candidate-diff"
+      ],
+      "relay_fragment": "CandidateEditor_revision",
+      "primary_action": "Accept/reject explicit revision diff",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.candidate.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0206-1"
+      ]
+    },
+    {
+      "id": "screen.compare",
+      "name": "Candidate comparison",
+      "route": "/tasks/:id/compare",
+      "phase": "P05",
+      "ticket_ids": [
+        "CS-0504"
+      ],
+      "data_dependencies": [
+        "CandidateConnection",
+        "MeasurementConnection"
+      ],
+      "permissions": [
+        "read_project"
+      ],
+      "components": [
+        "organism.metric-comparison"
+      ],
+      "relay_fragment": "CandidateCompare_task",
+      "primary_action": "Compare compatible evidence only",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.compare.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0504-1"
+      ]
+    },
+    {
+      "id": "screen.reference",
+      "name": "Reference product",
+      "route": "/products/:id",
+      "phase": "P02",
+      "ticket_ids": [
+        "CS-0203"
+      ],
+      "data_dependencies": [
+        "ReferenceProductRevision",
+        "EvidenceConnection"
+      ],
+      "permissions": [
+        "read_project"
+      ],
+      "components": [
+        "organism.evidence-panel",
+        "organism.metric-comparison"
+      ],
+      "relay_fragment": "ReferenceProduct_product",
+      "primary_action": "Separate claimed/measured/unknown composition",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.reference.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0203-1"
+      ]
+    },
+    {
+      "id": "screen.material",
+      "name": "Material, grade and lot",
+      "route": "/materials/:id",
+      "phase": "P02",
+      "ticket_ids": [
+        "CS-0203"
+      ],
+      "data_dependencies": [
+        "MaterialIdentity",
+        "MaterialGradeConnection"
+      ],
+      "permissions": [
+        "read_project"
+      ],
+      "components": [
+        "molecule.identity-picker",
+        "organism.evidence-panel"
+      ],
+      "relay_fragment": "MaterialDetail_material",
+      "primary_action": "Review identity and source",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.material.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0203-1"
+      ]
+    },
+    {
+      "id": "screen.evidence",
+      "name": "Evidence viewer",
+      "route": "/evidence/:id",
+      "phase": "P03",
+      "ticket_ids": [
+        "CS-0302"
+      ],
+      "data_dependencies": [
+        "SourceDocumentRevision",
+        "ClaimConnection"
+      ],
+      "permissions": [
+        "read_project"
+      ],
+      "components": [
+        "organism.evidence-panel"
+      ],
+      "relay_fragment": "EvidenceViewer_source",
+      "primary_action": "View exact source locator",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.evidence.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0302-1"
+      ]
+    },
+    {
+      "id": "screen.import",
+      "name": "Import review",
+      "route": "/imports/:id/review",
+      "phase": "P03",
+      "ticket_ids": [
+        "CS-0302"
+      ],
+      "data_dependencies": [
+        "ImportBatch",
+        "ExtractionProposalConnection"
+      ],
+      "permissions": [
+        "manage_sources"
+      ],
+      "components": [
+        "organism.evidence-panel",
+        "organism.formulation-editor"
+      ],
+      "relay_fragment": "ImportReview_batch",
+      "primary_action": "Accept/reject extracted fields",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.import.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0302-1"
+      ]
+    },
+    {
+      "id": "screen.experiment",
+      "name": "Experiment plan review",
+      "route": "/tasks/:id/experiments/:planId",
+      "phase": "P05",
+      "ticket_ids": [
+        "CS-0501"
+      ],
+      "data_dependencies": [
+        "ExperimentPlanRevision",
+        "CandidateRevision"
+      ],
+      "permissions": [
+        "approve_experiment"
+      ],
+      "components": [
+        "organism.experiment-review"
+      ],
+      "relay_fragment": "ExperimentReview_plan",
+      "primary_action": "Review exact plan and approve/reject",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.experiment.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0501-1"
+      ]
+    },
+    {
+      "id": "screen.execution",
+      "name": "Execution and samples",
+      "route": "/experiments/:id/execution",
+      "phase": "P05",
+      "ticket_ids": [
+        "CS-0502"
+      ],
+      "data_dependencies": [
+        "ExperimentExecution",
+        "SampleConnection"
+      ],
+      "permissions": [
+        "edit_task"
+      ],
+      "components": [
+        "organism.measurement-grid"
+      ],
+      "relay_fragment": "ExecutionCapture_execution",
+      "primary_action": "Record actual lots and deviations",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.execution.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0502-1"
+      ]
+    },
+    {
+      "id": "screen.measurement",
+      "name": "Measurement quality review",
+      "route": "/measurements/:id/review",
+      "phase": "P05",
+      "ticket_ids": [
+        "CS-0502"
+      ],
+      "data_dependencies": [
+        "Measurement",
+        "Sample",
+        "Artifact"
+      ],
+      "permissions": [
+        "review_measurement"
+      ],
+      "components": [
+        "organism.measurement-grid",
+        "organism.evidence-panel"
+      ],
+      "relay_fragment": "MeasurementReview_measurement",
+      "primary_action": "Accept/reject/amend measurement",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.measurement.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0502-1"
+      ]
+    },
+    {
+      "id": "screen.run",
+      "name": "Job and run detail",
+      "route": "/runs/:id",
+      "phase": "P04",
+      "ticket_ids": [
+        "CS-0406"
+      ],
+      "data_dependencies": [
+        "Run",
+        "RunAttemptConnection"
+      ],
+      "permissions": [
+        "request_compute"
+      ],
+      "components": [
+        "organism.run-timeline"
+      ],
+      "relay_fragment": "RunDetail_run",
+      "primary_action": "Inspect/cancel/retry permitted run",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.run.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0406-1"
+      ]
+    },
+    {
+      "id": "screen.capabilities",
+      "name": "Compute and capabilities",
+      "route": "/settings/compute",
+      "phase": "P04",
+      "ticket_ids": [
+        "CS-0402"
+      ],
+      "data_dependencies": [
+        "HardwareCapabilities",
+        "EngineCapabilities"
+      ],
+      "permissions": [
+        "administer_workspace"
+      ],
+      "components": [
+        "molecule.resource-budget",
+        "atom.status"
+      ],
+      "relay_fragment": "CapabilitiesQuery",
+      "primary_action": "Inspect local support and blockers",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.capabilities.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0402-1"
+      ]
+    },
+    {
+      "id": "screen.dataset",
+      "name": "Dataset builder",
+      "route": "/learning/datasets/:id",
+      "phase": "P06",
+      "ticket_ids": [
+        "CS-0601"
+      ],
+      "data_dependencies": [
+        "DatasetSnapshot",
+        "DatasetExclusionConnection"
+      ],
+      "permissions": [
+        "manage_models"
+      ],
+      "components": [
+        "organism.dataset-review"
+      ],
+      "relay_fragment": "DatasetBuilder_snapshot",
+      "primary_action": "Review rights, labels and split groups",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.dataset.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0601-1"
+      ]
+    },
+    {
+      "id": "screen.training",
+      "name": "Training run detail",
+      "route": "/learning/runs/:id",
+      "phase": "P08",
+      "ticket_ids": [
+        "CS-0801"
+      ],
+      "data_dependencies": [
+        "TrainingRun",
+        "DatasetSnapshot",
+        "Run"
+      ],
+      "permissions": [
+        "manage_models"
+      ],
+      "components": [
+        "organism.run-timeline",
+        "organism.dataset-review"
+      ],
+      "relay_fragment": "TrainingRun_run",
+      "primary_action": "Approve/start/cancel bounded local job",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.training.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0801-1"
+      ]
+    },
+    {
+      "id": "screen.evaluation",
+      "name": "Independent evaluation",
+      "route": "/learning/evaluations/:id",
+      "phase": "P08",
+      "ticket_ids": [
+        "CS-0803"
+      ],
+      "data_dependencies": [
+        "EvaluationReport",
+        "ModelArtifact"
+      ],
+      "permissions": [
+        "approve_model"
+      ],
+      "components": [
+        "organism.metric-comparison",
+        "organism.dataset-review"
+      ],
+      "relay_fragment": "EvaluationReport_report",
+      "primary_action": "Compare matched baseline and limitations",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.evaluation.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0803-1"
+      ]
+    },
+    {
+      "id": "screen.models",
+      "name": "Model registry",
+      "route": "/learning/models",
+      "phase": "P08",
+      "ticket_ids": [
+        "CS-0802"
+      ],
+      "data_dependencies": [
+        "ModelReleaseConnection"
+      ],
+      "permissions": [
+        "manage_models"
+      ],
+      "components": [
+        "atom.status",
+        "molecule.approval-summary"
+      ],
+      "relay_fragment": "ModelRegistryQuery",
+      "primary_action": "Inspect/promote/rollback authorized release",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.models.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0802-1"
+      ]
+    },
+    {
+      "id": "screen.export",
+      "name": "Cloud export review",
+      "route": "/privacy/exports/:id",
+      "phase": "P10",
+      "ticket_ids": [
+        "CS-1002"
+      ],
+      "data_dependencies": [
+        "ExportRequest",
+        "FeasibilityReport"
+      ],
+      "permissions": [
+        "review_export"
+      ],
+      "components": [
+        "organism.export-review"
+      ],
+      "relay_fragment": "ExportReview_request",
+      "primary_action": "Review exact payload and residual risk",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.export.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-1002-1"
+      ]
+    },
+    {
+      "id": "screen.settings",
+      "name": "Workspace and access",
+      "route": "/settings/workspace",
+      "phase": "P01",
+      "ticket_ids": [
+        "CS-0102"
+      ],
+      "data_dependencies": [
+        "Workspace",
+        "MembershipConnection"
+      ],
+      "permissions": [
+        "administer_workspace"
+      ],
+      "components": [
+        "atom.text-field",
+        "atom.checkbox"
+      ],
+      "relay_fragment": "WorkspaceSettings_workspace",
+      "primary_action": "Configure roles/local privacy controls",
+      "states": [
+        "loading",
+        "populated",
+        "error",
+        "forbidden"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.settings.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0102-1"
+      ]
+    },
+    {
+      "id": "screen.closeout",
+      "name": "Task closeout report",
+      "route": "/tasks/:id/closeout",
+      "phase": "P05",
+      "ticket_ids": [
+        "CS-0503"
+      ],
+      "data_dependencies": [
+        "TaskClosurePacket",
+        "MetricEvaluationConnection"
+      ],
+      "permissions": [
+        "review_science"
+      ],
+      "components": [
+        "organism.metric-comparison",
+        "molecule.approval-summary"
+      ],
+      "relay_fragment": "TaskCloseout_task",
+      "primary_action": "Approve scoped outcome; preserve unknowns",
+      "states": [
+        "loading",
+        "empty",
+        "populated",
+        "partial",
+        "error",
+        "forbidden",
+        "unavailable",
+        "offline_api",
+        "conflict"
+      ],
+      "responsive_rules": {
+        "desktop": "Persistent navigation and full details",
+        "small_screen": "Stack panels; keep units/context; scroll wide tables",
+        "reduced_motion": "No required animation"
+      },
+      "events": [
+        "ui.closeout.opened"
+      ],
+      "analytics_policy": "Local aggregate event metadata only; no scientific payload",
+      "figma_node_id": null,
+      "code_path": null,
+      "status": "logical_specification_only",
+      "acceptance_test_ids": [
+        "AT-0503-1"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "id": "00000000-0000-0000-0000-000000000065",
+  "task_id": "00000000-0000-0000-0000-000000000064",
+  "revision": 1,
+  "mode": "improve",
+  "target_kind": "formulation",
+  "status": "frozen",
+  "objective": "Synthetic workflow test; no real product claim",
+  "baseline_revision_id": null,
+  "reference_revision_id": null,
+  "matching_scope": null,
+  "metrics": [
+    {
+      "id": "metric.synthetic-performance",
+      "label": "Synthetic test-only index",
+      "required": true,
+      "value_kind": "numeric",
+      "operator": "gte",
+      "target_values": [
+        "5"
+      ],
+      "unit": "dimensionless",
+      "method_revision_id": "00000000-0000-0000-0000-000000000385",
+      "conditions": {
+        "substrate_revision_id": "00000000-0000-0000-0000-000000000386",
+        "description": "Synthetic test conditions, not a real chemical acceptance standard"
+      },
+      "required_evidence": [
+        "lab_measurement"
+      ],
+      "aggregation": "fixture-single-value",
+      "replication_rule": "Fixture only; no scientific repeat requirement inferred"
+    }
+  ],
+  "hard_constraints": [],
+  "unknowns": [],
+  "approval_id": "00000000-0000-0000-0000-000000000320",
+  "fixture_only": true
+}

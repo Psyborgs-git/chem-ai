@@ -1,0 +1,28 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+apps/studio-web/src/__generated__/
+
+# Local runtime state (vault/DB stay OUT of the repo - handoff 4.4)
+.local/
+*.log
+
+# OS
+.DS_Store
+
+# Pack validation env (isolated, throwaway)
+docs/chemistry-studio/.venv-validation/
+
+# playwright artifacts
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+apps/studio-web/test-results/

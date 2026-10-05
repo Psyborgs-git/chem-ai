@@ -1,0 +1,7 @@
+{
+  "schema": "../../packages/contracts/schema.graphql",
+  "src": "./src",
+  "language": "typescript",
+  "artifactDirectory": "./src/__generated__",
+  "eagerEsModules": true
+}

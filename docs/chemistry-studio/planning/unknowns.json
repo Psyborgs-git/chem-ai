@@ -1,0 +1,133 @@
+{
+  "schema_version": "1.0.0",
+  "unknowns": [
+    {
+      "id": "U01",
+      "question": "Existing repository/directory",
+      "blocks": "Repository baseline and exact code reuse",
+      "non_blocking_path": "Inspect current authorized workspace; initialize only in an authorized directory.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U02",
+      "question": "Dataset size, formats and quality",
+      "blocks": "Real import performance and training readiness",
+      "non_blocking_path": "Build synthetic import/review fixtures and profile actual data when provided.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U03",
+      "question": "Actual pilot tasks/products and targets",
+      "blocks": "Scientific acceptance and closure",
+      "non_blocking_path": "Keep task contracts exploratory until thresholds/methods are defined.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U04",
+      "question": "Scientists/reviewers and role assignments",
+      "blocks": "Experimental release and scientific sign-off",
+      "non_blocking_path": "Implement capability-based approvals; no invented reviewer identity.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U05",
+      "question": "Laboratory equipment and available methods",
+      "blocks": "Executable lab protocol and endpoint validation",
+      "non_blocking_path": "Manual records supported; incompatible/unknown methods block release.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U06",
+      "question": "Experiment capacity, cost and turnaround",
+      "blocks": "Campaign planning and physical execution",
+      "non_blocking_path": "No fabricated lab throughput or budget.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U07",
+      "question": "User count/team deployment",
+      "blocks": "LAN rollout and role provisioning",
+      "non_blocking_path": "Local owner setup; team access disabled until configured.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U08",
+      "question": "OS, CPU, GPU, RAM and disk",
+      "blocks": "Actual runtime and training execution",
+      "non_blocking_path": "Capability detector and synthetic hardware scenarios.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U09",
+      "question": "Infrastructure/cloud budgets",
+      "blocks": "Paid job authorization",
+      "non_blocking_path": "External spending disabled until a job-specific cap exists.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U10",
+      "question": "Delivery milestones/dates",
+      "blocks": "Calendar commitments",
+      "non_blocking_path": "Use dependency gates, not invented delivery dates.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U11",
+      "question": "Cloud provider/region/account/security model",
+      "blocks": "Live cloud execution",
+      "non_blocking_path": "Implement neutral broker; deny outbound data until approved.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U12",
+      "question": "Data rights and permitted training/export uses",
+      "blocks": "Dataset freeze and export",
+      "non_blocking_path": "Quarantine/review unknown rights per purpose.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U13",
+      "question": "Base model/license and runtime compatibility",
+      "blocks": "Fine-tuning and local serving",
+      "non_blocking_path": "Evaluate licensed candidates locally; no automatic large downloads.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U14",
+      "question": "Scientific evaluation/replication thresholds",
+      "blocks": "Model promotion and validated task success",
+      "non_blocking_path": "Synthetic test-only thresholds; scientific promotion blocked.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U15",
+      "question": "Retention, recovery and key-management policy",
+      "blocks": "Production recovery/retention claims",
+      "non_blocking_path": "Configurable policy and tested restore; unresolved production settings visible.",
+      "status": "unknown",
+      "answer": null
+    },
+    {
+      "id": "U16",
+      "question": "Optional ELN instance, credentials and record ownership",
+      "blocks": "Live ELN integration",
+      "non_blocking_path": "Fixture adapter tests only; core lab workflow remains native.",
+      "status": "unknown",
+      "answer": null
+    }
+  ]
+}

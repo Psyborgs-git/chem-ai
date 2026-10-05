@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "id": "00000000-0000-0000-0000-000000000067",
+  "task_id": "00000000-0000-0000-0000-000000000078",
+  "revision": 1,
+  "mode": "discover",
+  "target_kind": "unknown",
+  "status": "draft",
+  "objective": "Synthetic workflow test; no real product claim",
+  "baseline_revision_id": null,
+  "reference_revision_id": null,
+  "matching_scope": null,
+  "metrics": [],
+  "hard_constraints": [],
+  "unknowns": [
+    "Target material/formulation/molecule kind",
+    "Scientific endpoint and approved method"
+  ],
+  "approval_id": null,
+  "fixture_only": true
+}
