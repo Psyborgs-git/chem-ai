@@ -10,6 +10,7 @@ import {
 } from "../../components/states/states";
 import { CandidatePanel } from "../candidates/CandidatePanel";
 import { DatasetsPanel } from "../learning/datasets/DatasetsPanel";
+import { EvaluationsPanel } from "../learning/evaluations/EvaluationsPanel";
 import { ModelsPanel } from "../learning/models/ModelsPanel";
 import { TrainingPanel } from "../learning/training/TrainingPanel";
 import { OptimizationPanel } from "../optimization/OptimizationPanel";
@@ -35,6 +36,7 @@ const SECTIONS = [
   "datasets",
   "training",
   "models",
+  "evaluations",
   "optimization",
   "analysis",
 ] as const;
@@ -123,6 +125,12 @@ function TaskDetail({ taskId, section }: { taskId: string; section: Section }) {
         <section aria-labelledby="training-heading">
           <h3 id="training-heading">training runs</h3>
           <TrainingPanel taskId={tid} />
+        </section>
+      )}
+      {section === "evaluations" && (
+        <section aria-label="evaluations">
+          <h3>evaluations & promotion</h3>
+          <EvaluationsPanel taskId={tid} />
         </section>
       )}
       {section === "models" && (

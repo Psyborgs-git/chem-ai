@@ -35,6 +35,12 @@ from studio.persistence.models import (
     DatasetSnapshot as DatasetSnapshotRow,
 )
 from studio.persistence.models import (
+    EvaluationRun as EvaluationRunRow,
+)
+from studio.persistence.models import (
+    EvaluationSuite as EvaluationSuiteRow,
+)
+from studio.persistence.models import (
     EvidenceClaim as EvidenceClaimRow,
 )
 from studio.persistence.models import (
@@ -75,6 +81,9 @@ from studio.persistence.models import (
 )
 from studio.persistence.models import (
     Project as ProjectRow,
+)
+from studio.persistence.models import (
+    PromotionDecision as PromotionDecisionRow,
 )
 from studio.persistence.models import (
     ReferenceProduct as ReferenceProductRow,
@@ -2140,5 +2149,118 @@ class SessionModelPinInfo:
             release_id=(
                 relay.GlobalID("ModelRelease", str(row.release_id)) if row.release_id else None
             ),
+            created_at=row.created_at,
+        )
+
+
+# ----------------------------------------------------- evaluation & promotion
+
+
+@strawberry.type
+class EvaluationSuiteInfo:
+    """One versioned evaluation suite (§18.1, CS-0803): the PUBLIC
+    contract — tasks with label hashes, allowed-context reference,
+    pinned tool catalog, budget, scoring, review rules, thresholds.
+    Hidden target values are never reachable through this type."""
+
+    id: relay.GlobalID
+    task_id: str | None
+    name: str
+    version: int
+    purpose: str
+    kind: str
+    state: str
+    definition: JSON | None
+    digest: str
+    capability: JSON | None
+    created_at: datetime
+    updated_at: datetime | None
+
+    @classmethod
+    def from_row(cls, row: EvaluationSuiteRow) -> Self:
+        return cls(
+            id=relay.GlobalID("EvaluationSuite", str(row.id)),
+            task_id=str(row.task_id) if row.task_id else None,
+            name=row.name,
+            version=int(row.version),
+            purpose=row.purpose,
+            kind=row.kind,
+            state=row.state,
+            definition=JSON(row.definition) if row.definition else None,
+            digest=row.digest,
+            capability=JSON(row.capability) if row.capability else None,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+
+
+@strawberry.type
+class EvaluationRunInfo:
+    """One matched-comparison run (§18.2): per-arm results, metrics,
+    denominators, subgroups, uncertainty, safety regression, threshold
+    evaluations and the recorded contamination check — label values
+    are never duplicated into the report."""
+
+    id: relay.GlobalID
+    suite_id: relay.GlobalID
+    suite_digest: str
+    model_release_id: str
+    baseline_release_id: str | None
+    state: str
+    backend: JSON | None
+    comparison: JSON | None
+    contamination: JSON | None
+    blockers: JSON | None
+    capability: JSON | None
+    error: JSON | None
+    created_at: datetime
+
+    @classmethod
+    def from_row(cls, row: EvaluationRunRow) -> Self:
+        return cls(
+            id=relay.GlobalID("EvaluationRun", str(row.id)),
+            suite_id=relay.GlobalID("EvaluationSuite", str(row.suite_id)),
+            suite_digest=row.suite_digest,
+            model_release_id=str(row.model_release_id),
+            baseline_release_id=(str(row.baseline_release_id) if row.baseline_release_id else None),
+            state=row.state,
+            backend=JSON(row.backend) if row.backend else None,
+            comparison=JSON(row.comparison) if row.comparison else None,
+            contamination=JSON(row.contamination) if row.contamination else None,
+            blockers=JSON(row.blockers) if row.blockers else None,
+            capability=JSON(row.capability) if row.capability else None,
+            error=JSON(row.error) if row.error else None,
+            created_at=row.created_at,
+        )
+
+
+@strawberry.type
+class PromotionDecisionInfo:
+    """One recorded promotion-gate verdict (§18.3-18.4): eligible
+    flag, the full blocker list (hard + stored unknown-threshold
+    claim blockers), the honest model card and the decision digest a
+    scoped release approval binds to."""
+
+    id: relay.GlobalID
+    model_release_id: str
+    evaluation_run_id: str | None
+    eligible: bool
+    blockers: JSON | None
+    model_card: JSON | None
+    decision_digest: str
+    approval_id: str | None
+    created_at: datetime
+
+    @classmethod
+    def from_row(cls, row: PromotionDecisionRow) -> Self:
+        return cls(
+            id=relay.GlobalID("PromotionDecision", str(row.id)),
+            model_release_id=str(row.model_release_id),
+            evaluation_run_id=(str(row.evaluation_run_id) if row.evaluation_run_id else None),
+            eligible=bool(row.eligible),
+            blockers=JSON(row.blockers) if row.blockers else None,
+            model_card=JSON(row.model_card) if row.model_card else None,
+            decision_digest=row.decision_digest,
+            approval_id=str(row.approval_id) if row.approval_id else None,
             created_at=row.created_at,
         )

@@ -31,6 +31,10 @@ from studio.persistence.models import Approval
 APPROVAL_CAPABILITY: dict[str, str] = {
     "experiment_release": CAP_APPROVE_EXPERIMENT,
     "model_release": CAP_APPROVE_MODEL,
+    # The documented scope+limitations release decision (§18.3-4,
+    # CS-0803) — a human approver binds the gate verdict, scope and
+    # limitations; the promotion gate re-validates it at execution.
+    "model_release_scope": CAP_APPROVE_MODEL,
     "export": CAP_APPROVE_EXPORT,
     "training_run": CAP_APPROVE_MODEL,
 }

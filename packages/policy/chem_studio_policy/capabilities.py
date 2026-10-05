@@ -22,6 +22,7 @@ CAP_APPROVE_MODEL = "approve_model"
 CAP_REVIEW_EXPORT = "review_export"
 CAP_APPROVE_EXPORT = "approve_export"
 CAP_ADMINISTER_WORKSPACE = "administer_workspace"
+CAP_READ_EVAL_LABELS = "read_eval_labels"
 
 ALL_CAPABILITIES: frozenset[str] = frozenset(
     {
@@ -38,6 +39,7 @@ ALL_CAPABILITIES: frozenset[str] = frozenset(
         CAP_REVIEW_EXPORT,
         CAP_APPROVE_EXPORT,
         CAP_ADMINISTER_WORKSPACE,
+        CAP_READ_EVAL_LABELS,
     }
 )
 
@@ -94,6 +96,16 @@ APPROVAL_CAPABILITIES: frozenset[str] = frozenset(
     }
 )
 
+# Capabilities only a 'service'-kind principal may hold (§18.1,
+# AT-0803-2): hidden evaluation labels are reachable solely through
+# the evaluation service principal — users and agents lose the grant
+# at context load even if a row exists.
+SERVICE_ONLY_CAPABILITIES: frozenset[str] = frozenset(
+    {
+        CAP_READ_EVAL_LABELS,
+    }
+)
+
 
 @dataclass(frozen=True)
 class Grant:
@@ -124,7 +136,10 @@ def has_capability(grants: frozenset[Grant], capability: str, scope_ref: str | N
 
 
 def effective_grants(principal_kind: str, grants: frozenset[Grant]) -> frozenset[Grant]:
-    """Apply principal-kind ceilings: agents lose approval capabilities."""
+    """Apply principal-kind ceilings: agents lose approval capabilities;
+    non-service principals lose service-only capabilities."""
     if principal_kind == "agent":
-        return frozenset(g for g in grants if g.capability not in APPROVAL_CAPABILITIES)
+        grants = frozenset(g for g in grants if g.capability not in APPROVAL_CAPABILITIES)
+    if principal_kind != "service":
+        grants = frozenset(g for g in grants if g.capability not in SERVICE_ONLY_CAPABILITIES)
     return grants

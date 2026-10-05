@@ -293,6 +293,81 @@ type DomainErrorPayload {
   safeDetails: JSON!
 }
 
+type EvaluationRunInfo {
+  id: ID!
+  suiteId: ID!
+  suiteDigest: String!
+  modelReleaseId: String!
+  baselineReleaseId: String
+  state: String!
+  backend: JSON
+  comparison: JSON
+  contamination: JSON
+  blockers: JSON
+  capability: JSON
+  error: JSON
+  createdAt: DateTime!
+}
+
+type EvaluationRunResult {
+  evaluationRun: EvaluationRunInfo
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input EvaluationRunStartInput {
+  evaluationSuiteId: ID!
+  modelReleaseId: ID!
+  baselineReleaseId: ID = null
+  clientMutationId: String = null
+}
+
+input EvaluationSuiteCreateInput {
+  name: String!
+  kind: String!
+  taskId: ID = null
+  tasks: JSON = null
+  thresholds: JSON = null
+  budget: JSON = null
+  scoring: JSON = null
+  allowedContext: JSON = null
+  reviewRules: JSON = null
+  purpose: String = null
+  clientMutationId: String = null
+}
+
+input EvaluationSuiteIdInput {
+  evaluationSuiteId: ID!
+  clientMutationId: String = null
+}
+
+type EvaluationSuiteInfo {
+  id: ID!
+  taskId: String
+  name: String!
+  version: Int!
+  purpose: String!
+  kind: String!
+  state: String!
+  definition: JSON
+  digest: String!
+  capability: JSON
+  createdAt: DateTime!
+  updatedAt: DateTime
+}
+
+input EvaluationSuiteLabelsInput {
+  evaluationSuiteId: ID!
+  labels: JSON = null
+  clientMutationId: String = null
+}
+
+type EvaluationSuiteResult {
+  evaluationSuite: EvaluationSuiteInfo
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
 type EvidenceClaim implements Node {
   """The Globally Unique ID of this object"""
   id: ID!
@@ -538,6 +613,13 @@ type LearningMutation {
   modelReleasePromote(input: ModelReleaseIdInput!): ModelReleaseResult!
   modelReleaseRollback(input: ModelReleaseRollbackInput!): ModelReleaseResult!
   sessionModelBind(input: SessionModelBindInput!): SessionBindResult!
+  evaluationSuiteCreate(input: EvaluationSuiteCreateInput!): EvaluationSuiteResult!
+  evaluationSuiteLabels(input: EvaluationSuiteLabelsInput!): EvaluationSuiteResult!
+  evaluationSuiteFreeze(input: EvaluationSuiteIdInput!): EvaluationSuiteResult!
+  evaluationRunStart(input: EvaluationRunStartInput!): EvaluationRunResult!
+  promotionDecide(input: PromotionDecideInput!): PromotionDecisionResult!
+  promotionApprove(input: PromotionApproveInput!): PromotionDecisionResult!
+  promotionPromote(input: PromotionPromoteInput!): PromotionDecisionResult!
 }
 
 type MaterialGrade implements Node {
@@ -936,6 +1018,44 @@ input PromoteRecordInput {
   clientMutationId: String = null
 }
 
+input PromotionApproveInput {
+  modelReleaseId: ID!
+  scope: String!
+  limitations: [String!] = null
+  rationale: String = null
+  clientMutationId: String = null
+}
+
+input PromotionDecideInput {
+  modelReleaseId: ID!
+  clientMutationId: String = null
+}
+
+type PromotionDecisionInfo {
+  id: ID!
+  modelReleaseId: String!
+  evaluationRunId: String
+  eligible: Boolean!
+  blockers: JSON
+  modelCard: JSON
+  decisionDigest: String!
+  approvalId: String
+  createdAt: DateTime!
+}
+
+type PromotionDecisionResult {
+  promotionDecision: PromotionDecisionInfo
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input PromotionPromoteInput {
+  modelReleaseId: ID!
+  scope: String!
+  limitations: [String!] = null
+  clientMutationId: String = null
+}
+
 type Query {
   node(
     """The ID of the object."""
@@ -968,6 +1088,11 @@ type Query {
   modelRelease(modelReleaseId: ID!): ModelReleaseInfo
   servingPointer: ServingPointerInfo
   sessionModelPins(taskId: ID = null): [SessionModelPinInfo!]!
+  evaluationSuites(taskId: ID = null): [EvaluationSuiteInfo!]!
+  evaluationSuite(evaluationSuiteId: ID!): EvaluationSuiteInfo
+  evaluationRuns(modelReleaseId: ID = null, evaluationSuiteId: ID = null): [EvaluationRunInfo!]!
+  evaluationRun(evaluationRunId: ID!): EvaluationRunInfo
+  promotionDecision(modelReleaseId: ID!): PromotionDecisionInfo
   sessionMessages(sessionId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): SessionMessageConnection!
   taskQuestions(taskId: ID!): [TaskQuestion!]!
   taskSummaries(taskId: ID!): [TaskSummary!]!
