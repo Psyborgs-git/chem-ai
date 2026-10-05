@@ -34,7 +34,9 @@ DST_DB = "studio_backup_dst"
 DSN_TMPL = "postgresql://studio:studio@127.0.0.1:54329/{db}"
 
 
-def _exec(sql: str, dsn: str = ADMIN_DSN, params: tuple = ()) -> list[tuple]:
+def _exec(
+    sql: str, dsn: str = ADMIN_DSN, params: tuple[object, ...] = ()
+) -> list[tuple[object, ...]]:
     with psycopg.connect(dsn, autocommit=True) as conn:
         cur = conn.execute(sql, params)
         return cur.fetchall() if cur.description else []
@@ -47,7 +49,7 @@ def _fresh_db(name: str) -> None:
 
 def _migrate(dsn: str) -> None:
     env = dict(os.environ, STUDIO_DATABASE_URL=dsn)
-    subprocess.run(
+    subprocess.run(  # noqa: S603 — fixed argv
         [
             sys.executable,
             "-m",
@@ -82,8 +84,7 @@ def _seed(dsn: str, vault: Path) -> dict[str, str]:
             (ids["cap"], ids["ws"], ids["user"], "administer_workspace"),
         )
         conn.execute(
-            "INSERT INTO projects (id, workspace_id, slug, name) "
-            "VALUES (%s, %s, %s, %s)",
+            "INSERT INTO projects (id, workspace_id, slug, name) VALUES (%s, %s, %s, %s)",
             (ids["proj"], ids["ws"], "backup-proj", "Backup Project"),
         )
         conn.execute(
@@ -127,7 +128,7 @@ def main() -> int:
         ids = _seed(src_dsn, vault)
 
         print("== backup ==")
-        subprocess.run(
+        subprocess.run(  # noqa: S603 — fixed argv
             [
                 sys.executable,
                 str(BACKUP_PY),
@@ -141,7 +142,7 @@ def main() -> int:
             ],
             check=True,
         )
-        subprocess.run(
+        subprocess.run(  # noqa: S603 — fixed argv
             [sys.executable, str(BACKUP_PY), "verify", "--backup", str(backup_dir)],
             check=True,
         )
@@ -149,7 +150,7 @@ def main() -> int:
         print("== restore into clean db ==")
         _fresh_db(DST_DB)
         dst_dsn = DSN_TMPL.format(db=DST_DB)
-        subprocess.run(
+        subprocess.run(  # noqa: S603 — fixed argv
             [
                 sys.executable,
                 str(BACKUP_PY),
@@ -165,9 +166,7 @@ def main() -> int:
         )
 
         print("== AT-0505-1 assertions ==")
-        rows = _exec(
-            "SELECT storage_key FROM artifacts WHERE id = %s", dst_dsn, (ids["art"],)
-        )
+        rows = _exec("SELECT storage_key FROM artifacts WHERE id = %s", dst_dsn, (ids["art"],))
         check("artifact row survives", rows == [("ff/" + "f" * 62,)], str(rows))
 
         rows = _exec(
@@ -177,9 +176,7 @@ def main() -> int:
         )
         check("permission row survives", rows == [("administer_workspace",)], str(rows))
 
-        rows = _exec(
-            "SELECT slug FROM projects WHERE workspace_id = %s", dst_dsn, (ids["ws"],)
-        )
+        rows = _exec("SELECT slug FROM projects WHERE workspace_id = %s", dst_dsn, (ids["ws"],))
         check("project→workspace reference survives", rows == [("backup-proj",)])
 
         blob = vault_restore / "ff" / ("f" * 62)
@@ -193,9 +190,7 @@ def main() -> int:
 
         manifest = json.loads((backup_dir / MANIFEST_NAME).read_text())
         blob_hash = hashlib.sha256(blob.read_bytes()).hexdigest()
-        expected = {
-            f["path"]: f["sha256"] for f in manifest["vault"]["files"]
-        }
+        expected = {f["path"]: f["sha256"] for f in manifest["vault"]["files"]}
         check(
             "manifest checksums match restored vault",
             expected.get("ff/" + "f" * 62) == blob_hash,

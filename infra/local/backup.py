@@ -33,7 +33,6 @@ import json
 import shutil
 import subprocess
 import sys
-import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -67,8 +66,8 @@ def _pg_tool(name: str) -> list[str]:
     if tool is not None:
         return [tool]
     if shutil.which("docker") is not None:
-        probe = subprocess.run(
-            ["docker", "exec", _CONTAINER, "which", name],
+        probe = subprocess.run(  # noqa: S603 — fixed argv
+            ["docker", "exec", _CONTAINER, "which", name],  # noqa: S607
             capture_output=True,
         )
         if probe.returncode == 0:
@@ -117,7 +116,7 @@ def cmd_backup(dsn: str, vault: Path, out: Path) -> int:
     # (which cannot see host paths) works identically to host tools.
     tool_dsn = _container_dsn(dsn) if _via_container(pg_dump) else dsn
     with dump_path.open("wb") as fh:
-        subprocess.run(
+        subprocess.run(  # noqa: S603 — pg tool argv, no shell
             [*pg_dump, "--format=custom", "--compress=6", tool_dsn],
             check=True,
             stdout=fh,
@@ -148,10 +147,7 @@ def cmd_backup(dsn: str, vault: Path, out: Path) -> int:
         ),
     }
     (out / MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n")
-    print(
-        f"backup ok: {out} (alembic={head}, db={dump_bytes}B, "
-        f"vault_files={len(vault_files)})"
-    )
+    print(f"backup ok: {out} (alembic={head}, db={dump_bytes}B, vault_files={len(vault_files)})")
     return 0
 
 
@@ -159,10 +155,32 @@ def _load_manifest(backup: Path) -> dict[str, object]:
     path = backup / MANIFEST
     if not path.exists():
         raise SystemExit(f"FAILED: no manifest at {path}")
-    m = json.loads(path.read_text())
+    m: dict[str, object] = json.loads(path.read_text())
     if m.get("format") != FORMAT_VERSION:
         raise SystemExit(f"FAILED: unsupported manifest format {m.get('format')}")
     return m
+
+
+def _entries(m: dict[str, object], key: str) -> list[dict[str, object]]:
+    section = m.get(key)
+    if not isinstance(section, dict):
+        raise SystemExit(f"FAILED: manifest section '{key}' missing")
+    files = section.get("files") or []
+    if not isinstance(files, list):
+        raise SystemExit(f"FAILED: manifest '{key}.files' malformed")
+    out: list[dict[str, object]] = []
+    for entry in files:
+        if not isinstance(entry, dict):
+            raise SystemExit(f"FAILED: malformed entry in '{key}.files'")
+        out.append(entry)
+    return out
+
+
+def _db_section(m: dict[str, object]) -> dict[str, object]:
+    db = m.get("db")
+    if not isinstance(db, dict):
+        raise SystemExit("FAILED: manifest section 'db' missing")
+    return db
 
 
 def _check_file(path: Path, expected: str, what: str) -> None:
@@ -175,15 +193,10 @@ def _check_file(path: Path, expected: str, what: str) -> None:
 
 def cmd_verify(backup: Path) -> int:
     m = _load_manifest(backup)
-    db = m["db"]
-    assert isinstance(db, dict)
+    db = _db_section(m)
     _check_file(backup / str(db["file"]), str(db["sha256"]), "db dump")
-    vault = m["vault"]
-    assert isinstance(vault, dict)
-    files = vault.get("files") or []
-    assert isinstance(files, list)
+    files = _entries(m, "vault")
     for entry in files:
-        assert isinstance(entry, dict)
         _check_file(
             backup / VAULT_DIR / str(entry["path"]),
             str(entry["sha256"]),
@@ -200,13 +213,12 @@ def cmd_restore(backup: Path, dsn: str, vault: Path, force: bool) -> int:
     cmd_verify(backup)
     m = _load_manifest(backup)
 
-    db = m["db"]
-    assert isinstance(db, dict)
+    db = _db_section(m)
     tool_dsn = _container_dsn(dsn) if _via_container(pg_restore) else dsn
     # Stream the dump on stdin for the same reason as backup: the
     # container cannot see host paths.
     with (backup / str(db["file"])).open("rb") as fh:
-        subprocess.run(
+        subprocess.run(  # noqa: S603 — pg tool argv, no shell
             [
                 *pg_restore,
                 "--format=custom",
@@ -219,10 +231,10 @@ def cmd_restore(backup: Path, dsn: str, vault: Path, force: bool) -> int:
         )
 
     vault = vault.resolve()
-    files = (m["vault"] or {}).get("files") or []  # type: ignore[union-attr]
+    files = _entries(m, "vault")
     restored = 0
     for entry in files:
-        rel = str(entry["path"])  # type: ignore[index]
+        rel = str(entry["path"])
         src = backup / VAULT_DIR / rel
         dst = (vault / rel).resolve()
         if dst != vault and vault not in dst.parents:
@@ -231,12 +243,9 @@ def cmd_restore(backup: Path, dsn: str, vault: Path, force: bool) -> int:
             raise SystemExit(f"FAILED: {dst} exists (use --force to overwrite)")
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
-        _check_file(dst, str(entry["sha256"]), "restored vault file")  # type: ignore[index]
+        _check_file(dst, str(entry["sha256"]), "restored vault file")
         restored += 1
-    print(
-        f"restore ok: db={dsn} alembic={m['alembicHead']} "
-        f"vault_files={restored} -> {vault}"
-    )
+    print(f"restore ok: db={dsn} alembic={m['alembicHead']} vault_files={restored} -> {vault}")
     return 0
 
 

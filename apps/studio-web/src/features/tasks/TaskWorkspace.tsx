@@ -9,6 +9,7 @@ import {
   LoadingState,
 } from "../../components/states/states";
 import { CandidatePanel } from "../candidates/CandidatePanel";
+import { DatasetsPanel } from "../learning/datasets/DatasetsPanel";
 import { ResearchPanel } from "../research/ResearchPanel";
 import { RunsPanel } from "../runs/RunsPanel";
 import { ContractEditor } from "./ContractEditor";
@@ -27,6 +28,7 @@ const SECTIONS = [
   "closeout",
   "report",
   "decisions",
+  "datasets",
 ] as const;
 type Section = (typeof SECTIONS)[number];
 
@@ -99,6 +101,12 @@ function TaskDetail({ taskId, section }: { taskId: string; section: Section }) {
         <section aria-labelledby="decisions-heading">
           <h3 id="decisions-heading">decisions</h3>
           <DecisionsPanel taskId={tid} />
+        </section>
+      )}
+      {section === "datasets" && (
+        <section aria-labelledby="datasets-heading">
+          <h3 id="datasets-heading">dataset snapshots</h3>
+          <DatasetsPanel taskId={tid} />
         </section>
       )}
     </div>

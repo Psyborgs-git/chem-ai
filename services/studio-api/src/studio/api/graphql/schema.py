@@ -30,6 +30,7 @@ from studio.api.graphql.types import (
     CandidateRevision,
     ClaimLink,
     ContractRevision,
+    DatasetSnapshotInfo,
     Decision,
     EvidenceClaim,
     ExperimentPlan,
@@ -61,6 +62,7 @@ from studio.domain.evidence.imports import ImportService
 from studio.domain.evidence.revocation import RevocationService
 from studio.domain.lab.measurements import LabMeasurementService
 from studio.domain.lab.plans import LabPlanService
+from studio.domain.learning.datasets import DatasetService
 from studio.domain.materials.service import MaterialService
 from studio.domain.projects.service import ProjectService
 from studio.domain.runs.admission import AdmissionService
@@ -1178,6 +1180,21 @@ class Query:
         return JSON(TaskReportService(gql.db, gql.service_ctx()).report(t_uuid))
 
     @strawberry.field
+    def dataset_snapshots(
+        self, info: strawberry.Info, task_id: relay.GlobalID | None = None
+    ) -> list[DatasetSnapshotInfo]:
+        gql = gql_ctx(info)
+        t_uuid = _gid_uuid(task_id, "Task", "taskId") if task_id is not None else None
+        rows = DatasetService(gql.db, gql.service_ctx()).list(t_uuid)
+        return [DatasetSnapshotInfo.from_row(r) for r in rows]
+
+    @strawberry.field
+    def dataset_snapshot_drift(self, info: strawberry.Info, snapshot_id: relay.GlobalID) -> JSON:
+        gql = gql_ctx(info)
+        s_uuid = _gid_uuid(snapshot_id, "DatasetSnapshot", "snapshotId")
+        return JSON(DatasetService(gql.db, gql.service_ctx()).drift_status(s_uuid))
+
+    @strawberry.field
     def session_messages(
         self,
         info: strawberry.Info,
@@ -1843,6 +1860,116 @@ class Mutation:
     def lab(self) -> LabMutation:
         """Experiment-plan commands under one namespace (CS-0501)."""
         return LabMutation()
+
+    @strawberry.mutation
+    def learning(self) -> LearningMutation:
+        """Dataset/training-eligibility commands (CS-0601)."""
+        return LearningMutation()
+
+
+@strawberry.input
+class DatasetSnapshotBuildInput:
+    purpose: str
+    name: str
+    task_id: relay.GlobalID | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class DatasetSnapshotIdInput:
+    snapshot_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class DatasetSnapshotResult:
+    snapshot: DatasetSnapshotInfo | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class DatasetPrepareResult:
+    report: JSON | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class LearningMutation:
+    """Dataset snapshot commands (§17.2, CS-0601). Build/freeze/
+    prepare are `manage_models`-gated; the rights gate blocks freezes
+    with DATA_RIGHTS_UNKNOWN."""
+
+    @strawberry.mutation
+    def snapshot_build(
+        self, info: strawberry.Info, input: DatasetSnapshotBuildInput
+    ) -> DatasetSnapshotResult:
+        gql = gql_ctx(info)
+        try:
+            t_uuid = (
+                _gid_uuid(input.task_id, "Task", "taskId") if input.task_id is not None else None
+            )
+            snap = DatasetService(gql.db, gql.service_ctx()).build(
+                purpose=input.purpose, name=input.name, task_id=t_uuid
+            )
+            gql.db.commit()
+            return DatasetSnapshotResult(
+                snapshot=DatasetSnapshotInfo.from_row(snap),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return DatasetSnapshotResult(
+                snapshot=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def snapshot_freeze(
+        self, info: strawberry.Info, input: DatasetSnapshotIdInput
+    ) -> DatasetSnapshotResult:
+        gql = gql_ctx(info)
+        try:
+            s_uuid = _gid_uuid(input.snapshot_id, "DatasetSnapshot", "snapshotId")
+            snap = DatasetService(gql.db, gql.service_ctx()).freeze(s_uuid)
+            gql.db.commit()
+            return DatasetSnapshotResult(
+                snapshot=DatasetSnapshotInfo.from_row(snap),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return DatasetSnapshotResult(
+                snapshot=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def snapshot_prepare_run(
+        self, info: strawberry.Info, input: DatasetSnapshotIdInput
+    ) -> DatasetPrepareResult:
+        gql = gql_ctx(info)
+        try:
+            s_uuid = _gid_uuid(input.snapshot_id, "DatasetSnapshot", "snapshotId")
+            report = DatasetService(gql.db, gql.service_ctx()).prepare_run(s_uuid)
+            gql.db.commit()
+            return DatasetPrepareResult(
+                report=JSON(report),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return DatasetPrepareResult(
+                report=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
 
 
 def graphql_app(settings: Settings) -> GraphQLRouter:

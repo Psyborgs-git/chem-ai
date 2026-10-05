@@ -32,6 +32,9 @@ from studio.persistence.models import (
     ContextManifest as ContextManifestRow,
 )
 from studio.persistence.models import (
+    DatasetSnapshot as DatasetSnapshotRow,
+)
+from studio.persistence.models import (
     EvidenceClaim as EvidenceClaimRow,
 )
 from studio.persistence.models import (
@@ -1853,3 +1856,34 @@ class LabExecution(relay.Node):
         ids = list(node_ids)
         rows = _by_ids(info, LabExecutionRow, ids)
         return [cls.from_row(rows[nid]) if nid in rows else None for nid in ids]
+
+
+@strawberry.type
+class DatasetSnapshotInfo:
+    """Point-in-time training manifest (§17.2, CS-0601). A frozen
+    snapshot is immutable — drift is reported by re-hashing sources,
+    never by rewriting the manifest."""
+
+    id: strawberry.ID
+    purpose: str
+    name: str
+    task_id: str | None
+    state: str
+    digest: str
+    manifest: JSON
+    created_at: datetime
+    frozen_at: datetime | None
+
+    @classmethod
+    def from_row(cls, row: DatasetSnapshotRow) -> Self:
+        return cls(
+            id=strawberry.ID(str(row.id)),
+            purpose=row.purpose,
+            name=row.name,
+            task_id=str(row.task_id) if row.task_id else None,
+            state=row.state,
+            digest=row.digest,
+            manifest=JSON(row.manifest),
+            created_at=row.created_at,
+            frozen_at=row.frozen_at,
+        )

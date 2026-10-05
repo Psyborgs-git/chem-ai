@@ -1818,3 +1818,44 @@ class MeasurementAmendment(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
     value: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     conditions: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+
+# ------------------------------------------------------------------
+# CS-0601 — dataset snapshots + training eligibility (§17.2)
+
+DATASET_PURPOSES = (
+    "property_prediction",
+    "extraction_correction",
+    "assistant_sft",
+    "preference_pairs",
+    "rl_tasks",
+)
+DATASET_STATES = ("draft", "frozen")
+
+
+class DatasetSnapshot(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """Immutable point-in-time training manifest (§17.2): entry list
+    with record ids, revisions, per-record hashes, source classes,
+    rights and exclusion semantics. A frozen snapshot is never
+    rewritten — source drift is detected by re-hashing, not by
+    updating the manifest (AT-0601-3)."""
+
+    __tablename__ = "dataset_snapshots"
+    __table_args__ = (
+        CheckConstraint(f"purpose IN {DATASET_PURPOSES!r}", name="dataset_purpose"),
+        CheckConstraint(f"state IN {DATASET_STATES!r}", name="dataset_state"),
+        Index("ix_dataset_snapshots_scope", "workspace_id", "created_at", "id"),
+    )
+
+    purpose: Mapped[str] = mapped_column(String(48), nullable=False)
+    name: Mapped[str] = mapped_column(String(300), nullable=False)
+    task_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    # Entries: [{recordId, recordKind, sourceClass, hash,
+    #            rightsTraining, labelKind, semantics, excluded,
+    #            exclusionReason}]
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    frozen_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    frozen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

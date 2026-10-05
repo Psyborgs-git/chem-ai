@@ -186,6 +186,42 @@ type ContractRevisionResult {
   clientMutationId: String
 }
 
+type DatasetPrepareResult {
+  report: JSON
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input DatasetSnapshotBuildInput {
+  purpose: String!
+  name: String!
+  taskId: ID = null
+  clientMutationId: String = null
+}
+
+input DatasetSnapshotIdInput {
+  snapshotId: ID!
+  clientMutationId: String = null
+}
+
+type DatasetSnapshotInfo {
+  id: ID!
+  purpose: String!
+  name: String!
+  taskId: String
+  state: String!
+  digest: String!
+  manifest: JSON!
+  createdAt: DateTime!
+  frozenAt: DateTime
+}
+
+type DatasetSnapshotResult {
+  snapshot: DatasetSnapshotInfo
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
 """Date with time (isoformat)"""
 scalar DateTime
 
@@ -442,6 +478,12 @@ type LabSample implements Node {
   measurements: [Measurement!]!
 }
 
+type LearningMutation {
+  snapshotBuild(input: DatasetSnapshotBuildInput!): DatasetSnapshotResult!
+  snapshotFreeze(input: DatasetSnapshotIdInput!): DatasetSnapshotResult!
+  snapshotPrepareRun(input: DatasetSnapshotIdInput!): DatasetPrepareResult!
+}
+
 type MaterialGrade implements Node {
   """The Globally Unique ID of this object"""
   id: ID!
@@ -625,6 +667,7 @@ type Mutation {
   research: ResearchMutation!
   runs: RunsMutation!
   lab: LabMutation!
+  learning: LearningMutation!
 }
 
 """An object with a Globally Unique ID"""
@@ -753,6 +796,8 @@ type Query {
   taskCloseoutPacket(taskId: ID!): JSON!
   taskReassessmentStatus(taskId: ID!): JSON!
   taskReport(taskId: ID!): JSON!
+  datasetSnapshots(taskId: ID = null): [DatasetSnapshotInfo!]!
+  datasetSnapshotDrift(snapshotId: ID!): JSON!
   sessionMessages(sessionId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): SessionMessageConnection!
   taskQuestions(taskId: ID!): [TaskQuestion!]!
   taskSummaries(taskId: ID!): [TaskSummary!]!

@@ -105,16 +105,25 @@ def test_live_tool_turn_persists(session: Session, agent_ctx, runtime: LlamaCppR
     session.add(task)
     session.flush()
     mem = TaskMemoryService(session, agent_ctx)
+    # The runner decodes greedily (temperature 0), so repeating one
+    # prompt would just replay the same answer — rotate phrasings so
+    # each attempt is a genuinely different real turn.
+    prompts = [
+        "Llama a la herramienta summarize_task_evidence con "
+        f'task_id "{task.id}" — es obligatorio usar la herramienta — '
+        "y despues responde en una frase.",
+        'First call the tool summarize_task_evidence with task_id '
+        f'"{task.id}" — you must call the tool before answering — '
+        "then reply in one sentence.",
+        "Use summarize_task_evidence now with "
+        f'{{"task_id": "{task.id}"}}; after the tool result, '
+        "give a one-line answer.",
+    ]
     completed = False
     last_kinds: list[str] = []
-    for _attempt in range(3):
+    for prompt in prompts:
         sess = mem.start_session(task.id)
-        outcome = AgentTurnRunner(session, agent_ctx, runtime=runtime).run_turn(
-            sess.id,
-            "Llama a la herramienta summarize_task_evidence con "
-            f'task_id "{task.id}" — es obligatorio usar la herramienta — '
-            "y despues responde en una frase.",
-        )
+        outcome = AgentTurnRunner(session, agent_ctx, runtime=runtime).run_turn(sess.id, prompt)
         kinds = [
             m.kind
             for m in session.query(SessionMessage)

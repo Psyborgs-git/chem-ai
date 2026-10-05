@@ -131,13 +131,15 @@ class LlamaCppRuntime:
 
     # -- lifecycle ----------------------------------------------------
 
-    def _docker(self, *args: str, check: bool = False) -> subprocess.CompletedProcess[str]:
+    def _docker(
+        self, *args: str, check: bool = False, timeout: float = 60.0
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.run(  # noqa: S603 — argv list, no shell
             ["docker", *args],  # noqa: S607 — the docker CLI by design
             capture_output=True,
             text=True,
             check=check,
-            timeout=60,
+            timeout=timeout,
         )
 
     def running(self) -> bool:
@@ -311,6 +313,9 @@ class LlamaCppRuntime:
             self.container,
             "sha256sum",
             self.spec.gguf_path,
+            # hashing a multi-GB model on a starved or cold VM disk can
+            # legitimately take minutes — never truncate the check
+            timeout=300.0,
         )
         if res.returncode != 0:
             return False
