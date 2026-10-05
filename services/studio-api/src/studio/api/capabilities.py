@@ -96,12 +96,17 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
         profiles["materials"] = {"status": "disabled", "detail": "profile off"}
 
     if settings.profile_training:
-        ok = _module_available("torch")
+        try:
+            from workers.training.sft.runtime import available as sft_available
+
+            ok = sft_available()
+        except Exception:
+            ok = False
         profiles["training"] = {
             "status": "available" if ok else "unavailable",
-            "detail": "torch importable"
+            "detail": "isolated sft worker image live"
             if ok
-            else "torch not installed; install extra 'training' (U08/U13 gate live use)",
+            else "pinned sft worker image unavailable; build workers/training/sft/Dockerfile",
         }
     else:
         profiles["training"] = {"status": "disabled", "detail": "profile off"}
