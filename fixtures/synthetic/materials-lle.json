@@ -1,0 +1,84 @@
+{
+  "fixture_only": true,
+  "scientific_status": "fixture_only",
+  "note": "documented LLE behavior as regression cases — an installation/contract check, not scientific validation of predictions",
+  "spec": {
+    "schema_version": "1",
+    "method": "unifac_lle_screen",
+    "components": [
+      {"name": "water", "unifac_groups": {"17": 1}},
+      {"name": "1-butanol", "unifac_groups": {"1": 1, "2": 3, "14": 1}}
+    ],
+    "conditions": {"temperature_k": 298.15, "nominal_x1": 0.7},
+    "grid_points": 801,
+    "resources": {"wall_seconds": 120, "memory_mebibytes": 512, "ncores": 1}
+  },
+  "reference": {
+    "phase_state": "phase_separated",
+    "gap_lo": 0.534,
+    "gap_hi": 0.981,
+    "gap_lo_tolerance": 0.08,
+    "gap_hi_tolerance": 0.08,
+    "note": "water + 1-butanol at 298.15 K: documented binodal approx [0.50, 0.98] in mole fraction of water. Bounds are an implementation regression lock on this pinned stack (thermo 0.6.1, LLEUFIP table), not an experimental fit."
+  },
+  "homogeneous_examples": {
+    "water_ethanol": {
+      "method": "unifac_lle_screen",
+      "components": [
+        {"name": "water", "unifac_groups": {"17": 1}},
+        {"name": "ethanol", "unifac_groups": {"1": 1, "2": 1, "14": 1}}
+      ],
+      "conditions": {"temperature_k": 298.15},
+      "grid_points": 801,
+      "resources": {"wall_seconds": 120, "memory_mebibytes": 512, "ncores": 1},
+      "expected_phase_state": "homogeneous",
+      "note": "water + ethanol is fully miscible — documented behavior"
+    },
+    "water_methanol": {
+      "method": "unifac_lle_screen",
+      "components": [
+        {"name": "water", "unifac_groups": {"17": 1}},
+        {"name": "methanol", "unifac_groups": {"1": 1, "14": 1}}
+      ],
+      "conditions": {"temperature_k": 298.15},
+      "grid_points": 801,
+      "resources": {"wall_seconds": 120, "memory_mebibytes": 512, "ncores": 1},
+      "expected_phase_state": "homogeneous",
+      "note": "water + methanol is fully miscible — documented behavior"
+    },
+    "benzene_hexane": {
+      "method": "unifac_lle_screen",
+      "components": [
+        {"name": "benzene", "unifac_groups": {"9": 6}},
+        {"name": "n-hexane", "unifac_groups": {"1": 2, "2": 4}}
+      ],
+      "conditions": {"temperature_k": 298.15},
+      "grid_points": 801,
+      "resources": {"wall_seconds": 120, "memory_mebibytes": 512, "ncores": 1},
+      "expected_phase_state": "homogeneous",
+      "note": "benzene + n-hexane: similar nonpolar pair, fully miscible"
+    }
+  },
+  "missing_parameters_example": {
+    "method": "unifac_lle_screen",
+    "components": [
+      {"name": "water", "unifac_groups": {"17": 1}},
+      {"name": "dmso", "unifac_groups": {"57": 1}}
+    ],
+    "conditions": {"temperature_k": 298.15},
+    "grid_points": 801,
+    "resources": {"wall_seconds": 120, "memory_mebibytes": 512, "ncores": 1},
+    "note": "DMSO (main group 32) has no regressed interaction pair against water (main group 8) in LLEUFIP — thermo would silently zero-fill it; the contract blocks instead (AT-0702-1)"
+  },
+  "unsupported_subgroups_example": {
+    "method": "unifac_lle_screen",
+    "components": [
+      {"name": "water", "unifac_groups": {"17": 1}},
+      {"name": "unknown-fragrance-ester", "unifac_groups": {"99": 1}}
+    ],
+    "conditions": {"temperature_k": 298.15},
+    "grid_points": 801,
+    "resources": {"wall_seconds": 120, "memory_mebibytes": 512, "ncores": 1},
+    "note": "subgroup id 99 is not in the UNIFAC-LLE table — an invented molecule cannot stand in for an unknown composition"
+  }
+}

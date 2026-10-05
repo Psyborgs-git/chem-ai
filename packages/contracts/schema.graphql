@@ -771,6 +771,7 @@ type ProfileCapabilities {
   localAi: CapabilityStatus!
   optimization: CapabilityStatus!
   quantum: CapabilityStatus!
+  materials: CapabilityStatus!
   training: CapabilityStatus!
 }
 

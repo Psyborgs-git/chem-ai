@@ -75,6 +75,26 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
     else:
         profiles["quantum"] = {"status": "disabled", "detail": "profile off"}
 
+    if settings.profile_materials:
+        from workers.chemistry.materials.runtime import IMAGE as MATERIALS_IMAGE
+        from workers.chemistry.materials.runtime import available, capability
+
+        ok = available()
+        probe = capability() if ok else None
+        detail = MATERIALS_IMAGE
+        if probe:
+            methods = {name: m["state"] for name, m in (probe.get("methods") or {}).items()}
+            detail = f"{MATERIALS_IMAGE}; methods: {methods}"
+        profiles["materials"] = {
+            "status": "available" if ok else "unavailable",
+            "detail": detail
+            if ok
+            else "pinned thermo worker image unavailable; "
+            "build workers/chemistry/materials/Dockerfile",
+        }
+    else:
+        profiles["materials"] = {"status": "disabled", "detail": "profile off"}
+
     if settings.profile_training:
         ok = _module_available("torch")
         profiles["training"] = {
@@ -92,7 +112,7 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
         from engine_adapter_rdkit import RDKitAdapter
 
         _rdkit = RDKitAdapter().capability()
-        engines = {
+        engines: dict[str, dict[str, Any]] = {
             "rdkit": {
                 "status": "available" if _rdkit.available else "unavailable",
                 "version": _rdkit.version,
@@ -138,6 +158,46 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
             }
     except ImportError:
         engines["qcengine"] = {
+            "status": "unavailable",
+            "version": None,
+            "detail": "engine adapter package not importable",
+        }
+
+    # thermo adapter: §16.1 state probed inside the pinned image. When
+    # enabled, the card carries the method record's benchmark, domain,
+    # and limits verbatim — real state, never implied coverage.
+    try:
+        from workers.chemistry.materials.runtime import capability as _mt_probe
+
+        _mt = _mt_probe()
+        if _mt is None:
+            engines["materials"] = {
+                "status": "unavailable",
+                "version": None,
+                "detail": "pinned thermo worker image not installed on this host",
+            }
+        else:
+            worst = "available"
+            parts = []
+            method_cards: dict[str, Any] = {}
+            for name, m in sorted((_mt.get("methods") or {}).items()):
+                parts.append(f"{name}={m['state']}")
+                if m["state"] != "available_tested":
+                    worst = "degraded"
+                method_cards[name] = {
+                    "endpoint": m.get("endpoint"),
+                    "domain": m.get("domain"),
+                    "benchmark": m.get("benchmark"),
+                    "limitations": m.get("limitations") or [],
+                }
+            engines["materials"] = {
+                "status": worst,
+                "version": _mt.get("engine_version"),
+                "detail": f"{_mt.get('adapter_version')}; {', '.join(parts)}",
+                "methods": method_cards,
+            }
+    except ImportError:
+        engines["materials"] = {
             "status": "unavailable",
             "version": None,
             "detail": "engine adapter package not importable",

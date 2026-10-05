@@ -301,6 +301,7 @@ class ProfileCapabilities:
     local_ai: CapabilityStatus
     optimization: CapabilityStatus
     quantum: CapabilityStatus
+    materials: CapabilityStatus
     training: CapabilityStatus
 
 
@@ -1309,6 +1310,7 @@ class Query:
             local_ai=_cap(profiles["local_ai"]),
             optimization=_cap(profiles["optimization"]),
             quantum=_cap(profiles["quantum"]),
+            materials=_cap(profiles["materials"]),
             training=_cap(profiles["training"]),
         )
 

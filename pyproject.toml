@@ -49,6 +49,11 @@ quantum = [
     "qcengine==0.51.0",
     "qcelemental==0.51.2",
 ]
+# Materials/thermodynamics adapter (CS-0702). Exact pin: the adapter
+# fails closed on any other thermo version.
+materials = [
+    "thermo==0.6.1",
+]
 # Local adaptation / RL (P08/P09); blocked on U08/U13/U14 for live use.
 training = [
     "torch>=2.14,<2.15",
@@ -73,7 +78,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["services/studio-api/src/studio", "packages/policy/chem_studio_policy", "packages/engine-adapters/rdkit/engine_adapter_rdkit", "packages/engine-adapters/baybe/engine_adapter_baybe", "packages/engine-adapters/chemprop/engine_adapter_chemprop", "packages/engine-adapters/qcengine/engine_adapter_qcengine", "workers"]
+packages = ["services/studio-api/src/studio", "packages/policy/chem_studio_policy", "packages/engine-adapters/rdkit/engine_adapter_rdkit", "packages/engine-adapters/baybe/engine_adapter_baybe", "packages/engine-adapters/chemprop/engine_adapter_chemprop", "packages/engine-adapters/qcengine/engine_adapter_qcengine", "packages/engine-adapters/materials/engine_adapter_materials", "workers"]
 
 [tool.uv]
 package = true
@@ -92,7 +97,7 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "packages/engine-adapters/baybe", "packages/engine-adapters/chemprop", "packages/engine-adapters/qcengine", "workers"]
+src = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "packages/engine-adapters/baybe", "packages/engine-adapters/chemprop", "packages/engine-adapters/qcengine", "packages/engine-adapters/materials", "workers"]
 # Vendored spec package + its validation venv, execution evidence: not
 # project code — lint gates apply to first-party sources only.
 extend-exclude = ["docs", "**/.venv-validation", "**/.venv"]
@@ -108,8 +113,8 @@ ignore = []
 
 [tool.mypy]
 python_version = "3.12"
-mypy_path = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "packages/engine-adapters/baybe", "packages/engine-adapters/chemprop", "packages/engine-adapters/qcengine", "workers"]
-packages = ["studio", "chem_studio_policy", "engine_adapter_rdkit", "engine_adapter_baybe", "engine_adapter_chemprop", "engine_adapter_qcengine", "workers"]
+mypy_path = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "packages/engine-adapters/baybe", "packages/engine-adapters/chemprop", "packages/engine-adapters/qcengine", "packages/engine-adapters/materials", "workers"]
+packages = ["studio", "chem_studio_policy", "engine_adapter_rdkit", "engine_adapter_baybe", "engine_adapter_chemprop", "engine_adapter_qcengine", "engine_adapter_materials", "workers"]
 strict = true
 plugins = ["pydantic.mypy"]
 
@@ -140,6 +145,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["qcengine", "qcengine.*", "qcelemental", "qcelemental.*", "xtb", "xtb.*", "psi4", "psi4.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["thermo", "thermo.*", "scipy", "scipy.*", "chemicals", "chemicals.*", "fluids", "fluids.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
