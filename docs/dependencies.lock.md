@@ -41,7 +41,7 @@ row below.
 | `engines` | rdkit 2026.3.6 [S01/S02] | BSD-3 | **unavailable natively**: rdkit ships macOS arm64 + manylinux/win x86_64 wheels only — no macOS x86_64 wheel. Run under Docker `linux/amd64` or CI (Linux x86_64). Honest `unavailable` reported by capability probe (AT-0003-2). |
 | `local_ai` | llama-cpp-python 0.3.36 [S21] | MIT | installable; live use blocked on U08 (no GPU, 8 GiB RAM) and U13 (no licensed model selected). Bootstrap never downloads models. |
 | `optimization` | baybe 0.15.0 [S09], chemprop 2.3.1 [S10] | Apache-2.0 / MIT | heavy (torch transitive); deferred to P06 |
-| `quantum` | qcengine 0.51.0, qcelemental 0.51.2 [S06] | BSD-3 | xtb/psi4 are conda/system binaries, not pip — profile reports `unavailable` until binaries verified (S07/S08) |
+| `quantum` | qcengine 0.51.0, qcelemental 0.51.2 [S06] | BSD-3 | xtb ships via conda-forge inside `chem-studio-qcengine:0.51.0-v1` (xtb 6.7.1 + xtb-python 22.1, CS-0701) — verified against the documented water/GFN2-xTB reference; psi4 not installed — probe reports `not_installed` |
 | `training` | torch 2.14.1, peft 0.21.2 [S13], trl 1.14.1 [S14] | BSD-3 / Apache-2.0 / MIT | deferred to P08/P09; blocked on U08/U13/U14 |
 
 ## Frontend (pnpm workspace, resolved 2026-10-05)

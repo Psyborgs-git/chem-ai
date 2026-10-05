@@ -6,10 +6,11 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from engine_adapter_baybe import CampaignSpec
-from engine_adapter_baybe.validation import point
 from workers.optimization.campaign import Campaign
 from workers.optimization.runtime import IMAGE, IsolatedBayBE
+
+from engine_adapter_baybe import CampaignSpec
+from engine_adapter_baybe.validation import point
 
 pytestmark = pytest.mark.engine
 

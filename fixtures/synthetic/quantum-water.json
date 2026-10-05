@@ -1,0 +1,66 @@
+{
+  "fixture_only": true,
+  "scientific_status": "fixture_only",
+  "note": "public reference geometry — H2O near-equilibrium (QCSchema tutorial values, angstrom); an installation check, not a scientific validation",
+  "spec": {
+    "schema_version": "1",
+    "program": "xtb",
+    "method": "GFN2-xTB",
+    "driver": "energy",
+    "molecule": {
+      "symbols": ["O", "H", "H"],
+      "geometry": [
+        0.0, 0.0, -0.38936110962,
+        0.76298438661, 0.0, 0.19468055481,
+        -0.76298438661, 0.0, 0.19468055481
+      ],
+      "units": "angstrom",
+      "charge": 0,
+      "multiplicity": 1,
+      "name": "water-reference",
+      "provenance": {"kind": "reference", "source": "xtb-python qcschema docstring"}
+    },
+    "keywords": {},
+    "resources": {"wall_seconds": 120, "memory_mebibytes": 2048, "ncores": 1}
+  },
+  "reference": {
+    "energy_hartree": -5.070451354848316,
+    "observed_hartree": -5.070451354848318,
+    "tolerance_hartree": 1e-3,
+    "note": "documented reference is the upstream xtb-python harness docstring for the identical geometry/method; observed is this pinned stack (xtb 6.7.1 / xtb-python 22.1 / qcengine 0.51.0 / qcelemental 0.51.2). |observed - documented| ~ 2e-15 Eh < tolerance"
+  },
+  "nonconvergence_example": {
+    "program": "xtb",
+    "method": "GFN2-xTB",
+    "driver": "energy",
+    "molecule": {
+      "symbols": ["O", "H", "H"],
+      "geometry": [
+        0.0, 0.0, -0.38936110962,
+        0.76298438661, 0.0, 0.19468055481,
+        -0.76298438661, 0.0, 0.19468055481
+      ],
+      "units": "angstrom",
+      "charge": 0,
+      "multiplicity": 1,
+      "provenance": {"kind": "reference", "source": "SCC capped at 1 iteration — cannot converge"}
+    },
+    "keywords": {"max_iterations": 1},
+    "resources": {"wall_seconds": 60, "memory_mebibytes": 1024, "ncores": 1}
+  },
+  "engine_crash_example": {
+    "program": "xtb",
+    "method": "GFN2-xTB",
+    "driver": "energy",
+    "molecule": {
+      "symbols": ["U"],
+      "geometry": [0.0, 0.0, 0.0],
+      "units": "angstrom",
+      "charge": 0,
+      "multiplicity": 5,
+      "provenance": {"kind": "reference", "source": "beyond GFN parametrization (Z>86)"}
+    },
+    "keywords": {},
+    "resources": {"wall_seconds": 60, "memory_mebibytes": 1024, "ncores": 1}
+  }
+}

@@ -6,8 +6,9 @@ import json
 import shutil
 import subprocess
 
-from engine_adapter_baybe.contracts import CampaignSpec, EngineFailure, Recommendation
 from workers.common.executor import ContainerBackend, ExecLimits
+
+from engine_adapter_baybe.contracts import CampaignSpec, EngineFailure, Recommendation
 
 IMAGE = "chem-studio-baybe:0.15.0-v1"
 
@@ -17,9 +18,12 @@ def available() -> bool:
     if not docker:
         return False
     try:
-        return subprocess.run(  # noqa: S603 — fixed image probe
-            [docker, "image", "inspect", IMAGE], capture_output=True, timeout=5
-        ).returncode == 0
+        return (
+            subprocess.run(  # noqa: S603 — fixed image probe
+                [docker, "image", "inspect", IMAGE], capture_output=True, timeout=5
+            ).returncode
+            == 0
+        )
     except (OSError, subprocess.TimeoutExpired):
         return False
 
