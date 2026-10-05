@@ -54,6 +54,7 @@ class Settings:
     profile_local_ai: bool = False
     profile_optimization: bool = False
     profile_quantum: bool = False
+    profile_materials: bool = False
     profile_training: bool = False
 
     @property
@@ -81,6 +82,7 @@ def get_settings() -> Settings:
         profile_local_ai=(_env("STUDIO_PROFILE_LOCAL_AI") or "").lower() in _TRUE,
         profile_optimization=(_env("STUDIO_PROFILE_OPTIMIZATION") or "").lower() in _TRUE,
         profile_quantum=(_env("STUDIO_PROFILE_QUANTUM") or "").lower() in _TRUE,
+        profile_materials=(_env("STUDIO_PROFILE_MATERIALS") or "").lower() in _TRUE,
         profile_training=(_env("STUDIO_PROFILE_TRAINING") or "").lower() in _TRUE,
     )
 
