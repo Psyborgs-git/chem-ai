@@ -1948,7 +1948,8 @@ class TrainingRunInfo:
     labels. ``completed`` means artifacts exist, never deployable;
     ``promoted`` is unreachable in CS-0801."""
 
-    id: strawberry.ID
+    # GlobalID — the trainingRun* mutations take these ids back.
+    id: relay.GlobalID
     task_id: str | None
     name: str
     state: str
@@ -1975,7 +1976,7 @@ class TrainingRunInfo:
     @classmethod
     def from_row(cls, row: TrainingRunRow, attempt_id: str | None = None) -> Self:
         return cls(
-            id=strawberry.ID(str(row.id)),
+            id=relay.GlobalID("TrainingRun", str(row.id)),
             task_id=str(row.task_id) if row.task_id else None,
             name=row.name,
             state=row.state,
@@ -1992,7 +1993,7 @@ class TrainingRunInfo:
             capability=JSON(row.capability) if row.capability else None,
             error=JSON(row.error) if row.error else None,
             run_id=str(row.run_id) if row.run_id else None,
-            attempt_id=attempt_id,
+            attempt_id=(str(relay.GlobalID("RunAttempt", attempt_id)) if attempt_id else None),
             approval_id=str(row.approval_id) if row.approval_id else None,
             created_at=row.created_at,
             updated_at=row.updated_at,
@@ -2005,7 +2006,8 @@ class DatasetSnapshotInfo:
     snapshot is immutable — drift is reported by re-hashing sources,
     never by rewriting the manifest."""
 
-    id: strawberry.ID
+    # GlobalID — the datasetSnapshot* mutations take these ids back.
+    id: relay.GlobalID
     purpose: str
     name: str
     task_id: str | None
@@ -2018,7 +2020,7 @@ class DatasetSnapshotInfo:
     @classmethod
     def from_row(cls, row: DatasetSnapshotRow) -> Self:
         return cls(
-            id=strawberry.ID(str(row.id)),
+            id=relay.GlobalID("DatasetSnapshot", str(row.id)),
             purpose=row.purpose,
             name=row.name,
             task_id=str(row.task_id) if row.task_id else None,
