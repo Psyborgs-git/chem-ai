@@ -35,7 +35,7 @@ type Release = learningModelReleasesQuery["response"]["modelReleases"][number];
 type Validation = {
   status?: string;
   mode?: string;
-  loadVerified?: boolean;
+  load_verified?: boolean;
   checks?: { name?: string; ok?: boolean; detail?: string }[];
 };
 type Capability = Record<string, unknown>;
@@ -49,7 +49,15 @@ const STATE_TONE: Record<string, "success" | "danger" | "warning" | "info" | "ne
   revoked: "danger",
 };
 
-function PointerCard({ onChanged }: { onChanged: () => void }) {
+function PointerCard({
+  notice,
+  setNotice,
+  onChanged,
+}: {
+  notice: string | null;
+  setNotice: (m: string) => void;
+  onChanged: () => void;
+}) {
   const data = useLazyLoadQuery<learningServingPointerQuery>(
     ServingPointerQuery,
     {},
@@ -58,7 +66,6 @@ function PointerCard({ onChanged }: { onChanged: () => void }) {
   const [rollback, busy] = useMutation<learningModelReleaseRollbackMutation>(
     ModelReleaseRollbackMutation,
   );
-  const [message, setMessage] = useState<string | null>(null);
   const pointer = data.servingPointer;
   return (
     <article aria-label="serving pointer">
@@ -81,7 +88,7 @@ function PointerCard({ onChanged }: { onChanged: () => void }) {
               variables: { input: {} },
               onCompleted: (r) => {
                 const err = r.learning.modelReleaseRollback.errors[0];
-                setMessage(err ? `${err.code}: ${err.message}` : "rolled back to known-good release");
+                setNotice(err ? `${err.code}: ${err.message}` : "rolled back to known-good release");
                 if (!err) onChanged();
               },
             })
@@ -90,12 +97,16 @@ function PointerCard({ onChanged }: { onChanged: () => void }) {
           rollback to previous release
         </Button>
       </div>
-      {message && <p role="status">{message}</p>}
+      {notice && <p role="status">{notice}</p>}
     </article>
   );
 }
 
-function useReleaseActions(release: Release, onChanged: () => void) {
+function useReleaseActions(
+  release: Release,
+  setNotice: (m: string) => void,
+  onChanged: () => void,
+) {
   const [validate, validating] = useMutation<learningModelReleaseValidateMutation>(
     ModelReleaseValidateMutation,
   );
@@ -108,18 +119,16 @@ function useReleaseActions(release: Release, onChanged: () => void) {
   const [promote, promoting] = useMutation<learningModelReleasePromoteMutation>(
     ModelReleasePromoteMutation,
   );
-  const [message, setMessage] = useState<string | null>(null);
   const id = { modelReleaseId: release.id };
   const report = (
     errors: readonly { code: string; message: string }[] | null | undefined,
     ok: string,
   ) => {
     const err = errors?.[0];
-    setMessage(err ? `${err.code}: ${err.message}` : ok);
+    setNotice(err ? `${err.code}: ${err.message}` : ok);
     if (!err) onChanged();
   };
   return {
-    message,
     busy: validating || converting || approving || promoting,
     actions: {
       validate: () =>
@@ -150,8 +159,18 @@ function useReleaseActions(release: Release, onChanged: () => void) {
   };
 }
 
-function ReleaseCard({ release, onChanged }: { release: Release; onChanged: () => void }) {
-  const { actions, busy, message } = useReleaseActions(release, onChanged);
+function ReleaseCard({
+  release,
+  notice,
+  setNotice,
+  onChanged,
+}: {
+  release: Release;
+  notice: string | null;
+  setNotice: (m: string) => void;
+  onChanged: () => void;
+}) {
+  const { actions, busy } = useReleaseActions(release, setNotice, onChanged);
   const capability = (release.capability ?? {}) as Capability;
   const validation = (release.validation ?? {}) as Validation;
   const conversions = (release.conversions ?? []) as {
@@ -190,7 +209,7 @@ function ReleaseCard({ release, onChanged }: { release: Release; onChanged: () =
             {validation.status}
           </Badge>{" "}
           <Badge tone="neutral">mode {validation.mode}</Badge>{" "}
-          {validation.loadVerified ? (
+          {validation.load_verified ? (
             <Badge tone="success">load verified</Badge>
           ) : (
             <Badge tone="warning">load not verified</Badge>
@@ -227,12 +246,20 @@ function ReleaseCard({ release, onChanged }: { release: Release; onChanged: () =
           </Button>
         )}
       </div>
-      {message && <p role="status">{message}</p>}
+      {notice && <p role="status">{notice}</p>}
     </article>
   );
 }
 
-function PinList({ taskId }: { taskId: string | null }) {
+function PinList({
+  taskId,
+  notice,
+  setNotice,
+}: {
+  taskId: string | null;
+  notice: string | null;
+  setNotice: (m: string) => void;
+}) {
   const data = useLazyLoadQuery<learningSessionModelPinsQuery>(
     SessionModelPinsQuery,
     { taskId },
@@ -241,7 +268,6 @@ function PinList({ taskId }: { taskId: string | null }) {
   const [bind, binding] = useMutation<learningSessionModelBindMutation>(
     SessionModelBindMutation,
   );
-  const [message, setMessage] = useState<string | null>(null);
   const pins = data.sessionModelPins;
   return (
     <div>
@@ -271,7 +297,7 @@ function PinList({ taskId }: { taskId: string | null }) {
                     onCompleted: (r) => {
                       const res = r.learning.sessionModelBind;
                       const err = res.errors[0];
-                      setMessage(
+                      setNotice(
                         err
                           ? `${String(p.sessionId).slice(-8)}: ${err.code}: ${err.message}`
                           : `${String(p.sessionId).slice(-8)}: bound to ${res.modelRelease?.name}`,
@@ -286,16 +312,20 @@ function PinList({ taskId }: { taskId: string | null }) {
           ))}
         </ul>
       )}
-      {message && <p role="status">{message}</p>}
+      {notice && <p role="status">{notice}</p>}
     </div>
   );
 }
 
 function ReleaseList({
   taskId,
+  notices,
+  setNotice,
   onChanged,
 }: {
   taskId: string | null;
+  notices: Record<string, string>;
+  setNotice: (key: string, m: string) => void;
   onChanged: () => void;
 }) {
   const data = useLazyLoadQuery<learningModelReleasesQuery>(
@@ -309,7 +339,13 @@ function ReleaseList({
   return (
     <>
       {data.modelReleases.map((r) => (
-        <ReleaseCard key={r.id} release={r} onChanged={onChanged} />
+        <ReleaseCard
+          key={r.id}
+          release={r}
+          notice={notices[r.id] ?? null}
+          setNotice={(m) => setNotice(r.id, m)}
+          onChanged={onChanged}
+        />
       ))}
     </>
   );
@@ -366,6 +402,9 @@ export function ModelsPanel({ taskId }: { taskId: string | null }) {
   const [runId, setRunId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [notices, setNotices] = useState<Record<string, string>>({});
+  const setNotice = (key: string, m: string) =>
+    setNotices((n) => ({ ...n, [key]: m }));
 
   const doRegister = () =>
     register({
@@ -390,7 +429,12 @@ export function ModelsPanel({ taskId }: { taskId: string | null }) {
         fixture-only data is never scientific validation.
       </p>
       <Suspense fallback={<LoadingState label="loading serving pointer…" />}>
-        <PointerCard key={`p${refreshKey}`} onChanged={() => setRefreshKey((k) => k + 1)} />
+        <PointerCard
+          key={`p${refreshKey}`}
+          notice={notices["pointer"] ?? null}
+          setNotice={(m) => setNotice("pointer", m)}
+          onChanged={() => setRefreshKey((k) => k + 1)}
+        />
       </Suspense>
       <form
         onSubmit={(e) => {
@@ -424,12 +468,19 @@ export function ModelsPanel({ taskId }: { taskId: string | null }) {
         <ReleaseList
           key={refreshKey}
           taskId={taskId}
+          notices={notices}
+          setNotice={setNotice}
           onChanged={() => setRefreshKey((k) => k + 1)}
         />
       </Suspense>
       <h4>session pins</h4>
       <Suspense fallback={<LoadingState label="loading session pins…" />}>
-        <PinList key={`s${refreshKey}`} taskId={taskId} />
+        <PinList
+          key={`s${refreshKey}`}
+          taskId={taskId}
+          notice={notices["pins"] ?? null}
+          setNotice={(m) => setNotice("pins", m)}
+        />
       </Suspense>
     </div>
   );
