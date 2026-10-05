@@ -33,6 +33,8 @@ from studio.api.graphql.types import (
     ContractRevision,
     DatasetSnapshotInfo,
     Decision,
+    EvaluationRunInfo,
+    EvaluationSuiteInfo,
     EvidenceClaim,
     ExperimentPlan,
     ExtractedRecord,
@@ -45,6 +47,7 @@ from studio.api.graphql.types import (
     Measurement,
     ModelReleaseInfo,
     Project,
+    PromotionDecisionInfo,
     ReferenceProduct,
     ReferenceProductRevision,
     ResearchSession,
@@ -69,6 +72,7 @@ from studio.domain.lab.measurements import LabMeasurementService
 from studio.domain.lab.plans import LabPlanService
 from studio.domain.learning.datasets import DatasetService
 from studio.domain.learning.models import ModelRegistryService
+from studio.domain.learning.promotion import EvaluationService, PromotionService
 from studio.domain.learning.sft import TrainingRunService
 from studio.domain.materials.service import MaterialService
 from studio.domain.projects.service import ProjectService
@@ -1276,6 +1280,77 @@ class Query:
         return [SessionModelPinInfo.from_row(r) for r in rows]
 
     @strawberry.field
+    def evaluation_suites(
+        self, info: strawberry.Info, task_id: relay.GlobalID | None = None
+    ) -> list[EvaluationSuiteInfo]:
+        """Versioned evaluation suites (§18.1) — the PUBLIC contract
+        only; hidden target values are never reachable here."""
+        gql = gql_ctx(info)
+        t_uuid = _gid_uuid(task_id, "Task", "taskId") if task_id is not None else None
+        rows = EvaluationService(gql.db, gql.service_ctx(), gql.settings).list_suites(t_uuid)
+        return [EvaluationSuiteInfo.from_row(r) for r in rows]
+
+    @strawberry.field
+    def evaluation_suite(
+        self, info: strawberry.Info, evaluation_suite_id: relay.GlobalID
+    ) -> EvaluationSuiteInfo | None:
+        gql = gql_ctx(info)
+        s_uuid = _gid_uuid(evaluation_suite_id, "EvaluationSuite", "evaluationSuiteId")
+        try:
+            row = EvaluationService(gql.db, gql.service_ctx(), gql.settings).get_suite(s_uuid)
+        except DomainError:
+            return None
+        return EvaluationSuiteInfo.from_row(row)
+
+    @strawberry.field
+    def evaluation_runs(
+        self,
+        info: strawberry.Info,
+        model_release_id: relay.GlobalID | None = None,
+        evaluation_suite_id: relay.GlobalID | None = None,
+    ) -> list[EvaluationRunInfo]:
+        """Matched-comparison runs (§18.2) — per-arm metrics,
+        denominators, subgroups, safety regression, contamination."""
+        gql = gql_ctx(info)
+        r_uuid = (
+            _gid_uuid(model_release_id, "ModelRelease", "modelReleaseId")
+            if model_release_id is not None
+            else None
+        )
+        s_uuid = (
+            _gid_uuid(evaluation_suite_id, "EvaluationSuite", "evaluationSuiteId")
+            if evaluation_suite_id is not None
+            else None
+        )
+        rows = EvaluationService(gql.db, gql.service_ctx(), gql.settings).list_runs(
+            model_release_id=r_uuid, suite_id=s_uuid
+        )
+        return [EvaluationRunInfo.from_row(r) for r in rows]
+
+    @strawberry.field
+    def evaluation_run(
+        self, info: strawberry.Info, evaluation_run_id: relay.GlobalID
+    ) -> EvaluationRunInfo | None:
+        gql = gql_ctx(info)
+        r_uuid = _gid_uuid(evaluation_run_id, "EvaluationRun", "evaluationRunId")
+        try:
+            row = EvaluationService(gql.db, gql.service_ctx(), gql.settings).get_run(r_uuid)
+        except DomainError:
+            return None
+        return EvaluationRunInfo.from_row(row)
+
+    @strawberry.field
+    def promotion_decision(
+        self, info: strawberry.Info, model_release_id: relay.GlobalID
+    ) -> PromotionDecisionInfo | None:
+        """The newest recorded promotion-gate verdict for a release
+        (§18.3-4): eligible flag, blockers, model card, decision digest."""
+        gql = gql_ctx(info)
+        r_uuid = _gid_uuid(model_release_id, "ModelRelease", "modelReleaseId")
+        row = PromotionService(gql.db, gql.service_ctx(), gql.settings).latest_decision(r_uuid)
+        return PromotionDecisionInfo.from_row(row) if row is not None else None
+
+    @strawberry.field
     def session_messages(
         self,
         info: strawberry.Info,
@@ -2091,6 +2166,86 @@ class SessionBindResult:
     client_mutation_id: str | None
 
 
+@strawberry.input
+class EvaluationSuiteCreateInput:
+    name: str
+    kind: str
+    task_id: relay.GlobalID | None = None
+    tasks: JSON | None = None
+    thresholds: JSON | None = None
+    budget: JSON | None = None
+    scoring: JSON | None = None
+    allowed_context: JSON | None = None
+    review_rules: JSON | None = None
+    purpose: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class EvaluationSuiteLabelsInput:
+    evaluation_suite_id: relay.GlobalID
+    labels: JSON | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class EvaluationSuiteIdInput:
+    evaluation_suite_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class EvaluationRunStartInput:
+    evaluation_suite_id: relay.GlobalID
+    model_release_id: relay.GlobalID
+    baseline_release_id: relay.GlobalID | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class PromotionDecideInput:
+    model_release_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class PromotionApproveInput:
+    model_release_id: relay.GlobalID
+    scope: str
+    limitations: list[str] | None = None
+    rationale: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class PromotionPromoteInput:
+    model_release_id: relay.GlobalID
+    scope: str
+    limitations: list[str] | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class EvaluationSuiteResult:
+    evaluation_suite: EvaluationSuiteInfo | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class EvaluationRunResult:
+    evaluation_run: EvaluationRunInfo | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class PromotionDecisionResult:
+    promotion_decision: PromotionDecisionInfo | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
 @strawberry.type
 class LearningMutation:
     """Dataset snapshot commands (§17.2, CS-0601). Build/freeze/
@@ -2481,6 +2636,230 @@ class LearningMutation:
             return SessionBindResult(
                 model_release=None,
                 validation=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    # ------------------------------------------- evaluation & promotion
+
+    @staticmethod
+    def _eval_service(gql: Any) -> EvaluationService:
+        return EvaluationService(gql.db, gql.service_ctx(), gql.settings)
+
+    @staticmethod
+    def _promotion_service(gql: Any) -> PromotionService:
+        return PromotionService(gql.db, gql.service_ctx(), gql.settings)
+
+    @strawberry.mutation
+    def evaluation_suite_create(
+        self, info: strawberry.Info, input: EvaluationSuiteCreateInput
+    ) -> EvaluationSuiteResult:
+        """Register a versioned suite draft (§18.1) — public contract
+        only; hidden targets attach via evaluation_suite_labels."""
+        gql = gql_ctx(info)
+        try:
+            t_uuid = (
+                _gid_uuid(input.task_id, "Task", "taskId") if input.task_id is not None else None
+            )
+            suite = self._eval_service(gql).create_suite(
+                name=input.name,
+                kind=input.kind,
+                task_id=t_uuid,
+                tasks=cast(list[dict[str, Any]], input.tasks or []),
+                thresholds=cast(list[dict[str, Any]] | None, input.thresholds),
+                budget=cast(dict[str, Any] | None, input.budget),
+                scoring=cast(dict[str, Any] | None, input.scoring),
+                allowed_context=cast(dict[str, Any] | None, input.allowed_context),
+                review_rules=cast(dict[str, Any] | None, input.review_rules),
+                purpose=input.purpose or "assistant_sft",
+            )
+            gql.db.commit()
+            return EvaluationSuiteResult(
+                evaluation_suite=EvaluationSuiteInfo.from_row(suite),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except (DomainError, ValueError) as exc:
+            gql.db.rollback()
+            payload = (
+                _err_payload(exc)
+                if isinstance(exc, DomainError)
+                else _err_payload(DomainError(ErrorCode.VALIDATION, str(exc)[:300]))
+            )
+            return EvaluationSuiteResult(
+                evaluation_suite=None,
+                errors=[payload],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def evaluation_suite_labels(
+        self, info: strawberry.Info, input: EvaluationSuiteLabelsInput
+    ) -> EvaluationSuiteResult:
+        """Attach hidden targets to a draft suite — write path is
+        manage_models; the READ path stays service-principal only."""
+        gql = gql_ctx(info)
+        try:
+            s_uuid = _gid_uuid(input.evaluation_suite_id, "EvaluationSuite", "evaluationSuiteId")
+            suite = self._eval_service(gql).set_labels(
+                s_uuid, cast(list[dict[str, Any]], input.labels or [])
+            )
+            gql.db.commit()
+            return EvaluationSuiteResult(
+                evaluation_suite=EvaluationSuiteInfo.from_row(suite),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except (DomainError, ValueError) as exc:
+            gql.db.rollback()
+            payload = (
+                _err_payload(exc)
+                if isinstance(exc, DomainError)
+                else _err_payload(DomainError(ErrorCode.VALIDATION, str(exc)[:300]))
+            )
+            return EvaluationSuiteResult(
+                evaluation_suite=None,
+                errors=[payload],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def evaluation_suite_freeze(
+        self, info: strawberry.Info, input: EvaluationSuiteIdInput
+    ) -> EvaluationSuiteResult:
+        """Freeze the suite: pin the live agent-tool catalog into
+        tool_versions and seal the definition digest."""
+        gql = gql_ctx(info)
+        try:
+            s_uuid = _gid_uuid(input.evaluation_suite_id, "EvaluationSuite", "evaluationSuiteId")
+            suite = self._eval_service(gql).freeze(s_uuid)
+            gql.db.commit()
+            return EvaluationSuiteResult(
+                evaluation_suite=EvaluationSuiteInfo.from_row(suite),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return EvaluationSuiteResult(
+                evaluation_suite=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def evaluation_run_start(
+        self, info: strawberry.Info, input: EvaluationRunStartInput
+    ) -> EvaluationRunResult:
+        """Execute the §18.2 matched comparison — both arms on the
+        same frozen tasks, tools, context and budget."""
+        gql = gql_ctx(info)
+        try:
+            s_uuid = _gid_uuid(input.evaluation_suite_id, "EvaluationSuite", "evaluationSuiteId")
+            r_uuid = _gid_uuid(input.model_release_id, "ModelRelease", "modelReleaseId")
+            b_uuid = (
+                _gid_uuid(input.baseline_release_id, "ModelRelease", "baselineReleaseId")
+                if input.baseline_release_id is not None
+                else None
+            )
+            run = self._eval_service(gql).start_run(
+                suite_id=s_uuid,
+                model_release_id=r_uuid,
+                baseline_release_id=b_uuid,
+            )
+            gql.db.commit()
+            return EvaluationRunResult(
+                evaluation_run=EvaluationRunInfo.from_row(run),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return EvaluationRunResult(
+                evaluation_run=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def promotion_decide(
+        self, info: strawberry.Info, input: PromotionDecideInput
+    ) -> PromotionDecisionResult:
+        """Run the §18.4 gate and record the verdict — hard blockers
+        refuse promotion; unknown thresholds are stored claim
+        blockers, never filled in."""
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.model_release_id, "ModelRelease", "modelReleaseId")
+            decision = self._promotion_service(gql).decide(r_uuid)
+            gql.db.commit()
+            return PromotionDecisionResult(
+                promotion_decision=PromotionDecisionInfo.from_row(decision),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return PromotionDecisionResult(
+                promotion_decision=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def promotion_approve(
+        self, info: strawberry.Info, input: PromotionApproveInput
+    ) -> PromotionDecisionResult:
+        """The documented human release decision (§18.3-4): binds
+        scope + limitations + the gate verdict into a
+        ``model_release_scope`` approval (approve_model capability —
+        agents can never grant it)."""
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.model_release_id, "ModelRelease", "modelReleaseId")
+            decision = self._promotion_service(gql).approve_scope(
+                r_uuid,
+                scope=input.scope,
+                limitations=input.limitations,
+                rationale=input.rationale,
+            )
+            gql.db.commit()
+            return PromotionDecisionResult(
+                promotion_decision=PromotionDecisionInfo.from_row(decision),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return PromotionDecisionResult(
+                promotion_decision=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def promotion_promote(
+        self, info: strawberry.Info, input: PromotionPromoteInput
+    ) -> PromotionDecisionResult:
+        """Gated promotion (§18.4): fresh gate decision → scoped
+        approval re-validated → atomic serving-pointer move via the
+        CS-0802 registry."""
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.model_release_id, "ModelRelease", "modelReleaseId")
+            decision = self._promotion_service(gql).promote(
+                r_uuid, scope=input.scope, limitations=input.limitations
+            )
+            gql.db.commit()
+            return PromotionDecisionResult(
+                promotion_decision=PromotionDecisionInfo.from_row(decision),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return PromotionDecisionResult(
+                promotion_decision=None,
                 errors=[_err_payload(exc)],
                 client_mutation_id=input.client_mutation_id,
             )

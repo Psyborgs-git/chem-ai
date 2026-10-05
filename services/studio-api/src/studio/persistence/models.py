@@ -2213,3 +2213,176 @@ class SessionModelPin(Base, UUIDPrimaryKey, WorkspaceScoped):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+# ------------------------------------------------- evaluation & promotion
+
+EVALUATION_SUITE_STATES = ("draft", "frozen")
+EVALUATION_SUITE_KINDS = ("development", "final")
+EVALUATION_RUN_STATES = ("running", "completed", "failed")
+
+
+class EvaluationSuite(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """One versioned evaluation registry entry (§18.1, CS-0803).
+
+    ``definition`` holds the PUBLIC suite contract — tasks (id, kind,
+    inputs, subgroup, group keys, target *hashes*), allowed-context
+    reference, pinned tool catalog, budget, scoring, review rules and
+    acceptance thresholds. Hidden target values never appear here;
+    they live in ``evaluation_labels`` behind the service-principal
+    capability gate (AT-0803-2).
+    """
+
+    __tablename__ = "evaluation_suites"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "task_id"],
+            ["research_tasks.workspace_id", "research_tasks.id"],
+            name="fk_evaluation_suites_scope_task",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "created_by"],
+            ["principals.workspace_id", "principals.id"],
+            name="fk_evaluation_suites_scope_creator",
+        ),
+        UniqueConstraint("workspace_id", "name", "version", name="uq_evaluation_suites_version"),
+        UniqueConstraint("workspace_id", "id", name="uq_evaluation_suites_scope_id"),
+        CheckConstraint(f"state IN {EVALUATION_SUITE_STATES!r}", name="eval_suite_state"),
+        CheckConstraint(f"kind IN {EVALUATION_SUITE_KINDS!r}", name="eval_suite_kind"),
+        Index("ix_evaluation_suites_scope", "workspace_id", "task_id", "created_at", "id"),
+    )
+
+    task_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    purpose: Mapped[str] = mapped_column(String(40), nullable=False, default="assistant_sft")
+    kind: Mapped[str] = mapped_column(String(16), nullable=False, default="development")
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    definition: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    digest: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    capability: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+
+class EvaluationLabel(Base, UUIDPrimaryKey, WorkspaceScoped):
+    """A hidden evaluation target (AT-0803-2).
+
+    Rows in this table are read ONLY through the evaluation service
+    principal — ``read_eval_labels`` is a service-only capability that
+    context loading strips from every user and agent grant, and no
+    agent tool can reach this store. Writes go through the suite
+    authoring path (manage_models); reads happen inside scoring."""
+
+    __tablename__ = "evaluation_labels"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "suite_id"],
+            ["evaluation_suites.workspace_id", "evaluation_suites.id"],
+            ondelete="CASCADE",
+            name="fk_evaluation_labels_scope_suite",
+        ),
+        UniqueConstraint("suite_id", "example_id", name="uq_evaluation_labels_example"),
+        Index("ix_evaluation_labels_suite", "workspace_id", "suite_id"),
+    )
+
+    suite_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    example_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    target: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class EvaluationRun(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """One matched-comparison run of a frozen suite against a release
+    (§18.2). ``comparison`` is the EvalComparisonReport — per-arm
+    results, metrics, denominators, subgroups, uncertainty, safety
+    regression and threshold evaluations — plus the recorded
+    contamination check. Label values are never duplicated into it."""
+
+    __tablename__ = "evaluation_runs"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "suite_id"],
+            ["evaluation_suites.workspace_id", "evaluation_suites.id"],
+            name="fk_evaluation_runs_scope_suite",
+        ),
+        ForeignKeyConstraint(
+            ["model_release_id"], ["model_releases.id"], name="fk_evaluation_runs_release"
+        ),
+        ForeignKeyConstraint(
+            ["baseline_release_id"], ["model_releases.id"], name="fk_evaluation_runs_baseline"
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "created_by"],
+            ["principals.workspace_id", "principals.id"],
+            name="fk_evaluation_runs_scope_creator",
+        ),
+        CheckConstraint(f"state IN {EVALUATION_RUN_STATES!r}", name="eval_run_state"),
+        Index(
+            "ix_evaluation_runs_release",
+            "workspace_id",
+            "model_release_id",
+            "created_at",
+            "id",
+        ),
+    )
+
+    suite_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    # The frozen definition digest this run executed — drifted suites
+    # can't silently stand in for the reviewed suite.
+    suite_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    model_release_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    baseline_release_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="running")
+    backend: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    comparison: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    contamination: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    blockers: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+    report_artifact_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    capability: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    error: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+
+class PromotionDecision(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """One recorded promotion-gate verdict (§18.3-18.4).
+
+    Every ``decide`` call writes a row — the audit trail of what the
+    gate saw: the eval run evidence, hard blockers, stored
+    unknown-threshold blockers, the model card and the decision digest
+    a scoped release approval binds to."""
+
+    __tablename__ = "promotion_decisions"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["model_release_id"],
+            ["model_releases.id"],
+            name="fk_promotion_decisions_release",
+        ),
+        ForeignKeyConstraint(
+            ["evaluation_run_id"], ["evaluation_runs.id"], name="fk_promotion_decisions_run"
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "created_by"],
+            ["principals.workspace_id", "principals.id"],
+            name="fk_promotion_decisions_scope_creator",
+        ),
+        Index(
+            "ix_promotion_decisions_release",
+            "workspace_id",
+            "model_release_id",
+            "created_at",
+            "id",
+        ),
+    )
+
+    model_release_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    evaluation_run_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    eligible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    blockers: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+    model_card: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    decision_digest: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    approval_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)

@@ -22,8 +22,10 @@ from studio.persistence.revisions import canonical_json, content_hash
 
 class TestCapabilityVocabulary:
     def test_vocabulary_matches_spec(self) -> None:
-        # §21.1 lists exactly 13 capabilities.
-        assert len(ALL_CAPABILITIES) == 13
+        # §21.1 lists 13 capabilities; §18.1 (CS-0803) adds
+        # `read_eval_labels` — a service-only capability for the
+        # evaluation label store (AT-0803-2).
+        assert len(ALL_CAPABILITIES) == 14
         assert APPROVAL_CAPABILITIES <= ALL_CAPABILITIES
 
     def test_agent_role_has_no_approvals(self) -> None:
