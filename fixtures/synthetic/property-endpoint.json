@@ -1,0 +1,841 @@
+{
+  "fixture_only": true,
+  "scientific_status": "fixture_only",
+  "scope": {
+    "target": "metric.synthetic-hardness",
+    "method": "fixture-method",
+    "unit": "MPa"
+  },
+  "features": [
+    {
+      "name": "solids_content",
+      "kind": "numeric",
+      "required": true
+    },
+    {
+      "name": "drying_temp",
+      "kind": "numeric",
+      "required": true
+    },
+    {
+      "name": "binder_family",
+      "kind": "categorical",
+      "required": true
+    }
+  ],
+  "records": [
+    {
+      "record_id": "r-00-0",
+      "group_keys": [
+        "formula:fam-00",
+        "sample:s-00"
+      ],
+      "label": 106.4974,
+      "eligible": true,
+      "features": {
+        "solids_content": 46.719,
+        "drying_temp": 41.415,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-00-1",
+      "group_keys": [
+        "formula:fam-00",
+        "sample:s-00"
+      ],
+      "label": 113.0833,
+      "eligible": true,
+      "features": {
+        "solids_content": 50.606,
+        "drying_temp": 41.454,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-00-2",
+      "group_keys": [
+        "formula:fam-00",
+        "sample:s-00"
+      ],
+      "label": 115.1109,
+      "eligible": true,
+      "features": {
+        "solids_content": 50.363,
+        "drying_temp": 44.614,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-01-0",
+      "group_keys": [
+        "formula:fam-01",
+        "sample:s-01"
+      ],
+      "label": 127.1305,
+      "eligible": true,
+      "features": {
+        "solids_content": 41.52,
+        "drying_temp": 78.727,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-02-0",
+      "group_keys": [
+        "formula:fam-02",
+        "sample:s-02"
+      ],
+      "label": 98.5331,
+      "eligible": true,
+      "features": {
+        "solids_content": 32.224,
+        "drying_temp": 64.586,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-03-0",
+      "group_keys": [
+        "formula:fam-03",
+        "sample:s-03"
+      ],
+      "label": 154.3743,
+      "eligible": true,
+      "features": {
+        "solids_content": 61.286,
+        "drying_temp": 77.581,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-03-1",
+      "group_keys": [
+        "formula:fam-03",
+        "sample:s-03"
+      ],
+      "label": 156.0364,
+      "eligible": true,
+      "features": {
+        "solids_content": 62.442,
+        "drying_temp": 77.938,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-04-0",
+      "group_keys": [
+        "formula:fam-04",
+        "sample:s-04"
+      ],
+      "label": 146.1995,
+      "eligible": true,
+      "features": {
+        "solids_content": 52.473,
+        "drying_temp": 79.471,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-05-0",
+      "group_keys": [
+        "formula:fam-05",
+        "sample:s-05"
+      ],
+      "label": 174.8896,
+      "eligible": true,
+      "features": {
+        "solids_content": 73.501,
+        "drying_temp": 78.203,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-06-0",
+      "group_keys": [
+        "formula:fam-06",
+        "sample:s-06"
+      ],
+      "label": 203.9509,
+      "eligible": true,
+      "features": {
+        "solids_content": 79.842,
+        "drying_temp": 105.603,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-06-1",
+      "group_keys": [
+        "formula:fam-06",
+        "sample:s-06"
+      ],
+      "label": 200.2061,
+      "eligible": true,
+      "features": {
+        "solids_content": 77.979,
+        "drying_temp": 103.97,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-07-0",
+      "group_keys": [
+        "formula:fam-07",
+        "sample:s-07"
+      ],
+      "label": 144.9978,
+      "eligible": true,
+      "features": {
+        "solids_content": 61.165,
+        "drying_temp": 66.442,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-07-1",
+      "group_keys": [
+        "formula:fam-07",
+        "sample:s-07"
+      ],
+      "label": 151.2178,
+      "eligible": true,
+      "features": {
+        "solids_content": 63.299,
+        "drying_temp": 68.991,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-08-0",
+      "group_keys": [
+        "formula:fam-08",
+        "sample:s-08"
+      ],
+      "label": 87.3619,
+      "eligible": true,
+      "features": {
+        "solids_content": 33.419,
+        "drying_temp": 41.227,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-09-0",
+      "group_keys": [
+        "formula:fam-09",
+        "sample:s-09"
+      ],
+      "label": 158.2818,
+      "eligible": true,
+      "features": {
+        "solids_content": 54.755,
+        "drying_temp": 92.511,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-09-1",
+      "group_keys": [
+        "formula:fam-09",
+        "sample:s-09"
+      ],
+      "label": 162.5923,
+      "eligible": true,
+      "features": {
+        "solids_content": 55.82,
+        "drying_temp": 96.282,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-10-0",
+      "group_keys": [
+        "formula:fam-10",
+        "sample:s-10"
+      ],
+      "label": 154.1534,
+      "eligible": true,
+      "features": {
+        "solids_content": 62.533,
+        "drying_temp": 76.449,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-11-0",
+      "group_keys": [
+        "formula:fam-11",
+        "sample:s-11"
+      ],
+      "label": 97.9225,
+      "eligible": true,
+      "features": {
+        "solids_content": 34.688,
+        "drying_temp": 57.3,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-12-0",
+      "group_keys": [
+        "formula:fam-12",
+        "sample:s-12"
+      ],
+      "label": 151.3857,
+      "eligible": true,
+      "features": {
+        "solids_content": 36.116,
+        "drying_temp": 116.545,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-12-1",
+      "group_keys": [
+        "formula:fam-12",
+        "sample:s-12"
+      ],
+      "label": 148.54,
+      "eligible": true,
+      "features": {
+        "solids_content": 36.976,
+        "drying_temp": 111.209,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-13-0",
+      "group_keys": [
+        "formula:fam-13",
+        "sample:s-13"
+      ],
+      "label": 104.3008,
+      "eligible": true,
+      "features": {
+        "solids_content": 34.438,
+        "drying_temp": 63.448,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-14-0",
+      "group_keys": [
+        "formula:fam-14",
+        "sample:s-14"
+      ],
+      "label": 96.7135,
+      "eligible": true,
+      "features": {
+        "solids_content": 27.204,
+        "drying_temp": 70.558,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-14-1",
+      "group_keys": [
+        "formula:fam-14",
+        "sample:s-14"
+      ],
+      "label": 96.578,
+      "eligible": true,
+      "features": {
+        "solids_content": 26.011,
+        "drying_temp": 73.059,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-15-0",
+      "group_keys": [
+        "formula:fam-15",
+        "sample:s-15"
+      ],
+      "label": 149.5692,
+      "eligible": true,
+      "features": {
+        "solids_content": 47.748,
+        "drying_temp": 97.359,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-15-1",
+      "group_keys": [
+        "formula:fam-15",
+        "sample:s-15"
+      ],
+      "label": 154.2367,
+      "eligible": true,
+      "features": {
+        "solids_content": 51.122,
+        "drying_temp": 96.279,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-16-0",
+      "group_keys": [
+        "formula:fam-16",
+        "sample:s-16"
+      ],
+      "label": 78.8693,
+      "eligible": true,
+      "features": {
+        "solids_content": 19.462,
+        "drying_temp": 57.507,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-17-0",
+      "group_keys": [
+        "formula:fam-17",
+        "sample:s-17"
+      ],
+      "label": 170.8132,
+      "eligible": true,
+      "features": {
+        "solids_content": 73.412,
+        "drying_temp": 73.09,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-18-0",
+      "group_keys": [
+        "formula:fam-18",
+        "sample:s-18"
+      ],
+      "label": 120.6062,
+      "eligible": true,
+      "features": {
+        "solids_content": 41.641,
+        "drying_temp": 74.598,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-18-1",
+      "group_keys": [
+        "formula:fam-18",
+        "sample:s-18"
+      ],
+      "label": 122.7551,
+      "eligible": true,
+      "features": {
+        "solids_content": 42.0,
+        "drying_temp": 75.911,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-19-0",
+      "group_keys": [
+        "formula:fam-19",
+        "sample:s-19"
+      ],
+      "label": 112.2528,
+      "eligible": true,
+      "features": {
+        "solids_content": 42.979,
+        "drying_temp": 57.831,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-20-0",
+      "group_keys": [
+        "formula:fam-20",
+        "sample:s-20"
+      ],
+      "label": 158.9797,
+      "eligible": true,
+      "features": {
+        "solids_content": 64.573,
+        "drying_temp": 72.836,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-21-0",
+      "group_keys": [
+        "formula:fam-21",
+        "sample:s-21"
+      ],
+      "label": 180.6197,
+      "eligible": true,
+      "features": {
+        "solids_content": 61.106,
+        "drying_temp": 108.454,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-21-1",
+      "group_keys": [
+        "formula:fam-21",
+        "sample:s-21"
+      ],
+      "label": 179.0379,
+      "eligible": true,
+      "features": {
+        "solids_content": 59.478,
+        "drying_temp": 109.99,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-21-2",
+      "group_keys": [
+        "formula:fam-21",
+        "sample:s-21"
+      ],
+      "label": 178.598,
+      "eligible": true,
+      "features": {
+        "solids_content": 59.529,
+        "drying_temp": 110.427,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-22-0",
+      "group_keys": [
+        "formula:fam-22",
+        "sample:s-22"
+      ],
+      "label": 100.5007,
+      "eligible": true,
+      "features": {
+        "solids_content": 22.06,
+        "drying_temp": 85.377,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-23-0",
+      "group_keys": [
+        "formula:fam-23",
+        "sample:s-23"
+      ],
+      "label": 132.0282,
+      "eligible": true,
+      "features": {
+        "solids_content": 33.424,
+        "drying_temp": 102.269,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-24-0",
+      "group_keys": [
+        "formula:fam-24",
+        "sample:s-24"
+      ],
+      "label": 201.013,
+      "eligible": true,
+      "features": {
+        "solids_content": 78.823,
+        "drying_temp": 97.345,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-24-1",
+      "group_keys": [
+        "formula:fam-24",
+        "sample:s-24"
+      ],
+      "label": 198.3586,
+      "eligible": true,
+      "features": {
+        "solids_content": 79.756,
+        "drying_temp": 92.762,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-25-0",
+      "group_keys": [
+        "formula:fam-25",
+        "sample:s-25"
+      ],
+      "label": 142.2704,
+      "eligible": true,
+      "features": {
+        "solids_content": 54.515,
+        "drying_temp": 73.287,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-26-0",
+      "group_keys": [
+        "formula:fam-26",
+        "sample:s-26"
+      ],
+      "label": 194.856,
+      "eligible": true,
+      "features": {
+        "solids_content": 69.114,
+        "drying_temp": 114.995,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-27-0",
+      "group_keys": [
+        "formula:fam-27",
+        "sample:s-27"
+      ],
+      "label": 156.9523,
+      "eligible": true,
+      "features": {
+        "solids_content": 71.773,
+        "drying_temp": 60.135,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-27-1",
+      "group_keys": [
+        "formula:fam-27",
+        "sample:s-27"
+      ],
+      "label": 157.7726,
+      "eligible": true,
+      "features": {
+        "solids_content": 70.632,
+        "drying_temp": 64.657,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-28-0",
+      "group_keys": [
+        "formula:fam-28",
+        "sample:s-28"
+      ],
+      "label": 186.9958,
+      "eligible": true,
+      "features": {
+        "solids_content": 77.658,
+        "drying_temp": 82.803,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-28-1",
+      "group_keys": [
+        "formula:fam-28",
+        "sample:s-28"
+      ],
+      "label": 184.4849,
+      "eligible": true,
+      "features": {
+        "solids_content": 78.268,
+        "drying_temp": 79.218,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-29-0",
+      "group_keys": [
+        "formula:fam-29",
+        "sample:s-29"
+      ],
+      "label": 133.0941,
+      "eligible": true,
+      "features": {
+        "solids_content": 33.166,
+        "drying_temp": 101.067,
+        "binder_family": "epoxy-b"
+      }
+    },
+    {
+      "record_id": "r-30-0",
+      "group_keys": [
+        "formula:fam-30",
+        "sample:s-30"
+      ],
+      "label": 124.8523,
+      "eligible": true,
+      "features": {
+        "solids_content": 36.098,
+        "drying_temp": 90.102,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-30-1",
+      "group_keys": [
+        "formula:fam-30",
+        "sample:s-30"
+      ],
+      "label": 117.1772,
+      "eligible": true,
+      "features": {
+        "solids_content": 33.087,
+        "drying_temp": 85.975,
+        "binder_family": "acryl-x"
+      }
+    },
+    {
+      "record_id": "r-31-0",
+      "group_keys": [
+        "formula:fam-31",
+        "sample:s-31"
+      ],
+      "label": 107.9138,
+      "eligible": true,
+      "features": {
+        "solids_content": 40.474,
+        "drying_temp": 58.118,
+        "binder_family": "pu-11"
+      }
+    },
+    {
+      "record_id": "r-excluded",
+      "group_keys": [
+        "formula:fam-x"
+      ],
+      "label": 10.0,
+      "eligible": false,
+      "exclusion": "manual_review_pending",
+      "features": {
+        "solids_content": 50.0,
+        "drying_temp": 80.0,
+        "binder_family": "epoxy-a"
+      }
+    },
+    {
+      "record_id": "r-nolabel",
+      "group_keys": [
+        "formula:fam-y"
+      ],
+      "label": null,
+      "eligible": true,
+      "features": {
+        "solids_content": 55.0,
+        "drying_temp": 90.0,
+        "binder_family": "acryl-x"
+      }
+    }
+  ],
+  "out_of_domain_rows": [
+    {
+      "record_id": "ood-unknown-binder",
+      "features": {
+        "solids_content": 50.0,
+        "drying_temp": 80.0,
+        "binder_family": "siloxane-9"
+      },
+      "expect": "out_of_domain"
+    },
+    {
+      "record_id": "ood-above-range",
+      "features": {
+        "solids_content": 250.0,
+        "drying_temp": 80.0,
+        "binder_family": "epoxy-a"
+      },
+      "expect": "out_of_domain"
+    },
+    {
+      "record_id": "ood-sparse-corner",
+      "features": {
+        "solids_content": 79.9,
+        "drying_temp": 119.9,
+        "binder_family": "pu-11"
+      },
+      "expect": "any_of:sparse,out_of_domain,in_domain"
+    },
+    {
+      "record_id": "in-mid",
+      "features": {
+        "solids_content": 50.0,
+        "drying_temp": 80.0,
+        "binder_family": "epoxy-a"
+      },
+      "expect": "any_of:in_domain,sparse"
+    }
+  ],
+  "smiles_rows": [
+    {
+      "row_id": "mol-01",
+      "smiles": "CCO",
+      "label": "0.52"
+    },
+    {
+      "row_id": "mol-02",
+      "smiles": "CC(=O)O",
+      "label": "1.18"
+    },
+    {
+      "row_id": "mol-03",
+      "smiles": "c1ccccc1",
+      "label": "2.09"
+    },
+    {
+      "row_id": "mol-04",
+      "smiles": "CC(C)O",
+      "label": "0.71"
+    },
+    {
+      "row_id": "mol-05",
+      "smiles": "O=C=O",
+      "label": "-0.33"
+    },
+    {
+      "row_id": "mol-06",
+      "smiles": "CCCC",
+      "label": "1.95"
+    },
+    {
+      "row_id": "mol-07",
+      "smiles": "CCN",
+      "label": "0.44"
+    },
+    {
+      "row_id": "mol-08",
+      "smiles": "COC",
+      "label": "0.61"
+    },
+    {
+      "row_id": "mol-09",
+      "smiles": "CCCl",
+      "label": "1.37"
+    },
+    {
+      "row_id": "mol-10",
+      "smiles": "CCBr",
+      "label": "1.62"
+    },
+    {
+      "row_id": "mol-11",
+      "smiles": "c1ccncc1",
+      "label": "2.21"
+    },
+    {
+      "row_id": "mol-12",
+      "smiles": "CCOC(=O)C",
+      "label": "1.05"
+    }
+  ],
+  "smiles_predict": [
+    {
+      "row_id": "mol-p1",
+      "smiles": "CCO"
+    },
+    {
+      "row_id": "mol-p2",
+      "smiles": "c1ccccc1"
+    },
+    {
+      "row_id": "mol-bad",
+      "smiles": "not-a-smiles"
+    }
+  ]
+}
