@@ -523,6 +523,14 @@ type LearningMutation {
   snapshotBuild(input: DatasetSnapshotBuildInput!): DatasetSnapshotResult!
   snapshotFreeze(input: DatasetSnapshotIdInput!): DatasetSnapshotResult!
   snapshotPrepareRun(input: DatasetSnapshotIdInput!): DatasetPrepareResult!
+  trainingRunCreate(input: TrainingRunCreateInput!): TrainingRunResult!
+  trainingRunSubmit(input: TrainingRunIdInput!): TrainingRunResult!
+  trainingRunApprove(input: TrainingRunApproveInput!): TrainingRunResult!
+  trainingRunQueue(input: TrainingRunIdInput!): TrainingRunResult!
+  trainingRunExecute(input: TrainingRunExecuteInput!): TrainingRunResult!
+  trainingRunCancel(input: TrainingRunIdInput!): TrainingRunResult!
+  trainingRunResume(input: TrainingRunIdInput!): TrainingRunResult!
+  trainingRunTransition(input: TrainingRunTransitionInput!): TrainingRunResult!
 }
 
 type MaterialGrade implements Node {
@@ -886,6 +894,8 @@ type Query {
   taskReport(taskId: ID!): JSON!
   datasetSnapshots(taskId: ID = null): [DatasetSnapshotInfo!]!
   datasetSnapshotDrift(snapshotId: ID!): JSON!
+  trainingRuns(taskId: ID = null): [TrainingRunInfo!]!
+  trainingRun(trainingRunId: ID!): TrainingRunInfo
   sessionMessages(sessionId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): SessionMessageConnection!
   taskQuestions(taskId: ID!): [TaskQuestion!]!
   taskSummaries(taskId: ID!): [TaskSummary!]!
@@ -1258,6 +1268,69 @@ input TaskTransitionInput {
   reason: String = null
   expectedVersion: Int = null
   idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+input TrainingRunApproveInput {
+  trainingRunId: ID!
+  decision: String!
+  rationale: String = null
+  clientMutationId: String = null
+}
+
+input TrainingRunCreateInput {
+  snapshotId: ID!
+  name: String!
+  taskId: ID = null
+  spec: JSON = null
+  clientMutationId: String = null
+}
+
+input TrainingRunExecuteInput {
+  trainingRunId: ID!
+  attemptId: ID!
+  clientMutationId: String = null
+}
+
+input TrainingRunIdInput {
+  trainingRunId: ID!
+  clientMutationId: String = null
+}
+
+type TrainingRunInfo {
+  id: ID!
+  taskId: String
+  name: String!
+  state: String!
+  snapshotId: String
+  snapshotDigest: String
+  spec: JSON!
+  specDigest: String
+  datasetDigest: String
+  datasetManifest: JSON
+  telemetry: JSON
+  checkpoints: JSON
+  resumeFrom: JSON
+  provenance: JSON
+  capability: JSON
+  error: JSON
+  runId: String
+  attemptId: String
+  approvalId: String
+  createdAt: DateTime!
+  updatedAt: DateTime
+}
+
+type TrainingRunResult {
+  trainingRun: TrainingRunInfo
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input TrainingRunTransitionInput {
+  trainingRunId: ID!
+  toState: String!
+  rationale: String = null
   clientMutationId: String = null
 }
 

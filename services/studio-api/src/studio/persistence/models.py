@@ -1861,6 +1861,89 @@ class DatasetSnapshot(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
     frozen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+TRAINING_RUN_STATES = (
+    "draft",
+    "dataset_validated",
+    "awaiting_approval",
+    "queued",
+    "running",
+    "completed",
+    "evaluating",
+    "candidate_release",
+    "promoted",
+    "rejected",
+    "failed",
+    "cancelled",
+    "blocked",
+)
+# Terminal per §17.5/§18.4: completed means outputs exist, never
+# deployable — promotion comes only through evaluating →
+# candidate_release → promoted.
+TRAINING_RUN_TERMINAL = ("promoted", "rejected", "failed", "cancelled", "blocked")
+
+
+class TrainingRun(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """One local SFT training run (§17.5, CS-0801).
+
+    The lifecycle is the §17.5 state machine — separate from
+    ``runs.status`` because a training run must hold dataset_validated/
+    evaluating/candidate_release states an execution record never has.
+    ``run_id`` points at the newest execution Run row that carries the
+    queue/attempt bookkeeping; resume creates a new execution Run and
+    records the lineage in ``provenance``."""
+
+    __tablename__ = "training_runs"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "task_id"],
+            ["research_tasks.workspace_id", "research_tasks.id"],
+            name="fk_training_runs_scope_task",
+        ),
+        ForeignKeyConstraint(
+            ["snapshot_id"],
+            ["dataset_snapshots.id"],
+            name="fk_training_runs_snapshot",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "created_by"],
+            ["principals.workspace_id", "principals.id"],
+            name="fk_training_runs_scope_creator",
+        ),
+        CheckConstraint(f"state IN {TRAINING_RUN_STATES!r}", name="training_run_state"),
+        Index("ix_training_runs_scope", "workspace_id", "state", "created_at", "id"),
+    )
+
+    task_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    state: Mapped[str] = mapped_column(String(24), nullable=False, default="draft")
+    snapshot_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    # The manifest digest the run was approved against — drift or an
+    # invalid digest blocks the run BEFORE any bytes are read
+    # (AT-0801-2).
+    snapshot_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Complete SftTrainSpec JSON (§17.4) + its content digest.
+    spec: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    spec_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Vault artifacts: dataset JSONL, resolved config, result, adapter.
+    dataset_artifact_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    dataset_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    dataset_manifest: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    config_artifact_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    adapter_artifact_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    result_artifact_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    # Newest execution Run + the approval bound to this run's inputs.
+    run_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    approval_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    bound_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    telemetry: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    checkpoints: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
+    resume_from: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    provenance: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    capability: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    error: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+
+
 class OptimizationCampaign(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
     __tablename__ = "optimization_campaigns"
     __table_args__ = (

@@ -107,6 +107,9 @@ from studio.persistence.models import (
     TaskSummary as TaskSummaryRow,
 )
 from studio.persistence.models import (
+    TrainingRun as TrainingRunRow,
+)
+from studio.persistence.models import (
     Workspace as WorkspaceRow,
 )
 
@@ -1940,12 +1943,71 @@ class LabExecution(relay.Node):
 
 
 @strawberry.type
+class TrainingRunInfo:
+    """One §17.5 training run — lifecycle state + honest capability
+    labels. ``completed`` means artifacts exist, never deployable;
+    ``promoted`` is unreachable in CS-0801."""
+
+    # GlobalID — the trainingRun* mutations take these ids back.
+    id: relay.GlobalID
+    task_id: str | None
+    name: str
+    state: str
+    snapshot_id: str | None
+    snapshot_digest: str | None
+    spec: JSON
+    spec_digest: str | None
+    dataset_digest: str | None
+    dataset_manifest: JSON | None
+    telemetry: JSON | None
+    checkpoints: JSON | None
+    resume_from: JSON | None
+    provenance: JSON | None
+    capability: JSON | None
+    error: JSON | None
+    run_id: str | None
+    # newest RunAttempt id for the current execution Run — the UI
+    # needs it to drive ``trainingRunExecute``.
+    attempt_id: str | None
+    approval_id: str | None
+    created_at: datetime
+    updated_at: datetime | None
+
+    @classmethod
+    def from_row(cls, row: TrainingRunRow, attempt_id: str | None = None) -> Self:
+        return cls(
+            id=relay.GlobalID("TrainingRun", str(row.id)),
+            task_id=str(row.task_id) if row.task_id else None,
+            name=row.name,
+            state=row.state,
+            snapshot_id=str(row.snapshot_id) if row.snapshot_id else None,
+            snapshot_digest=row.snapshot_digest,
+            spec=JSON(row.spec),
+            spec_digest=row.spec_digest,
+            dataset_digest=row.dataset_digest,
+            dataset_manifest=JSON(row.dataset_manifest) if row.dataset_manifest else None,
+            telemetry=JSON(row.telemetry) if row.telemetry else None,
+            checkpoints=JSON(row.checkpoints) if row.checkpoints else None,
+            resume_from=JSON(row.resume_from) if row.resume_from else None,
+            provenance=JSON(row.provenance) if row.provenance else None,
+            capability=JSON(row.capability) if row.capability else None,
+            error=JSON(row.error) if row.error else None,
+            run_id=str(row.run_id) if row.run_id else None,
+            attempt_id=(str(relay.GlobalID("RunAttempt", attempt_id)) if attempt_id else None),
+            approval_id=str(row.approval_id) if row.approval_id else None,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+
+
+@strawberry.type
 class DatasetSnapshotInfo:
     """Point-in-time training manifest (§17.2, CS-0601). A frozen
     snapshot is immutable — drift is reported by re-hashing sources,
     never by rewriting the manifest."""
 
-    id: strawberry.ID
+    # GlobalID — the datasetSnapshot* mutations take these ids back.
+    id: relay.GlobalID
     purpose: str
     name: str
     task_id: str | None
@@ -1958,7 +2020,7 @@ class DatasetSnapshotInfo:
     @classmethod
     def from_row(cls, row: DatasetSnapshotRow) -> Self:
         return cls(
-            id=strawberry.ID(str(row.id)),
+            id=relay.GlobalID("DatasetSnapshot", str(row.id)),
             purpose=row.purpose,
             name=row.name,
             task_id=str(row.task_id) if row.task_id else None,

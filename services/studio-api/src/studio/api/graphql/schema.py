@@ -52,6 +52,7 @@ from studio.api.graphql.types import (
     Task,
     TaskQuestion,
     TaskSummary,
+    TrainingRunInfo,
     User,
     Workspace,
 )
@@ -64,6 +65,7 @@ from studio.domain.evidence.revocation import RevocationService
 from studio.domain.lab.measurements import LabMeasurementService
 from studio.domain.lab.plans import LabPlanService
 from studio.domain.learning.datasets import DatasetService
+from studio.domain.learning.sft import TrainingRunService
 from studio.domain.materials.service import MaterialService
 from studio.domain.projects.service import ProjectService
 from studio.domain.runs.admission import AdmissionService
@@ -129,6 +131,9 @@ from studio.persistence.models import (
 )
 from studio.persistence.models import (
     Run as RunRow,
+)
+from studio.persistence.models import (
+    RunAttempt as RunAttemptRow,
 )
 from studio.persistence.models import (
     SessionMessage as SessionMessageRow,
@@ -1197,6 +1202,35 @@ class Query:
         return JSON(DatasetService(gql.db, gql.service_ctx()).drift_status(s_uuid))
 
     @strawberry.field
+    def training_runs(
+        self, info: strawberry.Info, task_id: relay.GlobalID | None = None
+    ) -> list[TrainingRunInfo]:
+        gql = gql_ctx(info)
+        t_uuid = _gid_uuid(task_id, "Task", "taskId") if task_id is not None else None
+        rows = TrainingRunService(gql.db, gql.service_ctx(), gql.settings).list(t_uuid)
+        return [
+            TrainingRunInfo.from_row(
+                r,
+                attempt_id=LearningMutation._training_attempt_id(gql, r),
+            )
+            for r in rows
+        ]
+
+    @strawberry.field
+    def training_run(
+        self, info: strawberry.Info, training_run_id: relay.GlobalID
+    ) -> TrainingRunInfo | None:
+        gql = gql_ctx(info)
+        r_uuid = _gid_uuid(training_run_id, "TrainingRun", "trainingRunId")
+        try:
+            row = TrainingRunService(gql.db, gql.service_ctx(), gql.settings).get(r_uuid)
+        except DomainError:
+            return None
+        return TrainingRunInfo.from_row(
+            row, attempt_id=LearningMutation._training_attempt_id(gql, row)
+        )
+
+    @strawberry.field
     def session_messages(
         self,
         info: strawberry.Info,
@@ -1907,6 +1941,51 @@ class DatasetPrepareResult:
     client_mutation_id: str | None
 
 
+@strawberry.input
+class TrainingRunCreateInput:
+    snapshot_id: relay.GlobalID
+    name: str
+    task_id: relay.GlobalID | None = None
+    spec: JSON | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class TrainingRunIdInput:
+    training_run_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class TrainingRunApproveInput:
+    training_run_id: relay.GlobalID
+    decision: str
+    rationale: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class TrainingRunTransitionInput:
+    training_run_id: relay.GlobalID
+    to_state: str
+    rationale: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class TrainingRunExecuteInput:
+    training_run_id: relay.GlobalID
+    attempt_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class TrainingRunResult:
+    training_run: TrainingRunInfo | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
 @strawberry.type
 class LearningMutation:
     """Dataset snapshot commands (§17.2, CS-0601). Build/freeze/
@@ -1982,6 +2061,171 @@ class LearningMutation:
                 errors=[_err_payload(exc)],
                 client_mutation_id=input.client_mutation_id,
             )
+
+    @staticmethod
+    def _training_service(gql: Any) -> TrainingRunService:
+        return TrainingRunService(gql.db, gql.service_ctx(), gql.settings)
+
+    @staticmethod
+    def _training_attempt_id(gql: Any, run: Any | None) -> str | None:
+        """Newest RunAttempt on the run's current execution Run — the
+        id ``trainingRunExecute`` takes."""
+        if run is None or run.run_id is None:
+            return None
+        attempt = (
+            gql.db.execute(
+                select(RunAttemptRow)
+                .where(RunAttemptRow.run_id == run.run_id)
+                .order_by(RunAttemptRow.attempt_number.desc())
+                .limit(1)
+            )
+            .scalars()
+            .first()
+        )
+        return str(attempt.id) if attempt else None
+
+    @classmethod
+    def _training_result(
+        cls,
+        gql: Any,
+        run: Any | None,
+        errors: list[DomainErrorPayload],
+        client_mutation_id: str | None,
+    ) -> TrainingRunResult:
+        return TrainingRunResult(
+            training_run=(
+                TrainingRunInfo.from_row(run, attempt_id=cls._training_attempt_id(gql, run))
+                if run is not None
+                else None
+            ),
+            errors=errors,
+            client_mutation_id=client_mutation_id,
+        )
+
+    @strawberry.mutation
+    def training_run_create(
+        self, info: strawberry.Info, input: TrainingRunCreateInput
+    ) -> TrainingRunResult:
+        gql = gql_ctx(info)
+        try:
+            s_uuid = _gid_uuid(input.snapshot_id, "DatasetSnapshot", "snapshotId")
+            t_uuid = (
+                _gid_uuid(input.task_id, "Task", "taskId") if input.task_id is not None else None
+            )
+            run = self._training_service(gql).create(
+                snapshot_id=s_uuid,
+                name=input.name,
+                task_id=t_uuid,
+                spec=cast(dict[str, Any] | None, input.spec),
+            )
+            gql.db.commit()
+            return self._training_result(gql, run, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._training_result(gql, None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def training_run_submit(
+        self, info: strawberry.Info, input: TrainingRunIdInput
+    ) -> TrainingRunResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.training_run_id, "TrainingRun", "trainingRunId")
+            run = self._training_service(gql).submit(r_uuid)
+            gql.db.commit()
+            return self._training_result(gql, run, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._training_result(gql, None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def training_run_approve(
+        self, info: strawberry.Info, input: TrainingRunApproveInput
+    ) -> TrainingRunResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.training_run_id, "TrainingRun", "trainingRunId")
+            run = self._training_service(gql).approve(
+                r_uuid, decision=input.decision, rationale=input.rationale
+            )
+            gql.db.commit()
+            return self._training_result(gql, run, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._training_result(gql, None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def training_run_queue(
+        self, info: strawberry.Info, input: TrainingRunIdInput
+    ) -> TrainingRunResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.training_run_id, "TrainingRun", "trainingRunId")
+            run = self._training_service(gql).queue(r_uuid)
+            gql.db.commit()
+            return self._training_result(gql, run, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._training_result(gql, None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def training_run_execute(
+        self, info: strawberry.Info, input: TrainingRunExecuteInput
+    ) -> TrainingRunResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.training_run_id, "TrainingRun", "trainingRunId")
+            a_uuid = _gid_uuid(input.attempt_id, "RunAttempt", "attemptId")
+            run = self._training_service(gql).execute(r_uuid, a_uuid)
+            gql.db.commit()
+            return self._training_result(gql, run, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._training_result(gql, None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def training_run_cancel(
+        self, info: strawberry.Info, input: TrainingRunIdInput
+    ) -> TrainingRunResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.training_run_id, "TrainingRun", "trainingRunId")
+            run = self._training_service(gql).cancel(r_uuid)
+            gql.db.commit()
+            return self._training_result(gql, run, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._training_result(gql, None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def training_run_resume(
+        self, info: strawberry.Info, input: TrainingRunIdInput
+    ) -> TrainingRunResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.training_run_id, "TrainingRun", "trainingRunId")
+            run = self._training_service(gql).resume(r_uuid)
+            gql.db.commit()
+            return self._training_result(gql, run, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._training_result(gql, None, [_err_payload(exc)], input.client_mutation_id)
+
+    @strawberry.mutation
+    def training_run_transition(
+        self, info: strawberry.Info, input: TrainingRunTransitionInput
+    ) -> TrainingRunResult:
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.training_run_id, "TrainingRun", "trainingRunId")
+            run = self._training_service(gql).transition(
+                r_uuid, to_state=input.to_state, rationale=input.rationale
+            )
+            gql.db.commit()
+            return self._training_result(gql, run, [], input.client_mutation_id)
+        except DomainError as exc:
+            gql.db.rollback()
+            return self._training_result(gql, None, [_err_payload(exc)], input.client_mutation_id)
 
 
 def graphql_app(settings: Settings) -> GraphQLRouter:
