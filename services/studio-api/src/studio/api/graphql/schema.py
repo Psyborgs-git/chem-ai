@@ -1873,6 +1873,11 @@ class Mutation:
     def optimization(self) -> OptimizationMutation:
         return OptimizationMutation()
 
+    @strawberry.field
+    def analytical(self) -> AnalyticalMutation:
+        """Analytical-data ingest + scoped comparison (CS-0703)."""
+        return AnalyticalMutation()
+
 
 @strawberry.input
 class DatasetSnapshotBuildInput:
@@ -3968,6 +3973,109 @@ class OptimizationMutation:
         except DomainError as exc:
             gql.db.rollback()
             return OptimizationResult(
+                task=None, errors=[_err_payload(exc)], client_mutation_id=input.client_mutation_id
+            )
+
+
+@strawberry.input
+class AnalyticalIngestInput:
+    task_id: relay.GlobalID
+    raw_artifact_id: str  # raw uuid — artifacts are vault records, not Nodes
+    spec: JSON
+    idempotency_key: str
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class AnalyticalCompareInput:
+    task_id: relay.GlobalID
+    left_series_id: relay.GlobalID
+    right_series_id: relay.GlobalID
+    spec: JSON
+    idempotency_key: str
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class AnalyticalResult:
+    task: Task | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class AnalyticalMutation:
+    """Analytical processing (§16.5, CS-0703). Both commands return the
+    parent task so Relay fragments refresh the analysis panel.
+
+    ingest: binds a committed raw-export artifact to the task with its
+    declared method/context; unsupported formats persist as raw-only
+    rows marked 'unsupported' — never a guessed parse.
+    compare: one scoped similarity between two processed series of the
+    same method; the persisted result carries algorithm, version,
+    applied range and interpretation limits.
+    """
+
+    @strawberry.mutation
+    def ingest(self, info: strawberry.Info, input: AnalyticalIngestInput) -> AnalyticalResult:
+        from studio.domain.chemistry.analytics import AnalyticsService
+
+        gql = gql_ctx(info)
+        try:
+            if not isinstance(input.spec, dict):
+                raise DomainError(ErrorCode.VALIDATION, "spec must be an object")
+            try:
+                a_uuid = uuid.UUID(input.raw_artifact_id)
+            except ValueError as e:
+                raise DomainError(
+                    ErrorCode.VALIDATION,
+                    "malformed artifact id",
+                    field_path="input.rawArtifactId",
+                ) from e
+            row = AnalyticsService(gql.db, gql.service_ctx(), gql.settings).ingest(
+                _gid_uuid(input.task_id, "Task", "taskId"),
+                a_uuid,
+                input.spec,
+                input.idempotency_key,
+            )
+            gql.db.commit()
+            task = gql.db.get(TaskRow, row.task_id)
+            return AnalyticalResult(
+                task=Task.from_row(task) if task else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return AnalyticalResult(
+                task=None, errors=[_err_payload(exc)], client_mutation_id=input.client_mutation_id
+            )
+
+    @strawberry.mutation
+    def compare(self, info: strawberry.Info, input: AnalyticalCompareInput) -> AnalyticalResult:
+        from studio.domain.chemistry.analytics import AnalyticsService
+
+        gql = gql_ctx(info)
+        try:
+            if not isinstance(input.spec, dict):
+                raise DomainError(ErrorCode.VALIDATION, "spec must be an object")
+            row = AnalyticsService(gql.db, gql.service_ctx(), gql.settings).compare(
+                _gid_uuid(input.task_id, "Task", "taskId"),
+                _gid_uuid(input.left_series_id, "AnalyticalSeries", "leftSeriesId"),
+                _gid_uuid(input.right_series_id, "AnalyticalSeries", "rightSeriesId"),
+                input.spec,
+                input.idempotency_key,
+            )
+            gql.db.commit()
+            task = gql.db.get(TaskRow, row.task_id)
+            return AnalyticalResult(
+                task=Task.from_row(task) if task else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return AnalyticalResult(
                 task=None, errors=[_err_payload(exc)], client_mutation_id=input.client_mutation_id
             )
 

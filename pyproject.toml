@@ -78,7 +78,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["services/studio-api/src/studio", "packages/policy/chem_studio_policy", "packages/engine-adapters/rdkit/engine_adapter_rdkit", "packages/engine-adapters/baybe/engine_adapter_baybe", "packages/engine-adapters/chemprop/engine_adapter_chemprop", "packages/engine-adapters/qcengine/engine_adapter_qcengine", "packages/engine-adapters/materials/engine_adapter_materials", "workers"]
+packages = ["services/studio-api/src/studio", "packages/policy/chem_studio_policy", "packages/engine-adapters/rdkit/engine_adapter_rdkit", "packages/engine-adapters/baybe/engine_adapter_baybe", "packages/engine-adapters/chemprop/engine_adapter_chemprop", "packages/engine-adapters/qcengine/engine_adapter_qcengine", "packages/engine-adapters/materials/engine_adapter_materials", "packages/engine-adapters/analytics/engine_adapter_analytics", "workers"]
 
 [tool.uv]
 package = true
@@ -97,7 +97,7 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "packages/engine-adapters/baybe", "packages/engine-adapters/chemprop", "packages/engine-adapters/qcengine", "packages/engine-adapters/materials", "workers"]
+src = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "packages/engine-adapters/baybe", "packages/engine-adapters/chemprop", "packages/engine-adapters/qcengine", "packages/engine-adapters/materials", "packages/engine-adapters/analytics", "workers"]
 # Vendored spec package + its validation venv, execution evidence: not
 # project code — lint gates apply to first-party sources only.
 extend-exclude = ["docs", "**/.venv-validation", "**/.venv"]
@@ -113,8 +113,8 @@ ignore = []
 
 [tool.mypy]
 python_version = "3.12"
-mypy_path = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "packages/engine-adapters/baybe", "packages/engine-adapters/chemprop", "packages/engine-adapters/qcengine", "packages/engine-adapters/materials", "workers"]
-packages = ["studio", "chem_studio_policy", "engine_adapter_rdkit", "engine_adapter_baybe", "engine_adapter_chemprop", "engine_adapter_qcengine", "engine_adapter_materials", "workers"]
+mypy_path = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "packages/engine-adapters/baybe", "packages/engine-adapters/chemprop", "packages/engine-adapters/qcengine", "packages/engine-adapters/materials", "packages/engine-adapters/analytics", "workers"]
+packages = ["studio", "chem_studio_policy", "engine_adapter_rdkit", "engine_adapter_baybe", "engine_adapter_chemprop", "engine_adapter_qcengine", "engine_adapter_materials", "engine_adapter_analytics", "workers"]
 strict = true
 plugins = ["pydantic.mypy"]
 

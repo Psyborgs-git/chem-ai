@@ -203,6 +203,27 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
             "detail": "engine adapter package not importable",
         }
 
+    # Analytics adapter (CS-0703): in-process stdlib numerics — the
+    # honest capability is which export formats it parses; scientific
+    # validation is never claimed (§16.1).
+    try:
+        from engine_adapter_analytics import AnalyticsAdapter
+
+        _an = AnalyticsAdapter().capability()
+        engines["analytics"] = {
+            "status": "available",
+            "version": _an["adapter_version"],
+            "detail": "formats: "
+            + ", ".join(sorted(_an["formats"]))
+            + "; scientific_status=not_validated",
+        }
+    except ImportError:
+        engines["analytics"] = {
+            "status": "unavailable",
+            "version": None,
+            "detail": "engine adapter package not importable",
+        }
+
     return {
         "profiles": profiles,
         "engines": engines,

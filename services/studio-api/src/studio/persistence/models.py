@@ -1890,3 +1890,108 @@ class OptimizationCampaign(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
     creation_key: Mapped[str] = mapped_column(String(100), nullable=False)
     commands: Mapped[dict[str, str]] = mapped_column(JSONB, nullable=False, default=dict)
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+
+
+# ------------------------------------------------------------- analytics
+
+ANALYTICAL_INTERPRETATION_STATES = ("processed", "unsupported")
+
+
+class AnalyticalSeries(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """One instrument-export series (CS-0703, §16.5): the raw export
+    artifact, its method/calibration/sample context, the detected
+    format, and — when a supported reader exists — the derived
+    processed-values artifact plus the exact transform record that
+    produced it. Lineage columns are never implied: an unsupported
+    format leaves ``processed_artifact_id`` null and marks
+    ``interpretation_state='unsupported'`` (AT-0703-3)."""
+
+    __tablename__ = "analytical_series"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "task_id"],
+            ["research_tasks.workspace_id", "research_tasks.id"],
+            name="fk_analytical_series_scope_task",
+        ),
+        ForeignKeyConstraint(
+            ["raw_artifact_id"],
+            ["artifacts.id"],
+            name="fk_analytical_series_raw",
+        ),
+        ForeignKeyConstraint(
+            ["processed_artifact_id"],
+            ["artifacts.id"],
+            name="fk_analytical_series_processed",
+        ),
+        CheckConstraint(
+            f"interpretation_state IN {ANALYTICAL_INTERPRETATION_STATES!r}",
+            name="analytical_interpretation",
+        ),
+        UniqueConstraint("workspace_id", "task_id", "creation_key", name="uq_analytical_creation"),
+        Index("ix_analytical_series_task", "workspace_id", "task_id", "created_at", "id"),
+    )
+
+    task_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    label: Mapped[str] = mapped_column(String(200), nullable=False)
+    method: Mapped[str] = mapped_column(String(32), nullable=False)
+    sample_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    instrument: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    calibration: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    sample: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    source_format: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    interpretation_state: Mapped[str] = mapped_column(String(16), nullable=False)
+    raw_artifact_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    processed_artifact_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    transform: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    spec_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    creation_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+
+
+class AnalyticalComparison(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """One scoped comparison of two processed series (CS-0703, §16.5).
+    The similarity value is meaningless without its scope — algorithm,
+    version, applied range, aligned point count and interpretation
+    limits are all persisted columns of the result, plus the transform
+    records (preprocessing per side + alignment) needed to reproduce it."""
+
+    __tablename__ = "analytical_comparisons"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "task_id"],
+            ["research_tasks.workspace_id", "research_tasks.id"],
+            name="fk_analytical_cmp_scope_task",
+        ),
+        ForeignKeyConstraint(
+            ["left_series_id"],
+            ["analytical_series.id"],
+            name="fk_analytical_cmp_left",
+        ),
+        ForeignKeyConstraint(
+            ["right_series_id"],
+            ["analytical_series.id"],
+            name="fk_analytical_cmp_right",
+        ),
+        ForeignKeyConstraint(
+            ["result_artifact_id"],
+            ["artifacts.id"],
+            name="fk_analytical_cmp_result",
+        ),
+        UniqueConstraint(
+            "workspace_id", "task_id", "creation_key", name="uq_analytical_cmp_creation"
+        ),
+        Index("ix_analytical_cmp_task", "workspace_id", "task_id", "created_at", "id"),
+    )
+
+    task_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    left_series_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    right_series_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    result_artifact_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    similarity: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    transform: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    spec_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    creation_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
