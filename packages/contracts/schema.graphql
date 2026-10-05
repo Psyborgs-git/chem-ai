@@ -531,6 +531,13 @@ type LearningMutation {
   trainingRunCancel(input: TrainingRunIdInput!): TrainingRunResult!
   trainingRunResume(input: TrainingRunIdInput!): TrainingRunResult!
   trainingRunTransition(input: TrainingRunTransitionInput!): TrainingRunResult!
+  modelReleaseRegister(input: ModelReleaseRegisterInput!): ModelReleaseResult!
+  modelReleaseValidate(input: ModelReleaseIdInput!): ModelReleaseResult!
+  modelReleaseConvert(input: ModelReleaseConvertInput!): ModelReleaseResult!
+  modelReleaseApprove(input: ModelReleaseApproveInput!): ModelReleaseResult!
+  modelReleasePromote(input: ModelReleaseIdInput!): ModelReleaseResult!
+  modelReleaseRollback(input: ModelReleaseRollbackInput!): ModelReleaseResult!
+  sessionModelBind(input: SessionModelBindInput!): SessionBindResult!
 }
 
 type MaterialGrade implements Node {
@@ -698,6 +705,67 @@ input MessagePostInput {
   kind: String = null
   refs: JSON = null
   idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+input ModelReleaseApproveInput {
+  modelReleaseId: ID!
+  rationale: String = null
+  clientMutationId: String = null
+}
+
+input ModelReleaseConvertInput {
+  modelReleaseId: ID!
+  targetFormat: String = null
+  clientMutationId: String = null
+}
+
+input ModelReleaseIdInput {
+  modelReleaseId: ID!
+  clientMutationId: String = null
+}
+
+type ModelReleaseInfo {
+  id: ID!
+  taskId: String
+  name: String!
+  state: String!
+  snapshotId: String!
+  trainingRunId: String
+  baseModelId: String!
+  architecture: String!
+  baseSha256: String!
+  licenseId: String!
+  tokenizerKind: String!
+  tokenizerSha256: String!
+  adapterSha256: String!
+  adapterMethod: String!
+  servingFormat: String!
+  conversions: JSON
+  validation: JSON
+  capability: JSON
+  provenance: JSON
+  approvalId: String
+  createdAt: DateTime!
+  updatedAt: DateTime
+}
+
+input ModelReleaseRegisterInput {
+  trainingRunId: ID!
+  name: String!
+  taskId: ID = null
+  servingFormat: String = null
+  clientMutationId: String = null
+}
+
+type ModelReleaseResult {
+  modelRelease: ModelReleaseInfo
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input ModelReleaseRollbackInput {
+  modelReleaseId: ID = null
   clientMutationId: String = null
 }
 
@@ -896,6 +964,10 @@ type Query {
   datasetSnapshotDrift(snapshotId: ID!): JSON!
   trainingRuns(taskId: ID = null): [TrainingRunInfo!]!
   trainingRun(trainingRunId: ID!): TrainingRunInfo
+  modelReleases(taskId: ID = null): [ModelReleaseInfo!]!
+  modelRelease(modelReleaseId: ID!): ModelReleaseInfo
+  servingPointer: ServingPointerInfo
+  sessionModelPins(taskId: ID = null): [SessionModelPinInfo!]!
   sessionMessages(sessionId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): SessionMessageConnection!
   taskQuestions(taskId: ID!): [TaskQuestion!]!
   taskSummaries(taskId: ID!): [TaskSummary!]!
@@ -1103,6 +1175,20 @@ type SampleResult {
   clientMutationId: String
 }
 
+type ServingPointerInfo {
+  releaseId: ID
+  revision: Int!
+  reason: String!
+  updatedAt: DateTime
+}
+
+type SessionBindResult {
+  modelRelease: ModelReleaseInfo
+  validation: JSON
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
 input SessionEndInput {
   sessionId: ID!
   clientMutationId: String = null
@@ -1131,6 +1217,17 @@ type SessionMessageResult {
   message: SessionMessage
   errors: [DomainErrorPayload!]!
   clientMutationId: String
+}
+
+input SessionModelBindInput {
+  sessionId: ID!
+  clientMutationId: String = null
+}
+
+type SessionModelPinInfo {
+  sessionId: ID!
+  releaseId: ID
+  createdAt: DateTime!
 }
 
 input SessionStartInput {

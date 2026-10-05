@@ -7,9 +7,9 @@ Lifecycle — the §17.5 state machine, enforced by ``_ALLOWED``:
     (+ failed / cancelled / blocked)
 
 - ``completed`` means outputs exist in the vault — never deployable;
-  ``promoted`` is intentionally unreachable in CS-0801 (the §18.4
-  promotion gates are CS-0803), so ``candidate_release → promoted``
-  raises MODEL_NOT_PROMOTABLE instead of pretending.
+  ``promoted`` is reachable only through the CS-0802 registry's
+  approved serving-pointer move — ``transition()`` still raises
+  MODEL_NOT_PROMOTABLE so no manual path can skip the gate.
 - Eligibility gate (AT-0801-2): at queue AND execute time the service
   re-verifies the snapshot digest, live training rights of every
   included record, model license approval, and the bound approval —
@@ -81,9 +81,10 @@ _ALLOWED: dict[str, frozenset[str]] = {
     "running": frozenset({"completed", "failed", "cancelled", "blocked"}),
     "completed": frozenset({"evaluating", "rejected"}),
     "evaluating": frozenset({"candidate_release", "rejected"}),
-    # promoted is deliberately absent — §18.4 promotion gates are
-    # CS-0803; nothing in CS-0801 may promote a run.
-    "candidate_release": frozenset({"rejected"}),
+    # promoted is reachable only through the CS-0802 registry's guarded
+    # promote path (approved pointer move); the public transition()
+    # still refuses it so reviewers cannot self-promote.
+    "candidate_release": frozenset({"promoted", "rejected"}),
     "cancelled": frozenset({"queued"}),  # resume re-queues
     "failed": frozenset({"queued"}),  # resume re-queues
 }
@@ -539,9 +540,7 @@ class TrainingRunService:
         if self._gate(run, stage="execute"):
             return run
         if run.run_id is None:
-            raise DomainError(
-                ErrorCode.CONFLICT, "training run has no execution run attached"
-            )
+            raise DomainError(ErrorCode.CONFLICT, "training run has no execution run attached")
 
         self.runs.accept_attempt(
             run_id=run.run_id, attempt_id=attempt_id, external_id=f"sft-{attempt_id}"
@@ -734,14 +733,15 @@ class TrainingRunService:
         self, run_id: uuid.UUID, *, to_state: str, rationale: str | None = None
     ) -> TrainingRun:
         """Reviewer-driven lifecycle moves: completed → evaluating →
-        candidate_release → rejected. ``promoted`` is unreachable in
-        CS-0801 — §18.4 gates are CS-0803's machinery."""
+        candidate_release → rejected. ``promoted`` is reachable only via
+        the CS-0802 model registry's approved pointer move — a reviewer
+        can never promote a run directly here."""
         self.ctx.require(CAP_REVIEW_SCIENCE)
         run = self._get(run_id)
         if to_state == "promoted":
             raise DomainError(
                 ErrorCode.MODEL_NOT_PROMOTABLE,
-                "promotion requires the CS-0803 evaluation gates; completed is not deployable",
+                "promotion requires the model registry's approved serving pointer",
             )
         if to_state not in REVIEWER_STATES:
             raise DomainError(

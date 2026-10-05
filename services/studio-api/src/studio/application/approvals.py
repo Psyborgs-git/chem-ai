@@ -104,13 +104,37 @@ def require_valid(
     bound-digest drift are their own typed codes so the client can act
     on them (re-request vs fix inputs).
     """
-    approval = db.execute(
-        select(Approval)
-        .where(Approval.workspace_id == ctx.workspace_id, Approval.action == action)
-        .order_by(Approval.created_at.desc(), Approval.id.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-    if approval is None or approval.decision != "approved":
+    candidates = (
+        db.execute(
+            select(Approval)
+            .where(Approval.workspace_id == ctx.workspace_id, Approval.action == action)
+            .order_by(Approval.created_at.desc(), Approval.id.desc())
+            .limit(50)
+        )
+        .scalars()
+        .all()
+    )
+    digest = bound_digest(bound_inputs)
+    # Same-transaction grants can share created_at, which makes
+    # tie-breaking on the random uuid nondeterministic — so the newest
+    # approval bound to these exact inputs is authoritative. Without a
+    # digest match, the newest row decides forbidden-vs-stale.
+    approval = next(
+        (a for a in candidates if a.decision == "approved" and a.bound_digest == digest),
+        None,
+    )
+    newest = candidates[0] if candidates else None
+    if approval is None:
+        if newest is None or newest.decision != "approved":
+            raise forbidden(f"approval for '{action}'")
+        if newest.bound_digest != digest:
+            raise DomainError(
+                ErrorCode.APPROVAL_STALE,
+                "bound inputs changed since approval; request a fresh approval",
+                safe_details={"approvalId": str(newest.id)},
+            )
+        approval = newest
+    if approval.decision != "approved":
         raise forbidden(f"approval for '{action}'")
     if approval.revoked_at is not None:
         raise forbidden(f"approval for '{action}' (revoked)")
