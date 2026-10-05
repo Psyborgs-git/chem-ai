@@ -43,7 +43,18 @@ def db_url(pg_container: PostgresContainer) -> Iterator[str]:
     try:
         base = admin_url.rsplit("/", 1)[0]
         url = f"{base}/{dbname}"
-        command.upgrade(_alembic_cfg(url), "head")
+        # env.py lets STUDIO_DATABASE_URL override the configured URL, so pin
+        # it to this test's database or CI migrates the shared service DB
+        # instead and the fresh test DB stays empty.
+        previous = os.environ.get("STUDIO_DATABASE_URL")
+        os.environ["STUDIO_DATABASE_URL"] = url
+        try:
+            command.upgrade(_alembic_cfg(url), "head")
+        finally:
+            if previous is None:
+                del os.environ["STUDIO_DATABASE_URL"]
+            else:
+                os.environ["STUDIO_DATABASE_URL"] = previous
         yield url
     finally:
         admin_engine.dispose()
