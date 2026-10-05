@@ -39,7 +39,7 @@ local_ai = [
 ]
 # Optimization / property models (P06).
 optimization = [
-    "baybe>=0.15.0,<0.16",
+    "baybe==0.15.0",
     "chemprop>=2.3.0,<2.4",
 ]
 # Typed quantum execution (P07). xtb/psi4 binaries are conda/system —
@@ -72,7 +72,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["services/studio-api/src/studio", "packages/policy/chem_studio_policy", "packages/engine-adapters/rdkit/engine_adapter_rdkit", "workers"]
+packages = ["services/studio-api/src/studio", "packages/policy/chem_studio_policy", "packages/engine-adapters/rdkit/engine_adapter_rdkit", "packages/engine-adapters/baybe/engine_adapter_baybe", "workers"]
 
 [tool.uv]
 package = true
@@ -107,8 +107,8 @@ ignore = []
 
 [tool.mypy]
 python_version = "3.12"
-mypy_path = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "workers"]
-packages = ["studio", "chem_studio_policy", "engine_adapter_rdkit", "workers"]
+mypy_path = ["services/studio-api/src", "packages", "packages/engine-adapters/rdkit", "packages/engine-adapters/baybe", "workers"]
+packages = ["studio", "chem_studio_policy", "engine_adapter_rdkit", "engine_adapter_baybe", "workers"]
 strict = true
 plugins = ["pydantic.mypy"]
 
@@ -116,6 +116,14 @@ plugins = ["pydantic.mypy"]
 # adapter imports them lazily and reports ENGINE_UNAVAILABLE instead.
 [[tool.mypy.overrides]]
 module = ["rdkit", "rdkit.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["baybe", "baybe.*", "pandas", "pandas.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["baybe", "baybe.*", "pandas", "pandas.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

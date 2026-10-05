@@ -668,12 +668,57 @@ type Mutation {
   runs: RunsMutation!
   lab: LabMutation!
   learning: LearningMutation!
+  optimization: OptimizationMutation!
 }
 
 """An object with a Globally Unique ID"""
 interface Node {
   """The Globally Unique ID of this object"""
   id: ID!
+}
+
+type OptimizationCampaignInfo {
+  id: ID!
+  revision: Int!
+  manifest: JSON!
+}
+
+input OptimizationCommandInput {
+  campaignId: ID!
+  expectedRevision: Int!
+  idempotencyKey: String!
+  operation: OptimizationOperation!
+  batchSize: Int! = 1
+  experimentId: String = null
+  measurementId: ID = null
+  snapshotId: ID = null
+  reason: String = null
+  clientMutationId: String = null
+}
+
+input OptimizationCreateInput {
+  taskId: ID!
+  definition: JSON!
+  idempotencyKey: String!
+  clientMutationId: String = null
+}
+
+type OptimizationMutation {
+  create(input: OptimizationCreateInput!): OptimizationResult!
+  command(input: OptimizationCommandInput!): OptimizationResult!
+}
+
+enum OptimizationOperation {
+  recommend
+  observed
+  cancelled
+  failed
+}
+
+type OptimizationResult {
+  task: Task
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
 }
 
 type PacketResult {
@@ -1077,6 +1122,7 @@ type Task implements Node {
   evaluationCycle: Int!
   unresolvedInputs: [String!]!
   createdAt: DateTime!
+  optimizationCampaigns: [OptimizationCampaignInfo!]!
   project: Project
 }
 

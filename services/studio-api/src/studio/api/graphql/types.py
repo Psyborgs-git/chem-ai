@@ -236,6 +236,23 @@ class Workspace(relay.Node):
 
 
 @strawberry.type
+class OptimizationCampaignInfo:
+    id: relay.GlobalID
+    revision: int
+    manifest: JSON
+
+    @classmethod
+    def from_row(cls, row: Any) -> Self:
+        from studio.domain.learning.optimization import public_state
+
+        return cls(
+            id=relay.GlobalID("OptimizationCampaign", str(row.id)),
+            revision=row.revision,
+            manifest=JSON(public_state(row)),
+        )
+
+
+@strawberry.type
 class Task(relay.Node):
     id: relay.NodeID[str]
     title: str
@@ -247,6 +264,14 @@ class Task(relay.Node):
     evaluation_cycle: int
     unresolved_inputs: list[str]
     created_at: datetime
+
+    @strawberry.field
+    def optimization_campaigns(self, info: strawberry.Info) -> list[OptimizationCampaignInfo]:
+        from studio.domain.learning.optimization import OptimizationService
+
+        gql = gql_ctx(info)
+        rows = OptimizationService(gql.db, gql.service_ctx(), gql.settings).list(uuid.UUID(self.id))
+        return [OptimizationCampaignInfo.from_row(row) for row in rows]
 
     @classmethod
     def from_row(cls, row: TaskRow) -> Self:
