@@ -37,7 +37,11 @@ dev: ## Start postgres + API (loopback) + web dev server
 
 .PHONY: db-up
 db-up: ## Start local postgres container
-	$(COMPOSE) up -d postgres
+	@if (echo > /dev/tcp/127.0.0.1/54329) 2>/dev/null; then \
+	  echo "postgres already listening on 127.0.0.1:54329 — reusing"; \
+	else \
+	  $(COMPOSE) up -d postgres; \
+	fi
 
 .PHONY: db-down
 db-down: ## Stop local postgres container
