@@ -22,6 +22,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 
@@ -44,6 +45,8 @@ from studio.persistence.models import (
     LabExecution,
     LabSample,
     Measurement,
+    ResearchSession,
+    SessionMessage,
 )
 
 _TRAINABLE_VALUE_TYPES = {"numeric", "interval", "ordinal", "categorical"}
@@ -82,6 +85,25 @@ def _claim_fields(c: EvidenceClaim, artifact: Artifact | None) -> dict[str, Any]
         "conditions": c.conditions,
         "artifact_id": str(artifact.id) if artifact else None,
         "artifact_checksum": artifact.checksum_sha256 if artifact else None,
+    }
+
+
+def _session_fields(s: ResearchSession, messages: Sequence[SessionMessage]) -> dict[str, Any]:
+    return {
+        "kind": "session",
+        "status": s.status,
+        "task_id": str(s.task_id),
+        "messages": [
+            {
+                "id": str(m.id),
+                "role": m.role,
+                "kind": m.kind,
+                "content_hash": hashlib.sha256(m.content.encode()).hexdigest(),
+                "refs": m.refs,
+                "created_by": str(m.created_by) if m.created_by else None,
+            }
+            for m in messages
+        ],
     }
 
 
@@ -190,6 +212,48 @@ class DatasetService:
             )
         return entries
 
+    def _session_entries(self, task_id: uuid.UUID | None) -> list[dict[str, Any]]:
+        """Research sessions as SFT source records (CS-0801, §17.2).
+
+        Sessions are locally generated research records — training
+        rights are ``owned``; the *example* layer (§17.3) still drops
+        hidden reasoning traces and unreviewed turns. Only collected
+        for ``assistant_sft``/``preference_pairs`` snapshots."""
+        ws = self.ctx.workspace_id
+        stmt = select(ResearchSession).where(ResearchSession.workspace_id == ws)
+        if task_id is not None:
+            stmt = stmt.where(ResearchSession.task_id == task_id)
+        entries: list[dict[str, Any]] = []
+        for s in self.db.execute(stmt).scalars():
+            messages = (
+                self.db.execute(
+                    select(SessionMessage)
+                    .where(SessionMessage.session_id == s.id)
+                    .order_by(SessionMessage.created_at, SessionMessage.id)
+                )
+                .scalars()
+                .all()
+            )
+            entries.append(
+                {
+                    "recordId": str(s.id),
+                    "recordKind": "session",
+                    "sourceClass": "research_session",
+                    "hash": _record_hash(_session_fields(s, messages)),
+                    "rightsTraining": "owned",
+                    "labelKind": "reviewed_response",
+                    "semantics": {
+                        "status": s.status,
+                        "messageCount": len(messages),
+                    },
+                    "excluded": s.status not in ("active", "ended"),
+                    "exclusionReason": (
+                        None if s.status in ("active", "ended") else f"status:{s.status}"
+                    ),
+                }
+            )
+        return entries
+
     # -------------------------------------------------------- commands
 
     def build(
@@ -200,6 +264,8 @@ class DatasetService:
     ) -> DatasetSnapshot:
         self.ctx.require(CAP_MANAGE_MODELS)
         entries = self._measurement_entries(task_id) + self._claim_entries()
+        if purpose in ("assistant_sft", "preference_pairs"):
+            entries += self._session_entries(task_id)
         entries.sort(key=lambda e: (e["recordKind"], str(e["recordId"])))
         manifest = {
             "purpose": purpose,
@@ -278,6 +344,20 @@ class DatasetService:
         if entry["recordKind"] == "measurement":
             m = self.db.get(Measurement, rid)
             return _record_hash(_measurement_fields(m)) if m else None
+        if entry["recordKind"] == "session":
+            s = self.db.get(ResearchSession, rid)
+            if s is None:
+                return None
+            messages = (
+                self.db.execute(
+                    select(SessionMessage)
+                    .where(SessionMessage.session_id == s.id)
+                    .order_by(SessionMessage.created_at, SessionMessage.id)
+                )
+                .scalars()
+                .all()
+            )
+            return _record_hash(_session_fields(s, messages))
         c = self.db.get(EvidenceClaim, rid)
         if c is None:
             return None

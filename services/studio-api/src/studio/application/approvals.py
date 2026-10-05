@@ -32,6 +32,7 @@ APPROVAL_CAPABILITY: dict[str, str] = {
     "experiment_release": CAP_APPROVE_EXPERIMENT,
     "model_release": CAP_APPROVE_MODEL,
     "export": CAP_APPROVE_EXPORT,
+    "training_run": CAP_APPROVE_MODEL,
 }
 
 
