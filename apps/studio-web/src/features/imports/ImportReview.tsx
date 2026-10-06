@@ -193,6 +193,15 @@ function RecordRow({
                       },
                     },
                   },
+                  updater: (store, res) => {
+                    // Promote marks a proposed record accepted in the same
+                    // transaction; mirror that deterministic transition so
+                    // the row stops offering review actions without a
+                    // reload.
+                    if (res?.imports.recordPromote.claim != null) {
+                      store.get(record.id)?.setValue("accepted", "status");
+                    }
+                  },
                   onCompleted: (res) => {
                     const c = res.imports.recordPromote.claim;
                     setClaimId(c ? c.id : "error");
@@ -254,8 +263,14 @@ function RecordsTable({ batchId }: { batchId: string }) {
   );
 }
 
-function BatchList() {
-  const data = useLazyLoadQuery<importsBatchesQuery>(ImportBatchesQuery, {});
+function BatchList({ fetchKey }: { fetchKey: number }) {
+  // fetchKey + network-only forces a real refetch after an import —
+  // the old key-remount replayed the cached empty list (CS-1201).
+  const data = useLazyLoadQuery<importsBatchesQuery>(
+    ImportBatchesQuery,
+    {},
+    { fetchKey, fetchPolicy: "network-only" },
+  );
   const batches = data.importBatches.edges.map((e) => e.node);
   const [selected, setSelected] = useState<string | null>(null);
   return (
@@ -299,7 +314,7 @@ export function ImportReview() {
       </p>
       <ImportTrigger onDone={() => setReloadKey((k) => k + 1)} />
       <Suspense fallback={<LoadingState label="loading batches…" />}>
-        <BatchList key={reloadKey} />
+        <BatchList fetchKey={reloadKey} />
       </Suspense>
     </div>
   );

@@ -7,10 +7,16 @@ import {
   Route,
   BrowserRouter as Router,
   Routes,
+  useLocation,
   useParams,
 } from "react-router";
 
-import { EmptyState, ErrorState, LoadingState } from "../components";
+import {
+  EmptyState,
+  ErrorState,
+  ForbiddenState,
+  LoadingState,
+} from "../components";
 import { EvidencePanel } from "../features/evidence/EvidencePanel";
 import { QualityPanel } from "../features/evidence/quality/QualityPanel";
 import { ComputePanel } from "../features/compute/ComputePanel";
@@ -18,6 +24,7 @@ import { FallbackPanel } from "../features/compute/fallback/FallbackPanel";
 import { ImportReview } from "../features/imports/ImportReview";
 import { ExportReviewPanel } from "../features/privacy/export-review/ExportReviewPanel";
 import { LabPage } from "../features/lab/plans/LabPage";
+import { ModelsPanel } from "../features/learning/models/ModelsPanel";
 import { TaskCreateForm } from "../features/tasks/TaskCreateForm";
 import { TaskWorkspace } from "../features/tasks/TaskWorkspace";
 import {
@@ -44,31 +51,120 @@ const ViewerQuery = graphql`
   }
 `;
 
-class QueryBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
+type QueryFailureKind = "auth" | "forbidden" | "not_found" | "unknown";
+
+type WireError = { message?: unknown; extensions?: { code?: unknown } };
+
+/** Relay throws a RelayError for GraphQL failures; `error.source.errors`
+ * carries the server's raw `errors[]`, whose `extensions.code` holds
+ * the §8.3 typed code (DomainErrorExtensions). Message text is the
+ * fallback classifier for errors that carry no code. */
+function wireErrors(error: unknown): WireError[] {
+  const source = (error as { source?: { errors?: unknown } } | null)?.source;
+  return Array.isArray(source?.errors) ? (source.errors as WireError[]) : [];
+}
+
+function wireCodes(error: unknown): string[] {
+  return wireErrors(error)
+    .map((e) => e?.extensions?.code)
+    .filter((c): c is string => typeof c === "string" && c.length > 0);
+}
+
+function queryErrorMessages(error: unknown): string[] {
+  const messages = wireErrors(error)
+    .map((e) => e?.message)
+    .filter((m): m is string => typeof m === "string" && m.length > 0);
+  if (messages.length === 0 && error instanceof Error && error.message) {
+    messages.push(error.message);
+  }
+  return messages;
+}
+
+function classifyQueryError(error: unknown): QueryFailureKind {
+  const codes = new Set(wireCodes(error));
+  if (codes.has("UNAUTHENTICATED")) return "auth";
+  if (codes.has("FORBIDDEN")) return "forbidden";
+  if (codes.has("NOT_FOUND") || codes.has("VALIDATION")) return "not_found";
+  // Code-less failures (bad GlobalID coercion, pre-strawberry errors)
+  // still classify by their message when it's specific enough.
+  const text = queryErrorMessages(error).join("\n");
+  if (/\bUNAUTHENTICATED\b/.test(text)) return "auth";
+  if (/\bFORBIDDEN\b/.test(text)) return "forbidden";
+  if (/\b(NOT_FOUND|VALIDATION)\b/.test(text) || /GlobalID|base64/i.test(text)) {
+    return "not_found";
+  }
+  return "unknown";
+}
+
+function queryErrorDetail(error: unknown): string {
+  return queryErrorMessages(error).join("; ") || "unknown error";
+}
+
+/** Shell-level error boundary: only an UNAUTHENTICATED failure renders
+ * the signed-out copy — any other query failure is reported honestly
+ * instead of lying about the session (CS-1201). */
+class QueryBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
   }
   render() {
-    return this.state.failed ? (
-      <ErrorState title="Not signed in" detail="Sign in to continue." />
-    ) : (
-      this.props.children
-    );
+    const { error } = this.state;
+    if (error == null) return this.props.children;
+    const kind = classifyQueryError(error);
+    if (kind === "auth") {
+      return <ErrorState title="Not signed in" detail="Sign in to continue." />;
+    }
+    if (kind === "forbidden") return <ForbiddenState />;
+    return <ErrorState detail={queryErrorDetail(error)} />;
+  }
+}
+
+/** Fallback review boundary: the runId is user/URL input, so an
+ * unknown or malformed run is an empty state — never the signed-out
+ * copy for a signed-in user (CS-1201). */
+class FallbackQueryBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  render() {
+    const { error } = this.state;
+    if (error == null) return this.props.children;
+    switch (classifyQueryError(error)) {
+      case "auth":
+        return (
+          <ErrorState title="Not signed in" detail="Sign in to continue." />
+        );
+      case "forbidden":
+        return <ForbiddenState />;
+      case "not_found":
+        return <EmptyState title="Run not found." />;
+      default:
+        return <ErrorState detail={queryErrorDetail(error)} />;
+    }
   }
 }
 
 /** Persistent navigation (§22.1). Research chat is a task surface,
  * not the app shell. */
+/** Persistent navigation (§22.1): every entry must resolve to a real
+ * surface — a nav link that 404s is a defect, not a placeholder
+ * (CS-1201). Materials work lives inside task flows and no settings
+ * surface exists, so those links were removed rather than stubbed. */
 const NAV = [
   { to: "/projects", label: "Projects" },
-  { to: "/materials", label: "Materials & Products" },
   { to: "/imports", label: "Imports" },
   { to: "/evidence", label: "Evidence" },
   { to: "/lab", label: "Lab" },
   { to: "/models", label: "Models & Learning" },
   { to: "/compute", label: "Compute" },
-  { to: "/settings", label: "Settings" },
 ];
 
 function ThemeToggle() {
@@ -177,14 +273,88 @@ function TaskPage() {
   return <TaskWorkspace taskId={decodeURIComponent(taskId)} />;
 }
 
+function ModelsPage() {
+  return (
+    <div>
+      <h1>model registry</h1>
+      <ModelsPanel taskId={null} />
+    </div>
+  );
+}
+
+/** `/compute/fallback/:runId` carries a Relay GlobalID
+ * (`base64(Run:<uuid>)`); a param that cannot decode to one is an
+ * invalid id — render not-found without issuing the query. */
+const RUN_GLOBAL_ID = /^Run:[0-9a-fA-F]{8}-[0-9a-fA-F-]{27}$/;
+
+function isRunGlobalId(raw: string): boolean {
+  try {
+    return RUN_GLOBAL_ID.test(atob(raw));
+  } catch {
+    return false;
+  }
+}
+
 function FallbackPage() {
   const { runId = "" } = useParams();
-  return <FallbackPanel runId={decodeURIComponent(runId)} />;
+  const decoded = decodeURIComponent(runId);
+  if (!isRunGlobalId(decoded)) {
+    return <EmptyState title="Run not found." />;
+  }
+  return (
+    <FallbackQueryBoundary>
+      <Suspense fallback={<LoadingState label="loading fallback review…" />}>
+        <FallbackPanel runId={decoded} />
+      </Suspense>
+    </FallbackQueryBoundary>
+  );
 }
 
 function ExportReviewPage() {
   const { proposalId = "" } = useParams();
   return <ExportReviewPanel proposalId={decodeURIComponent(proposalId)} />;
+}
+
+function ShellContent() {
+  // Keyed by pathname so a failed query on one page does not wedge
+  // every other route — navigating away remounts the boundary (CS-1201).
+  const { pathname } = useLocation();
+  return (
+    <QueryBoundary key={pathname}>
+      <Suspense fallback={<LoadingState label="loading…" />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route
+            path="/projects/:projectId"
+            element={<ProjectDetailPage />}
+          />
+          <Route path="/tasks/:taskId" element={<TaskPage />} />
+          <Route path="/imports" element={<ImportReview />} />
+          <Route path="/evidence" element={<EvidencePanel />} />
+          <Route
+            path="/evidence/quality"
+            element={<QualityPanel />}
+          />
+          <Route path="/lab" element={<LabPage />} />
+          <Route path="/models" element={<ModelsPage />} />
+          <Route path="/compute" element={<ComputePanel />} />
+          <Route
+            path="/compute/fallback/:runId"
+            element={<FallbackPage />}
+          />
+          <Route
+            path="/privacy/exports/:proposalId"
+            element={<ExportReviewPage />}
+          />
+          <Route
+            path="*"
+            element={<EmptyState title="Page not found." />}
+          />
+        </Routes>
+      </Suspense>
+    </QueryBoundary>
+  );
 }
 
 function ViewerStatus() {
@@ -249,41 +419,9 @@ export function AppRoutes() {
               <EmptyState title="Workspace setup required — an owner account must be created." />
             ) : (
               <RelayEnvironmentProvider environment={getRelayEnvironment()}>
-                <QueryBoundary>
-                  <AppShell>
-                    <Suspense fallback={<LoadingState label="loading…" />}>
-                      <Routes>
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/projects" element={<ProjectsPage />} />
-                        <Route
-                          path="/projects/:projectId"
-                          element={<ProjectDetailPage />}
-                        />
-                        <Route path="/tasks/:taskId" element={<TaskPage />} />
-                        <Route path="/imports" element={<ImportReview />} />
-                        <Route path="/evidence" element={<EvidencePanel />} />
-                        <Route
-                          path="/evidence/quality"
-                          element={<QualityPanel />}
-                        />
-                        <Route path="/lab" element={<LabPage />} />
-                        <Route path="/compute" element={<ComputePanel />} />
-                        <Route
-                          path="/compute/fallback/:runId"
-                          element={<FallbackPage />}
-                        />
-                        <Route
-                          path="/privacy/exports/:proposalId"
-                          element={<ExportReviewPage />}
-                        />
-                        <Route
-                          path="*"
-                          element={<EmptyState title="Page not found." />}
-                        />
-                      </Routes>
-                    </Suspense>
-                  </AppShell>
-                </QueryBoundary>
+                <AppShell>
+                  <ShellContent />
+                </AppShell>
               </RelayEnvironmentProvider>
             )
           }
