@@ -1648,6 +1648,89 @@ class ExportProposal(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
     required_capability: Mapped[str] = mapped_column(String(80), nullable=False)
 
 
+ARTIFACT_CLASSIFICATIONS = ("internal", "confidential", "restricted")
+
+
+class ExportTransformedPayload(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """A minimal transformed export payload prepared for human review
+    (§20.2-20.3, CS-1002).
+
+    The payload hangs off an export proposal: source records are the
+    frozen snapshot's manifest entries reduced to per-kind allowlisted
+    fields, with names replaced by LOCAL aliases and metadata keys
+    stripped. The residual-risk report enumerates what still leaks
+    (ratios, structures, process windows, outcomes, free text,
+    metadata) — it can never certify the payload anonymous or safe.
+
+    ``bound_inputs``/``bound_digest`` bind the exact payload +
+    transformation version + recipient + permitted job + limits +
+    expiry for the approvals ledger: any change invalidates a reused
+    approval (AT-1002-3). ``local_alias_map`` never enters the payload,
+    its digest, or any API response — decoding is vault-local.
+
+    Still inert: no transfer, broker call, or credential exists here
+    (CS-1003 consumes the manifest). Default egress stays deny."""
+
+    __tablename__ = "export_transformed_payloads"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "proposal_id"],
+            ["export_proposals.workspace_id", "export_proposals.id"],
+            name="fk_export_payloads_scope_proposal",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "created_by"],
+            ["principals.workspace_id", "principals.id"],
+            name="fk_export_payloads_scope_creator",
+        ),
+        UniqueConstraint("workspace_id", "id", name="uq_export_payloads_scope_id"),
+        CheckConstraint(f"classification IN {ARTIFACT_CLASSIFICATIONS!r}", name="classification"),
+        Index(
+            "ix_export_payloads_scope_proposal",
+            "workspace_id",
+            "proposal_id",
+            "seq",
+        ),
+    )
+
+    # Server-side sequence — "latest" ordering must survive identical
+    # transaction timestamps, so it never relies on created_at.
+    seq: Mapped[int] = mapped_column(
+        BigInteger, nullable=False, server_default=text("nextval('export_payloads_seq')")
+    )
+    proposal_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    # Frozen dataset snapshot the records were drawn from (no FK —
+    # dataset_snapshots has no scope unique key).
+    snapshot_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    purpose: Mapped[str] = mapped_column(String(48), nullable=False)
+    transformation_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Effective classification — the source-derived one unless a
+    # reviewer recorded a reviewed change in classification_review.
+    classification: Mapped[str] = mapped_column(String(16), nullable=False)
+    source_classification: Mapped[str] = mapped_column(String(16), nullable=False)
+    classification_review: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    # The exact payload document (what a reviewer previews verbatim)
+    # plus its canonical digest, field list, and bounded size.
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    payload_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload_fields: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    redaction_report: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    residual_report: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    # §20.2 manifest: source/derived hashes, transformation version,
+    # fields, redaction report, classification, recipient, environment,
+    # permitted job, limits, retention/deletion, expiry, approver.
+    manifest: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    # The manifest subset an approval binds; digest re-validation uses
+    # bound_digest via the approvals ledger (require_valid).
+    bound_inputs: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    bound_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    # LOCAL-ONLY decode table: token -> {kind, original}. Never part of
+    # the payload, the digest, or any response — it exists so the vault
+    # can explain what an alias means during review.
+    local_alias_map: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+
+
 class RunCacheEntry(Base, UUIDPrimaryKey, WorkspaceScoped):
     """An immutable cached run result (§13.5).
 

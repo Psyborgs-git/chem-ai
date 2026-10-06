@@ -452,6 +452,47 @@ type ExperimentPlanEdge {
   node: ExperimentPlan!
 }
 
+input ExportDecideInput {
+  payloadId: ID!
+  decision: String!
+  rationale: String = null
+  ttlSeconds: Int = null
+  clientMutationId: String = null
+}
+
+input ExportPrepareInput {
+  proposalId: ID!
+  snapshotId: ID!
+  recipient: String = null
+  account: String = null
+  region: String = null
+  expiresAt: String = null
+  maxRecords: Int = null
+  maxBytes: Int = null
+  retentionExpectation: String = null
+  deletionExpectation: String = null
+  clientMutationId: String = null
+}
+
+type ExportReviewResult {
+  view: JSON
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input ExportSetClassificationInput {
+  payloadId: ID!
+  classification: String!
+  rationale: String = null
+  clientMutationId: String = null
+}
+
+type ExportsMutation {
+  prepare(input: ExportPrepareInput!): ExportReviewResult!
+  decide(input: ExportDecideInput!): ExportReviewResult!
+  setClassification(input: ExportSetClassificationInput!): ExportReviewResult!
+}
+
 type ExtractedRecord implements Node {
   """The Globally Unique ID of this object"""
   id: ID!
@@ -880,6 +921,7 @@ type Mutation {
   learning: LearningMutation!
   optimization: OptimizationMutation!
   analytical: AnalyticalMutation!
+  exports: ExportsMutation!
 }
 
 """An object with a Globally Unique ID"""
@@ -1116,6 +1158,7 @@ type Query {
   hardwareCapabilities: HardwareCapabilities!
   computeResources: JSON!
   runFallback(runId: ID!): JSON!
+  exportReview(proposalId: ID!): JSON!
   importBatches(first: Int = null, after: String = null, last: Int = null, before: String = null): ImportBatchConnection!
   importRecords(batchId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ExtractedRecordConnection!
   evidenceClaims(kind: String = null, status: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): EvidenceClaimConnection!

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
+import { Link } from "react-router";
 
 import { Badge } from "../../../components/atoms/Badge";
 import { Button } from "../../../components/atoms/Button";
@@ -162,6 +163,13 @@ function ProposalCard({ proposal }: { proposal: ExportProposalView }) {
         A proposal is a review item only — no payload, recipient, transfer, or
         spend exists. A human holding {proposal.requiredCapability} may approve
         it through the approvals ledger; nothing here submits anything.
+      </p>
+      <p>
+        <Link
+          to={`/privacy/exports/${encodeURIComponent(btoa(`ExportProposal:${proposal.id}`))}`}
+        >
+          review transformed payload and residual risk
+        </Link>
       </p>
     </section>
   );

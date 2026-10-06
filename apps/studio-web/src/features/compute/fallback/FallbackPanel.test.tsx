@@ -86,6 +86,16 @@ vi.mock("react-relay", () => ({
   useMutation: () => [vi.fn(), false],
 }));
 
+vi.mock("react-router", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router")>();
+  return {
+    ...actual,
+    Link: ({ to, children }: { to: string; children: React.ReactNode }) => (
+      <a href={to}>{children}</a>
+    ),
+  };
+});
+
 import { FallbackPanel } from "./FallbackPanel";
 
 describe("fallback decision surface", () => {

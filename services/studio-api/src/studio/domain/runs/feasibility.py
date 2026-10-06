@@ -42,6 +42,7 @@ from studio.errors import DomainError, ErrorCode, not_found
 from studio.persistence.models import (
     Approval,
     ExportProposal,
+    ExportTransformedPayload,
     Run,
     RunFeasibilityReport,
 )
@@ -772,17 +773,34 @@ class FeasibilityService:
         ).scalar_one_or_none()
 
     def _export_approved(self, proposal: ExportProposal) -> bool:
-        """True only when a live, matching-bound-digest ``export``
-        approval exists — approval belongs to humans via the approvals
-        machinery; this path never creates one."""
+        """True only when a live ``export`` approval binds the CURRENT
+        export state — approval belongs to humans via the approvals
+        machinery; this path never creates one. Since CS-1002 approvals
+        bind the exact transformed payload digest, so we accept the
+        proposal's own bound digest or the latest payload's bound digest
+        (payload approvals embed ``proposalBoundDigest``). A superseded
+        payload digest must not count — the review page calls that
+        approval 'stale'."""
         now = datetime.now(UTC)
+        digests = {proposal.bound_digest}
+        latest = self.db.execute(
+            select(ExportTransformedPayload.bound_digest)
+            .where(
+                ExportTransformedPayload.workspace_id == self.ctx.workspace_id,
+                ExportTransformedPayload.proposal_id == proposal.id,
+            )
+            .order_by(ExportTransformedPayload.seq.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+        if latest is not None:
+            digests.add(latest)
         rows = (
             self.db.execute(
                 select(Approval).where(
                     Approval.workspace_id == self.ctx.workspace_id,
                     Approval.action == "export",
                     Approval.decision == "approved",
-                    Approval.bound_digest == proposal.bound_digest,
+                    Approval.bound_digest.in_(digests),
                     Approval.revoked_at.is_(None),
                 )
             )
