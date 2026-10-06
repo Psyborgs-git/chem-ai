@@ -506,6 +506,30 @@ class TestApprovalBinding:
             env["svc"].set_classification(row.id, classification="restricted", rationale=" ")
         assert exc.value.code == ErrorCode.VALIDATION
 
+    def test_fallback_view_reflects_payload_approval(self, env, session: Session) -> None:
+        """The fallback card's ``approved`` flag follows the payload
+        approval — a stale bound digest must not report approved."""
+        task = _task(session, env["octx"])
+        _measurement(session, env["octx"], task)
+        snap = _frozen_snapshot(env, session, task)
+        proposal = _proposal(env, session)
+        feas = env["feas"]
+
+        def flag() -> bool:
+            return feas.fallback_view(proposal.run_id)["proposal"]["approved"]
+
+        assert flag() is False
+        row = env["svc"].prepare(proposal.id, snap.id)
+        assert flag() is False
+        env["svc"].decide(row.id, decision="approved")
+        session.flush()
+        assert flag() is True
+        # Re-binding the digest (new transformation version) invalidates
+        # the approval — the flag goes back to False, matching the
+        # review page's 'stale' state.
+        env["svc"].prepare(proposal.id, snap.id, transformation_version="export-transform/v2")
+        assert flag() is False
+
 
 def _claim_id(session: Session) -> uuid.UUID:
     return session.execute(select(EvidenceClaim.id)).scalars().first()
