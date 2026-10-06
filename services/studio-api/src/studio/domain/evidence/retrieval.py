@@ -93,6 +93,9 @@ class RetrievalService:
                 select(ExtractedRecord).where(
                     ExtractedRecord.workspace_id == ctx.workspace_id,
                     ExtractedRecord.batch_id == batch.id,
+                    # rejected records (incl. source_revoked) never enter
+                    # the retrieval index — revocation must not resurface
+                    ExtractedRecord.status != "rejected",
                 )
             ).scalars()
         )

@@ -57,15 +57,6 @@ class AttemptExecutor:
         - timeout -> timed_out (watchdog cancelled the attempt)
         - anything else -> failed with the executor's reported state
         """
-        profile = self.backend.profile
-        if not profile.enforces("argv_only_no_shell"):
-            return self.runs.fail_attempt(
-                run_id=run_id,
-                attempt_id=attempt_id,
-                code="profile_unavailable",
-                message="backend cannot honor argv-only execution",
-                retryable=False,
-            )
         self.runs.accept_attempt(
             run_id=run_id,
             attempt_id=attempt_id,
@@ -73,6 +64,19 @@ class AttemptExecutor:
             worker_id=self.worker_id,
         )
         self.runs.start_attempt(run_id=run_id, attempt_id=attempt_id, worker_id=self.worker_id)
+        profile = self.backend.profile
+        if not profile.enforces("argv_only_no_shell"):
+            # The attempt is recorded picked-up-then-refused: failing it
+            # after start keeps the run transition legal and truthful —
+            # an execution attempt was made and the isolation contract
+            # denied the backend (CS-1101).
+            return self.runs.fail_attempt(
+                run_id=run_id,
+                attempt_id=attempt_id,
+                code="profile_unavailable",
+                message="backend cannot honor argv-only execution",
+                retryable=False,
+            )
         result = self.backend.run(
             argv,
             inputs=inputs or {},
@@ -103,6 +107,12 @@ class AttemptExecutor:
                 },
             )
         self.admission.release(run_id)
+        # stderr is attacker-influenceable output: keep a bounded tail
+        # but strip control characters (ANSI escapes, NUL) so the stored
+        # message can never inject terminal escapes into a renderer.
+        tail = "".join(
+            ch if ch in "\n\t" or ch.isprintable() else "�" for ch in result.stderr[-300:]
+        )
         return self.runs.fail_attempt(
             run_id=run_id,
             attempt_id=attempt_id,
@@ -110,7 +120,7 @@ class AttemptExecutor:
             message=(
                 "process produced no parseable structured result — exit "
                 "code alone is not scientific success (§7.3); "
-                f"stderr tail: {result.stderr[-300:]}"
+                f"stderr tail: {tail}"
             ),
             retryable=False,
         )

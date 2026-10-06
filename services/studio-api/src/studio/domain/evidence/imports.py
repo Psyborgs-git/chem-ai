@@ -31,6 +31,7 @@ from studio.persistence.models import (
     ExtractedRecord,
     ImportBatch,
 )
+from studio.persistence.scrub import pg_clean
 
 
 class ImportService:
@@ -105,6 +106,11 @@ class ImportService:
                 ErrorCode.CONFLICT,
                 f"artifact is {artifact.upload_state} — only committed artifacts can be parsed",
             )
+        if artifact.review_state == "revoked":
+            raise DomainError(
+                ErrorCode.CONFLICT,
+                "artifact is revoked — a revoked source cannot re-enter the pipeline",
+            )
         rights = artifact.rights or {}
         if rights.get("extraction") == "denied":
             raise DomainError(
@@ -164,15 +170,24 @@ class ImportService:
         self.db.add(batch)
         self.db.flush()
         for rec in report.records:
+            # Postgres text/jsonb refuse NUL — scrub at the persistence
+            # boundary and flag the record honestly rather than crash
+            # the INSERT as a raw driver error (CS-1101).
+            locator, s1 = pg_clean(rec.locator)
+            text, s2 = pg_clean(rec.original_text)
+            payload, s3 = pg_clean(rec.value)
+            flags = list(rec.flags or [])
+            if s1 or s2 or s3:
+                flags = [*flags, "nul_scrubbed"]
             self.db.add(
                 ExtractedRecord(
                     workspace_id=ctx.workspace_id,
                     batch_id=batch.id,
                     kind=rec.kind,
-                    locator=rec.locator,
-                    original_text=rec.original_text,
-                    payload=rec.value,
-                    flags=rec.flags,
+                    locator=locator,
+                    original_text=text,
+                    payload=payload,
+                    flags=flags,
                     confidence=rec.confidence,
                 )
             )
@@ -201,7 +216,7 @@ class ImportService:
             workspace_id=ctx.workspace_id,
             artifact_id=artifact.id,
             checksum_sha256=checksum,
-            original_name=artifact.original_name,
+            original_name=pg_clean(artifact.original_name)[0],
             detected_type="unknown",  # caller sets the inspected type
             parser_name="quarantine",
             parser_version=PARSER_VERSION,

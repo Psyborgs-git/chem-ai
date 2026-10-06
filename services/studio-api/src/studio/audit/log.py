@@ -25,9 +25,28 @@ _SENSITIVE_KEYS = frozenset(
 
 
 def _clean(detail: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Drop sensitive keys at ANY depth and scrub NUL bytes out of
+    string values — a nested ``{"envelope": {"token": …}}`` is just as
+    persisted as a top-level one (CS-1101), and a NUL inside a value
+    would crash the jsonb insert."""
     if detail is None:
         return None
-    return {k: v for k, v in detail.items() if k.lower() not in _SENSITIVE_KEYS}
+
+    def walk(node: Any) -> Any:
+        if isinstance(node, dict):
+            return {
+                k: walk(v)
+                for k, v in node.items()
+                if not (isinstance(k, str) and k.lower() in _SENSITIVE_KEYS)
+            }
+        if isinstance(node, (list, tuple)):
+            return type(node)(walk(v) for v in node)
+        if isinstance(node, str):
+            return node.replace("\x00", "")
+        return node
+
+    cleaned = walk(detail)
+    return cleaned if isinstance(cleaned, dict) else None
 
 
 def record(

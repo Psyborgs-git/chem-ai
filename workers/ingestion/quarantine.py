@@ -10,12 +10,11 @@ from io import BytesIO
 from workers.ingestion.limits import IngestionLimits
 from workers.ingestion.types import QuarantineError
 
-MAGIC = {
-    b"%PDF": "pdf",
-    b"PK\x03\x04": "zip",  # docx/xlsx are zip containers, refined below
-    b"{": "json",
-    b"[": "json",
-}
+# Zip container signatures — a payload starting with any of these is
+# inspected as an archive even when its filename/mime claims text.
+# PK\x03\x04 local file header · PK\x05\x06 empty-archive EOCD ·
+# PK\x06\x06 zip64 EOCD · PK\x01\x02 central-directory entry.
+ZIP_MAGICS = (b"PK\x03\x04", b"PK\x05\x06", b"PK\x06\x06", b"PK\x01\x02")
 
 ZIP_MEMBERS_KIND = {
     "xl/workbook.xml": "xlsx",
@@ -32,7 +31,7 @@ def detect_type(data: bytes, filename: str = "") -> str:
     office formats, then text fallbacks by filename/content."""
     if data.startswith(b"%PDF"):
         return "pdf"
-    if data.startswith(b"PK\x03\x04"):
+    if any(data.startswith(m) for m in ZIP_MAGICS):
         try:
             with zipfile.ZipFile(BytesIO(data)) as zf:
                 names = set(zf.namelist())
@@ -50,6 +49,9 @@ def detect_type(data: bytes, filename: str = "") -> str:
         return "csv"
     if ext in ("md", "markdown"):
         return "markdown"
+    if b"\x00" in data[:4096]:
+        # NUL can never persist to a text column — it marks binary.
+        return "binary"
     try:
         data[:4096].decode("utf-8")
         return "text"
@@ -103,11 +105,15 @@ def inspect(data: bytes, filename: str, limits: IngestionLimits) -> str:
                     f"{total} decompressed bytes exceeds the limit",
                 )
             names = zf.namelist()
+            # Scan every path segment, not only the basename — XLM macro
+            # sheets live at 'xl/macrosheets/…' where the marker is the
+            # directory, not the member name (CS-1101).
             active = [
                 n
                 for n in names
                 if any(
-                    marker in n.lower().rsplit("/", 1)[-1].lower()
+                    marker in segment
+                    for segment in n.lower().replace("\\", "/").split("/")
                     for marker in ACTIVE_CONTENT_MEMBERS
                 )
             ]
