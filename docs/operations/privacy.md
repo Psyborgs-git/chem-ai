@@ -33,9 +33,12 @@ Pipeline, all gated:
    exist — today it does not.
 
 ```bash
-# verify: provider registry is empty without configuration
+# verify: provider registry is empty without configuration (executed —
+# prints `providers: [] (none configured)`)
 uv run python - <<'PY'
-from infra.cloud.broker.cloud_broker import PROVIDERS  # or PROVIDERS table
+import sys
+sys.path.insert(0, "infra/cloud/broker")
+from cloud_broker.providers import PROVIDERS
 print("providers:", list(PROVIDERS) if PROVIDERS else "[] (none configured)")
 PY
 ```

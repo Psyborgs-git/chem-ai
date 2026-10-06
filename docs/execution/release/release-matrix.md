@@ -112,7 +112,7 @@ layer while its domain layer landed last).
 | unit+contracts+lint | `make verify-core` | deterministic, no GPU/net/lab |
 | backend tests | `pytest services/studio-api/tests tests -m 'not engine'` | 1,055 collected, 61 engine-marked deselected |
 | web unit | `pnpm --filter studio-web test` | 18 tests / 8 files |
-| e2e browser | `make test-e2e` | 24 journeys across 11 specs |
+| e2e browser | `make test-e2e` | 24 journeys across 11 specs; fresh-DB run currently 21 pass / 3 fail — see known issues |
 | security | `make test-security` | adversarial suite (CS-1101) |
 | performance | `pytest tests/performance/` | measured report `docs/execution/benchmarks/CS-1103-report.md` — all §23.1 targets PASS |
 | recovery | `make backup-test` + `recovery_check.py` | 12-check integrity validation |
@@ -132,6 +132,20 @@ layer while its domain layer landed last).
   uvicorn loop for the parse duration (CS-1103 finding 2).
 - **Backups carry revoked bytes** by design; no purge policy exists
   (recovery.md §4).
+- **`make test-e2e` spec-ordering defect (found in CS-1104 repro, reported
+  not fixed):** `tests/e2e/at-1103.spec.ts` signs in as `e2e-1103-owner`,
+  but every earlier spec uses `e2e-owner` and `/api/auth/setup` refuses a
+  second owner — on a fresh `studio_e2e` DB the full suite fails all 3
+  at-1103 specs at login. `at-1103` passes standalone
+  (`playwright test at-1103`); core journeys (at-0504 et al.) pass in the
+  full run. Fix = align the helper to `e2e-owner` — a test change
+  deliberately left out of this docs-only ticket.
+- **`infra/local/pilot_gate.py` reason strings are stale:** the
+  regenerated `docs/operations/pilot-gate.md` still says `not implemented
+  (P06…)` for BayBE/training/RL rows when those capabilities exist but
+  their environment prerequisites (engine images, `profile_*` flags,
+  hardware) are absent. Status detection is honest; the reason text is
+  not. Flagged, not edited — the report is generated output.
 - Residual security risks R1–R12: see
   `docs/execution/security/cs1101-residual-threat-register.md`.
 - Benchmark machine/results: `docs/execution/benchmarks/cs1103-latest.json`.

@@ -138,7 +138,10 @@ curl -s -c /tmp/studio.cookies -X POST http://127.0.0.1:8787/api/auth/setup \
   -d '{"login":"owner","display_name":"Owner","password":"<pick ≥10 chars>"}'
 ```
 
-Expected: `{"ok": true, …}` and a `studio_session` cookie in the jar.
+Expected: `{"status":"owner_configured","expiresAt":"…"}` and a
+`studio_session` cookie in the jar. A second `/api/auth/setup` call
+returns `{"errors":[{"code":"CONFLICT","message":"owner already
+configured"}]}` — verified.
 Subsequent logins:
 
 ```bash
@@ -178,6 +181,17 @@ Playwright browser install (one-time per machine):
 pnpm --filter studio-web exec playwright install chromium
 make test-e2e         # real API subprocess + vite preview + chromium
 ```
+
+Known defect (reported in CS-1104, not yet fixed): on a **fresh**
+`studio_e2e` database the full suite reports 21 passed / 3 failed —
+the three `at-1103` accessibility specs sign in as `e2e-1103-owner`,
+but whichever spec runs first creates the owner as `e2e-owner` and
+`/api/auth/setup` refuses a second owner, so at-1103's login 401s.
+The at-1103 spec passes standalone
+(`pnpm --filter studio-web exec playwright test at-1103`), and every
+core-workflow journey (at-0504 project→closeout, at-0501/0502 lab
+records, etc.) passes in the full run. This is a test-isolation bug
+in `tests/e2e/at-1103-helpers.ts`, not an app defect.
 
 Honestly-reporting targets (exit non-zero with a reason, never a fake
 pass):
