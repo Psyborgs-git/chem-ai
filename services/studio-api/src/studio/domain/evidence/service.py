@@ -73,8 +73,11 @@ class ArtifactService:
         access_scope: uuid.UUID | None = None,
     ) -> Artifact:
         ctx.require(CAP_MANAGE_SOURCES, access_scope)
-        if not original_name.strip():
-            raise DomainError(ErrorCode.VALIDATION, "original name required")
+        if not original_name.strip() or "\x00" in original_name:
+            raise DomainError(
+                ErrorCode.VALIDATION,
+                "original name must be non-empty and contain no NUL bytes",
+            )
         if declared_size is not None and declared_size > self.max_bytes:
             raise DomainError(
                 ErrorCode.VALIDATION,

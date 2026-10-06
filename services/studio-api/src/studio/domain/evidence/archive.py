@@ -42,12 +42,15 @@ def unsafe_member_reason(name: str) -> str | None:
     stripped = name.rstrip("/")  # trailing dir marker is legal
     if not stripped:
         return "empty member name"
-    if stripped.startswith(("/", "\\")):
+    # Backslash is a path separator on Windows — normalize before the
+    # segment checks so 'a\..\b' is caught like 'a/../b' (CS-1101).
+    normalized = stripped.replace("\\", "/")
+    if normalized.startswith("/"):
         return "absolute path member"
     win = PureWindowsPath(stripped)
     if win.is_absolute() or (len(stripped) >= 2 and stripped[1] == ":"):
         return "absolute/drive-letter member"
-    parts = stripped.split("/")
+    parts = normalized.split("/")
     if ".." in parts:
         return "parent-directory traversal member"
     if any(part in ("", ".") for part in parts):

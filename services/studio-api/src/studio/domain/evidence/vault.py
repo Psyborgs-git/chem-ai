@@ -62,11 +62,14 @@ class Vault:
         return p
 
     def _check_key(self, storage_key: str) -> None:
+        # Backslash is a separator on Windows — normalize before the
+        # segment check so 'a\..\b' is refused like 'a/../b' (CS-1101).
+        normalized = storage_key.replace("\\", "/")
         if (
-            not storage_key
-            or storage_key.startswith(("/", "\\"))
-            or "\x00" in storage_key
-            or any(part in ("", ".", "..") for part in storage_key.split("/"))
+            not normalized
+            or normalized.startswith("/")
+            or "\x00" in normalized
+            or any(part in ("", ".", "..") for part in normalized.split("/"))
         ):
             raise DomainError(ErrorCode.VALIDATION, "invalid storage key")
 

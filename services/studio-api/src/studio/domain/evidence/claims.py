@@ -28,6 +28,7 @@ from studio.persistence.models import (
     ClaimLink,
     EvidenceClaim,
 )
+from studio.persistence.scrub import pg_clean
 
 
 class ClaimService:
@@ -107,11 +108,11 @@ class ClaimService:
             workspace_id=ctx.workspace_id,
             kind="document_claim",
             status="proposed",
-            subject=subject,
-            statement=statement,
+            subject=pg_clean(subject)[0],
+            statement=pg_clean(statement)[0],
             locator=record.locator,
             original_text=record.original_text,
-            conditions=conditions,
+            conditions=pg_clean(conditions)[0],
             source_batch_id=record.batch_id,
             source_record_id=record.id,
             created_by=ctx.principal_id,
@@ -136,15 +137,18 @@ class ClaimService:
         ctx.require(CAP_MANAGE_SOURCES)
         if kind not in CLAIM_KINDS:
             raise DomainError(ErrorCode.VALIDATION, f"unknown claim kind {kind}")
+        # pg_clean at the persistence boundary — a NUL byte in any
+        # caller-supplied text would otherwise crash the INSERT as a
+        # raw driver error rather than a clean record (CS-1101).
         claim = EvidenceClaim(
             workspace_id=ctx.workspace_id,
             kind=kind,
             status="proposed",
-            subject=subject,
-            statement=statement,
-            locator=locator,
-            original_text=original_text,
-            conditions=conditions,
+            subject=pg_clean(subject)[0],
+            statement=pg_clean(statement)[0],
+            locator=pg_clean(locator)[0],
+            original_text=pg_clean(original_text)[0],
+            conditions=pg_clean(conditions)[0],
             created_by=ctx.principal_id,
         )
         self.db.add(claim)
