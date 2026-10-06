@@ -30,6 +30,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import re
 import shutil
 import subprocess
 import sys
@@ -52,38 +54,79 @@ def _sha256(path: Path) -> tuple[str, int]:
     return h.hexdigest(), n
 
 
-_CONTAINER = "chem-studio-postgres"
+def _container() -> str:
+    """Postgres container used for the docker-exec pg-tool fallback.
+
+    Defaults to the compose service; tests point it at their
+    throwaway container via ``STUDIO_PGTOOL_CONTAINER``.
+    """
+    return os.environ.get("STUDIO_PGTOOL_CONTAINER", "chem-studio-postgres")
 
 
-def _pg_tool(name: str) -> list[str]:
+def _tool_major(tool: str) -> int | None:
+    out = subprocess.run(  # noqa: S603 — fixed argv
+        [tool, "--version"], capture_output=True, text=True
+    )
+    m = re.search(r"(\d+)", out.stdout or out.stderr)
+    return int(m.group(1)) if m else None
+
+
+def _server_major(dsn: str) -> int | None:
+    import psycopg
+
+    try:
+        with psycopg.connect(dsn) as conn:
+            num = conn.execute("SHOW server_version_num").fetchone()[0]
+    except Exception:
+        return None
+    return int(num) // 10000
+
+
+def _pg_tool(name: str, dsn: str) -> list[str]:
     """argv prefix for a postgres client tool.
 
-    Prefers host binaries; falls back to the compose container's tools
-    (``docker exec chem-studio-postgres <name>``) so the dev profile
-    works without a host postgres install.
+    Prefers host binaries *when they can talk to the server*
+    (pg_dump/pg_restore refuse a server newer than their own major
+    version); otherwise falls back to the postgres container's tools
+    (``docker exec <container> <name>``) so the dev profile works
+    without a host postgres install.
     """
     tool = shutil.which(name)
     if tool is not None:
-        return [tool]
+        server = _server_major(dsn)
+        client = _tool_major(tool)
+        if server is None or client is None or client >= server:
+            return [tool]
+        # Host client is older than the server — it would abort on a
+        # version mismatch; prefer the container tools instead.
+    container = _container()
     if shutil.which("docker") is not None:
         probe = subprocess.run(  # noqa: S603 — fixed argv
-            ["docker", "exec", _CONTAINER, "which", name],  # noqa: S607
+            ["docker", "exec", container, "which", name],  # noqa: S607
             capture_output=True,
         )
         if probe.returncode == 0:
-            return ["docker", "exec", "-i", _CONTAINER, name]
+            return ["docker", "exec", "-i", container, name]
+    if tool is not None:
+        # Older-than-server host tool and no container — try it anyway
+        # so the caller gets the real server error, not a false block.
+        return [tool]
     raise SystemExit(
-        f"BLOCKED: `{name}` unavailable on PATH and in {_CONTAINER}; "
+        f"BLOCKED: `{name}` unavailable on PATH and in {container}; "
         "install postgresql client tools or start compose postgres"
     )
 
 
 def _container_dsn(dsn: str) -> str:
-    """Rewrite a host DSN for use inside the postgres container."""
+    """Rewrite a host DSN for use inside the postgres container:
+    credentials/db from the DSN, netloc rebound to the container's
+    own loopback listener."""
     from urllib.parse import urlsplit, urlunsplit
 
     parts = urlsplit(dsn)
-    return urlunsplit(parts._replace(netloc="studio:studio@127.0.0.1:5432"))
+    user = parts.username or "studio"
+    password = parts.password or "studio"
+    return urlunsplit(parts._replace(netloc=f"{user}:{password}@127.0.0.1:5432"))
 
 
 def _alembic_head(dsn: str) -> str:
@@ -104,7 +147,7 @@ def _via_container(tool: list[str]) -> bool:
 
 
 def cmd_backup(dsn: str, vault: Path, out: Path) -> int:
-    pg_dump = _pg_tool("pg_dump")
+    pg_dump = _pg_tool("pg_dump", dsn)
     out = out.resolve()
     if out.exists() and any(out.iterdir()):
         raise SystemExit(f"FAILED: backup dir {out} is not empty (refuse to mix manifests)")
@@ -207,7 +250,7 @@ def cmd_verify(backup: Path) -> int:
 
 
 def cmd_restore(backup: Path, dsn: str, vault: Path, force: bool) -> int:
-    pg_restore = _pg_tool("pg_restore")
+    pg_restore = _pg_tool("pg_restore", dsn)
     backup = backup.resolve()
     # Verify BEFORE writing anything.
     cmd_verify(backup)
