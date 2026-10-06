@@ -23,13 +23,13 @@ nothing waits silently.
 | U13 | Base model/license/runtime compatibility | **open** | llama.cpp + sha256-pinned 2B GGUF proven the mechanics (CS-0405) | fine-tuning/serving a chosen model |
 | U14 | Scientific evaluation/replication thresholds | **open** | Gate machinery + synthetic thresholds (CS-0602/0803) | model promotion for real science |
 | U15 | Retention/recovery/key-management policy | **open** | Tested backup/restore + 12-check integrity + retention inventory (CS-0505/1102) | production retention schedule, key store |
-| U16 | Optional ELN (eLabFTW) instance/credentials/ownership | **open** | fixture adapter tests only; core lab workflow is native | **CS-0506 — never started, blocked** |
+| U16 | Optional ELN (eLabFTW) instance/credentials/ownership | **decided — deferred** | CS-0506 implemented at fixture level (export + selective import, version/hash review gates); core lab workflow is native | live sync — needs explicit instance + credentials + separate ownership/sync-direction decision |
 
 ## Optional/live integrations — honest state
 
 | Integration | Status | Note |
 |---|---|---|
-| eLabFTW ELN | **blocked (U16)** | CS-0506 unimplemented; do not start until instance+credentials+ownership land |
+| eLabFTW ELN | **fixture / live not_configured (U16 decided-deferred)** | CS-0506 adapter + `docs/operations/eln.md`; connector off by default, no instance/credentials provisioned |
 | Confidential cloud provider | **not_configured (U08/U09/U11)** | CS-1004 adapter skeleton + attestation gate verified against in-process double; `cloud-security.md` §"live activation" lists the required owner approval + real `ConfidentialBackend` |
 | Live model training at scale | **blocked (U08/U13)** | mechanism verified on fixture corpus; no hardware/model selection |
 | Instrument control | **blocked by design** | manual-first pilot; no adapter exists or is claimed |

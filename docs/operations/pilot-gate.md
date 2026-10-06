@@ -22,7 +22,7 @@ scientific capabilities even when the software path is live.
 | RL research decisions | blocked | `chem-studio-rl:0.1.0-v1` absent; build engine image then `make test-engines` | not_validated | promotion-gated; fixture reward climbs ≠ scientific gain |
 | Cloud fallback | not_configured | CS-1001-1004 decision reports + transform + broker + adapter landed; zero providers registered | not_validated | no approved provider/account/region (U08/U09/U11); explicit human approval still required (§20.2) |
 | Equipment / instrument control | blocked | no adapter by design (manual-first pilot) | not_validated | — |
-| ELN bridge (eLabFTW) | blocked | CS-0506 not implemented; optional integration | not_validated | — |
+| ELN bridge (eLabFTW) | fixture | CS-0506 adapter verified vs fixtures (export + review-gated import); connector off by default | not_validated | live sync deferred (U16 decision); no instance/credentials provisioned |
 
 ## Privacy posture (verified)
 
