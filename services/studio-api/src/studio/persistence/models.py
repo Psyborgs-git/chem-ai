@@ -1731,6 +1731,172 @@ class ExportTransformedPayload(Base, UUIDPrimaryKey, WorkspaceScoped, Timestampe
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
 
 
+EXPORT_JOB_STATUSES = (
+    "pending",
+    "transferring",
+    "transferred",
+    "running",
+    "succeeded",
+    "failed",
+    "cancelled",
+    "reconciling",
+    "deleted",
+    "denied",
+)
+EXPORT_ATTEMPT_OUTCOMES = (
+    "validated",
+    "denied",
+    "transferred",
+    "failed",
+    "cancelled",
+)
+EXPORT_RECEIPT_KINDS = ("reconcile", "deletion", "cancellation")
+
+
+class ExportJob(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """One external-job lineage for an approved export payload (§20.2,
+    CS-1003).
+
+    The broker (infra/cloud/broker) is the only egress path; this row
+    persists the lineage it converges to from untrusted provider
+    callbacks: repeated/crossed/reordered callbacks fold into exactly
+    one job + artifact list (AT-1003-3). ``bytes_transferred``/
+    ``exposed`` are honest accounting — a revocation records what was
+    already sent and never claims unseen data (AT-1003-2).
+    ``manifest_digest``/``payload_digest`` pin the job to the exact
+    approved bound inputs (digest equality, not field similarity)."""
+
+    __tablename__ = "export_jobs"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "payload_id"],
+            ["export_transformed_payloads.workspace_id", "export_transformed_payloads.id"],
+            name="fk_export_jobs_scope_payload",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "approval_id"],
+            ["approvals.workspace_id", "approvals.id"],
+            name="fk_export_jobs_scope_approval",
+        ),
+        UniqueConstraint("workspace_id", "id", name="uq_export_jobs_scope_id"),
+        UniqueConstraint(
+            "workspace_id",
+            "payload_id",
+            "manifest_digest",
+            name="uq_export_jobs_manifest",
+        ),
+        CheckConstraint(f"status IN {EXPORT_JOB_STATUSES!r}", name="status"),
+        Index("ix_export_jobs_scope_payload", "workspace_id", "payload_id"),
+        Index("ix_export_jobs_external", "external_job_id"),
+    )
+
+    payload_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    approval_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    external_job_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="pending")
+    manifest_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    recipient: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    permitted_job: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    bytes_transferred: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    artifact_ids: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    # Dedupe ledger of provider callback ids — untrusted input folded
+    # once (AT-1003-3).
+    seen_callback_ids: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    last_seq: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Bytes the provider verifiably received — recorded as exposed even
+    # after revocation; never reset (AT-1003-2).
+    exposed: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    # Last provider-event state folded from untrusted callbacks —
+    # seeds lineage restoration after a process restart (AT-1003-3).
+    external_state: Mapped[str] = mapped_column(String(24), nullable=False, default="submitted")
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class ExportJobAttempt(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """Every transfer attempt the broker evaluated — including denied
+    ones, which record ``bytes_emitted = 0`` so the ledger proves no
+    outbound bytes left on a denial (AT-1003-1)."""
+
+    __tablename__ = "export_job_attempts"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "job_id"],
+            ["export_jobs.workspace_id", "export_jobs.id"],
+            name="fk_export_attempts_scope_job",
+        ),
+        UniqueConstraint("workspace_id", "attempt_key", name="uq_export_attempts_key"),
+        CheckConstraint(f"outcome IN {EXPORT_ATTEMPT_OUTCOMES!r}", name="outcome"),
+        Index("ix_export_attempts_scope_job", "workspace_id", "job_id"),
+    )
+
+    job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    attempt_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    outcome: Mapped[str] = mapped_column(String(24), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    bytes_emitted: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    external_job_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+
+class ExportCallback(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """Append-only ledger of provider callbacks (untrusted input).
+
+    ``uq_export_callbacks_dedupe`` makes the fold idempotent: the same
+    callback id replayed inserts once, and convergence lives on the
+    job row (AT-1003-3)."""
+
+    __tablename__ = "export_callbacks"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "job_id"],
+            ["export_jobs.workspace_id", "export_jobs.id"],
+            name="fk_export_callbacks_scope_job",
+        ),
+        UniqueConstraint(
+            "workspace_id",
+            "job_id",
+            "callback_id",
+            name="uq_export_callbacks_dedupe",
+        ),
+    )
+
+    job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    callback_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    event: Mapped[str] = mapped_column(String(40), nullable=False)
+    seq: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    artifacts: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+
+class ExportReceipt(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """Recorded reconcile/cancellation/deletion receipts (§20.5).
+
+    A receipt is evidence, not a claim: ``unresolved_retention`` lists
+    what could not be verified deleted and ``exposed`` keeps the honest
+    byte count the provider had already received (AT-1003-2)."""
+
+    __tablename__ = "export_receipts"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "job_id"],
+            ["export_jobs.workspace_id", "export_jobs.id"],
+            name="fk_export_receipts_scope_job",
+        ),
+        CheckConstraint(f"kind IN {EXPORT_RECEIPT_KINDS!r}", name="kind"),
+        Index("ix_export_receipts_scope_job", "workspace_id", "job_id"),
+    )
+
+    job_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    kind: Mapped[str] = mapped_column(String(24), nullable=False)
+    receipt_ref: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    bytes_transferred: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    artifact_ids: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    unresolved_retention: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    exposed: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    raw: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+
 class RunCacheEntry(Base, UUIDPrimaryKey, WorkspaceScoped):
     """An immutable cached run result (§13.5).
 
