@@ -81,10 +81,19 @@ function RevisionDiff({ cand, all }: { cand: CandidateNode; all: CandidateNode[]
   );
 }
 
-function CandidateList({ taskId }: { taskId: string }) {
+function CandidateList({
+  taskId,
+  fetchKey,
+}: {
+  taskId: string;
+  fetchKey: number;
+}) {
+  // fetchKey + network-only forces a real refetch on propose — a
+  // remount alone replays the cached query result (CS-1201).
   const data = useLazyLoadQuery<candidatesTaskCandidatesQuery>(
     TaskCandidatesQuery,
     { taskId },
+    { fetchKey, fetchPolicy: "network-only" },
   );
   const [diff, setDiff] = useState<CandidateNode | null>(null);
   const all = data.taskCandidateRevisions.edges.map((e) => e.node);
@@ -105,7 +114,13 @@ function CandidateList({ taskId }: { taskId: string }) {
   );
 }
 
-function ProposeForm({ taskId }: { taskId: string }) {
+function ProposeForm({
+  taskId,
+  onProposed,
+}: {
+  taskId: string;
+  onProposed: () => void;
+}) {
   const [commit] = useMutation<candidatesCreateMutation>(CandidateCreateMutation);
   const [hypothesis, setHypothesis] = useState("");
   const [kind, setKind] = useState("formulation");
@@ -130,6 +145,7 @@ function ProposeForm({ taskId }: { taskId: string }) {
             setFeedback(
               errs.length ? `not proposed: ${errs[0].message}` : "proposed as draft",
             );
+            if (!errs.length) onProposed();
           },
           onError: (e) => setFeedback(`not proposed: ${e.message}`),
         });
@@ -162,11 +178,15 @@ function ProposeForm({ taskId }: { taskId: string }) {
 }
 
 export function CandidatePanel({ taskId }: { taskId: string }) {
+  const [fetchKey, setFetchKey] = useState(0);
   return (
     <div>
-      <ProposeForm taskId={taskId} />
+      <ProposeForm
+        taskId={taskId}
+        onProposed={() => setFetchKey((k) => k + 1)}
+      />
       <Suspense fallback={<LoadingState label="loading candidates…" />}>
-        <CandidateList taskId={taskId} />
+        <CandidateList taskId={taskId} fetchKey={fetchKey} />
       </Suspense>
     </div>
   );

@@ -53,15 +53,17 @@ function PointerCard({
   notice,
   setNotice,
   onChanged,
+  fetchKey,
 }: {
   notice: string | null;
   setNotice: (m: string) => void;
   onChanged: () => void;
+  fetchKey: number;
 }) {
   const data = useLazyLoadQuery<learningServingPointerQuery>(
     ServingPointerQuery,
     {},
-    { fetchPolicy: "network-only" },
+    { fetchKey, fetchPolicy: "network-only" },
   );
   const [rollback, busy] = useMutation<learningModelReleaseRollbackMutation>(
     ModelReleaseRollbackMutation,
@@ -255,15 +257,17 @@ function PinList({
   taskId,
   notice,
   setNotice,
+  fetchKey,
 }: {
   taskId: string | null;
   notice: string | null;
   setNotice: (m: string) => void;
+  fetchKey: number;
 }) {
   const data = useLazyLoadQuery<learningSessionModelPinsQuery>(
     SessionModelPinsQuery,
     { taskId },
-    { fetchPolicy: "network-only" },
+    { fetchKey, fetchPolicy: "network-only" },
   );
   const [bind, binding] = useMutation<learningSessionModelBindMutation>(
     SessionModelBindMutation,
@@ -322,16 +326,18 @@ function ReleaseList({
   notices,
   setNotice,
   onChanged,
+  fetchKey,
 }: {
   taskId: string | null;
   notices: Record<string, string>;
   setNotice: (key: string, m: string) => void;
   onChanged: () => void;
+  fetchKey: number;
 }) {
   const data = useLazyLoadQuery<learningModelReleasesQuery>(
     ModelReleasesQuery,
     { taskId },
-    { fetchPolicy: "network-only" },
+    { fetchKey, fetchPolicy: "network-only" },
   );
   if (data.modelReleases.length === 0) {
     return <EmptyState title="No model releases registered yet." />;
@@ -430,7 +436,7 @@ export function ModelsPanel({ taskId }: { taskId: string | null }) {
       </p>
       <Suspense fallback={<LoadingState label="loading serving pointer…" />}>
         <PointerCard
-          key={`p${refreshKey}`}
+          fetchKey={refreshKey}
           notice={notices["pointer"] ?? null}
           setNotice={(m) => setNotice("pointer", m)}
           onChanged={() => setRefreshKey((k) => k + 1)}
@@ -466,7 +472,7 @@ export function ModelsPanel({ taskId }: { taskId: string | null }) {
       )}
       <Suspense fallback={<LoadingState label="loading model releases…" />}>
         <ReleaseList
-          key={refreshKey}
+          fetchKey={refreshKey}
           taskId={taskId}
           notices={notices}
           setNotice={setNotice}
@@ -476,7 +482,7 @@ export function ModelsPanel({ taskId }: { taskId: string | null }) {
       <h4>session pins</h4>
       <Suspense fallback={<LoadingState label="loading session pins…" />}>
         <PinList
-          key={`s${refreshKey}`}
+          fetchKey={refreshKey}
           taskId={taskId}
           notice={notices["pins"] ?? null}
           setNotice={(m) => setNotice("pins", m)}

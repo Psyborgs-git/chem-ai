@@ -89,13 +89,14 @@ class TaskService:
 
     # ---------------------------------------------------------- reads
 
-    def _task(self, task_id: uuid.UUID) -> ResearchTask:
-        task = self.db.execute(
-            select(ResearchTask).where(
-                ResearchTask.id == task_id,
-                ResearchTask.workspace_id == self.ctx.workspace_id,
-            )
-        ).scalar_one_or_none()
+    def _task(self, task_id: uuid.UUID, *, for_update: bool = False) -> ResearchTask:
+        stmt = select(ResearchTask).where(
+            ResearchTask.id == task_id,
+            ResearchTask.workspace_id == self.ctx.workspace_id,
+        )
+        if for_update:
+            stmt = stmt.with_for_update()
+        task = self.db.execute(stmt).scalar_one_or_none()
         if task is None:
             raise not_found("task")
         return task
@@ -384,7 +385,10 @@ class TaskService:
     ) -> SuccessContractRevision:
         """New contract draft (rev = max+1). Thresholds live in the
         payload; unresolved fields stay unresolved."""
-        task = self._task(task_id)
+        # Lock the task row: concurrent draft/freezes must serialize so
+        # revision = max+1 cannot race the (task_id, revision) unique
+        # constraint into a bare IntegrityError (CS-1201).
+        task = self._task(task_id, for_update=True)
         self.ctx.require(CAP_EDIT_TASK, task.project_id)
         current_max = self.db.execute(
             select(func.max(SuccessContractRevision.revision)).where(
@@ -424,7 +428,10 @@ class TaskService:
         ).scalar_one_or_none()
         if rev is None:
             raise not_found("contract revision")
-        task = self._task(rev.task_id)
+        # Lock the task row (same lock point as draft_contract) so the
+        # status check + version bump serialize against concurrent
+        # contract writes on this task (CS-1201).
+        task = self._task(rev.task_id, for_update=True)
         self.ctx.require(CAP_EDIT_TASK, task.project_id)
         if rev.status != "draft":
             raise DomainError(

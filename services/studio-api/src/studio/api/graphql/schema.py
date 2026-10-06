@@ -11,7 +11,7 @@ domain tables — they are not stubbed.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import datetime
 from enum import Enum
 from typing import Any, cast
@@ -20,7 +20,9 @@ import strawberry
 from chem_studio_policy.capabilities import CAP_READ_PROJECT, CAP_REQUEST_COMPUTE
 from fastapi import Request
 from sqlalchemy import or_, select
+from sqlalchemy.exc import SQLAlchemyError
 from strawberry import relay
+from strawberry.extensions import SchemaExtension
 from strawberry.fastapi import GraphQLRouter
 from strawberry.scalars import JSON
 
@@ -806,6 +808,32 @@ def _err_payload(exc: DomainError) -> DomainErrorPayload:
         retryable=exc.retryable,
         safe_details=JSON(exc.safe_details),
     )
+
+
+class DomainErrorExtensions(SchemaExtension):
+    """Attach the §8.3 typed error contract to wire-level ``errors[]``.
+
+    A ``DomainError`` escaping a resolver lands in the GraphQL
+    ``errors`` array, where graphql-core keeps only ``args[0]`` text —
+    without ``extensions.code`` a NOT_FOUND is indistinguishable from
+    an auth failure to clients (CS-1201). Mutations already return
+    typed ``errors`` payloads; this covers field-level raises only."""
+
+    def on_operation(self) -> Iterator[None]:
+        yield
+        result = self.execution_context.result
+        if result is None or not result.errors:
+            return
+        for err in result.errors:
+            original = getattr(err, "original_error", None)
+            if isinstance(original, DomainError):
+                err.extensions = {
+                    **(err.extensions or {}),
+                    "code": str(original.code),
+                    "fieldPath": original.field_path,
+                    "retryable": original.retryable,
+                    "safeDetails": original.safe_details,
+                }
 
 
 # ------------------------------------------------------------------
@@ -1970,6 +1998,25 @@ class Mutation:
                 errors=[_err_payload(exc)],
                 client_mutation_id=input.client_mutation_id,
             )
+        except SQLAlchemyError:
+            # A transient persistence failure (lock contention,
+            # serialization race, dropped connection) must return the
+            # typed retryable error — an unhandled raise would surface
+            # as a bare `contractDraftCreate: null` field (CS-1201).
+            gql.db.rollback()
+            return ContractRevisionResult(
+                contract_revision=None,
+                errors=[
+                    _err_payload(
+                        DomainError(
+                            ErrorCode.CONFLICT,
+                            "the command could not be committed; retry",
+                            retryable=True,
+                        )
+                    )
+                ],
+                client_mutation_id=input.client_mutation_id,
+            )
 
     @strawberry.mutation
     def contract_freeze(
@@ -2012,6 +2059,24 @@ class Mutation:
             return ContractRevisionResult(
                 contract_revision=None,
                 errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except SQLAlchemyError:
+            # Same contract as contract_draft_create: a transient
+            # persistence failure is a typed retryable CONFLICT, never
+            # a bare `contractFreeze: null` field (CS-1201 flake fix).
+            gql.db.rollback()
+            return ContractRevisionResult(
+                contract_revision=None,
+                errors=[
+                    _err_payload(
+                        DomainError(
+                            ErrorCode.CONFLICT,
+                            "the command could not be committed; retry",
+                            retryable=True,
+                        )
+                    )
+                ],
                 client_mutation_id=input.client_mutation_id,
             )
 
@@ -5208,4 +5273,4 @@ class AnalyticalMutation:
             )
 
 
-schema = strawberry.Schema(query=Query, mutation=Mutation)
+schema = strawberry.Schema(query=Query, mutation=Mutation, extensions=[DomainErrorExtensions])
