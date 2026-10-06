@@ -67,13 +67,14 @@ CORE_TABLES = [
     "export_proposals",
 ]
 
-# Tables required only when the restored head includes the CS-1003
-# privacy broker (kept in sync with the migration chain).
+# Tables required only when the restored head includes the CS-1002/1003
+# export surface (kept in sync with the migration chain).
 CS1003_TABLES = [
-    "export_manifests",
+    "export_transformed_payloads",
     "export_jobs",
+    "export_job_attempts",
+    "export_callbacks",
     "export_receipts",
-    "export_revocations",
 ]
 
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -362,15 +363,16 @@ def check(dsn: str, vault: Path, expect_alembic: str | None) -> dict[str, Any]:
         # -- CS-1003 export broker surface (when the schema has it) -----
         items = []
         if "export_jobs" in present:
-            for jid, proposal in q("SELECT id, proposal_id FROM export_jobs"):
-                if "export_proposals" in present and not q(
-                    "SELECT 1 FROM export_proposals WHERE id=%s", (proposal,)
+            for jid, payload in q("SELECT id, payload_id FROM export_jobs"):
+                if "export_transformed_payloads" in present and not q(
+                    "SELECT 1 FROM export_transformed_payloads WHERE id=%s",
+                    (payload,),
                 ):
                     items.append(
                         {
-                            "kind": "export_job_proposal",
+                            "kind": "export_job_payload",
                             "job_id": str(jid),
-                            "proposal_id": str(proposal),
+                            "payload_id": str(payload),
                         }
                     )
         if "export_receipts" in present:
