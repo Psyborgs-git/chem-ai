@@ -16,6 +16,7 @@ import { QualityPanel } from "../features/evidence/quality/QualityPanel";
 import { ComputePanel } from "../features/compute/ComputePanel";
 import { FallbackPanel } from "../features/compute/fallback/FallbackPanel";
 import { ImportReview } from "../features/imports/ImportReview";
+import { ExportReviewPanel } from "../features/privacy/export-review/ExportReviewPanel";
 import { LabPage } from "../features/lab/plans/LabPage";
 import { TaskCreateForm } from "../features/tasks/TaskCreateForm";
 import { TaskWorkspace } from "../features/tasks/TaskWorkspace";
@@ -181,6 +182,11 @@ function FallbackPage() {
   return <FallbackPanel runId={decodeURIComponent(runId)} />;
 }
 
+function ExportReviewPage() {
+  const { proposalId = "" } = useParams();
+  return <ExportReviewPanel proposalId={decodeURIComponent(proposalId)} />;
+}
+
 function ViewerStatus() {
   const data = useLazyLoadQuery<AppViewerQueryType>(ViewerQuery, {});
   return <p>Signed in as {data.viewer.displayName}.</p>;
@@ -265,6 +271,10 @@ export function AppRoutes() {
                         <Route
                           path="/compute/fallback/:runId"
                           element={<FallbackPage />}
+                        />
+                        <Route
+                          path="/privacy/exports/:proposalId"
+                          element={<ExportReviewPage />}
                         />
                         <Route
                           path="*"

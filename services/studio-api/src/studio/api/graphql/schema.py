@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable
+from datetime import datetime
 from enum import Enum
 from typing import Any, cast
 
@@ -71,6 +72,7 @@ from studio.domain.evidence.revocation import RevocationService
 from studio.domain.lab.measurements import LabMeasurementService
 from studio.domain.lab.plans import LabPlanService
 from studio.domain.learning.datasets import DatasetService
+from studio.domain.learning.exports.transform import TransformService
 from studio.domain.learning.models import ModelRegistryService
 from studio.domain.learning.promotion import EvaluationService, PromotionService
 from studio.domain.learning.sft import TrainingRunService
@@ -1517,6 +1519,19 @@ class Query:
         return JSON(service.fallback_view(r_uuid))
 
     @strawberry.field
+    def export_review(self, info: strawberry.Info, proposal_id: relay.GlobalID) -> JSON:
+        """Disclosure-review view for an export proposal (§20.2-20.3,
+        CS-1002): the exact transformed payload document, the redaction
+        and residual-risk reports (a scanner flags risk — it can never
+        certify all trade secrets are removed), the bound manifest, the
+        approval state, frozen snapshot candidates, and honest
+        capabilities."""
+        gql = gql_ctx(info)
+        p_uuid = _gid_uuid(proposal_id, "ExportProposal", "proposalId")
+        service = TransformService(gql.db, gql.service_ctx())
+        return JSON(service.review_view(p_uuid))
+
+    @strawberry.field
     def import_batches(
         self,
         info: strawberry.Info,
@@ -2047,6 +2062,11 @@ class Mutation:
     def analytical(self) -> AnalyticalMutation:
         """Analytical-data ingest + scoped comparison (CS-0703)."""
         return AnalyticalMutation()
+
+    @strawberry.mutation
+    def exports(self) -> ExportsMutation:
+        """Export-review commands (§20.2-20.3, CS-1002)."""
+        return ExportsMutation()
 
 
 @strawberry.input
@@ -3919,6 +3939,158 @@ class RunsMutation:
                 report=None,
                 proposal=None,
                 cloud=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+
+@strawberry.input
+class ExportPrepareInput:
+    proposal_id: relay.GlobalID
+    snapshot_id: relay.GlobalID
+    recipient: str | None = None
+    account: str | None = None
+    region: str | None = None
+    expires_at: str | None = None
+    max_records: int | None = None
+    max_bytes: int | None = None
+    retention_expectation: str | None = None
+    deletion_expectation: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class ExportDecideInput:
+    payload_id: relay.GlobalID
+    decision: str
+    rationale: str | None = None
+    ttl_seconds: int | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class ExportSetClassificationInput:
+    payload_id: relay.GlobalID
+    classification: str
+    rationale: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class ExportReviewResult:
+    """The export-review surface result: the full view is re-fetched
+    after each command so the client always renders the exact document
+    the approval binds."""
+
+    view: JSON | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+def _parse_export_expiry(value: str | None) -> datetime | None:
+    if value is None:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise DomainError(
+            ErrorCode.VALIDATION, "expiresAt must be an ISO datetime", field_path="expiresAt"
+        ) from exc
+    return parsed
+
+
+@strawberry.type
+class ExportsMutation:
+    """Export-review commands (§20.2-20.3, CS-1002). prepare builds
+    (or reuses) the minimal transformed payload for a proposal; decide
+    binds a human approval to the exact payload+transformation digest;
+    set_classification records a reviewed classification change (which
+    re-binds the digest). Nothing here transfers anything — egress
+    stays deny and only an owner may approve."""
+
+    @strawberry.mutation
+    def prepare(self, info: strawberry.Info, input: ExportPrepareInput) -> ExportReviewResult:
+        gql = gql_ctx(info)
+        try:
+            p_uuid = _gid_uuid(input.proposal_id, "ExportProposal", "proposalId")
+            s_uuid = _gid_uuid(input.snapshot_id, "DatasetSnapshot", "snapshotId")
+            service = TransformService(gql.db, gql.service_ctx())
+            row = service.prepare(
+                p_uuid,
+                s_uuid,
+                recipient=input.recipient,
+                account=input.account,
+                region=input.region,
+                expires_at=_parse_export_expiry(input.expires_at),
+                max_records=input.max_records,
+                max_bytes=input.max_bytes,
+                retention_expectation=input.retention_expectation,
+                deletion_expectation=input.deletion_expectation,
+            )
+            gql.db.commit()
+            return ExportReviewResult(
+                view=JSON(service.review_view(row.proposal_id)),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return ExportReviewResult(
+                view=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def decide(self, info: strawberry.Info, input: ExportDecideInput) -> ExportReviewResult:
+        gql = gql_ctx(info)
+        try:
+            p_uuid = _gid_uuid(input.payload_id, "ExportPayload", "payloadId")
+            service = TransformService(gql.db, gql.service_ctx())
+            row = service.payload(p_uuid)
+            service.decide(
+                p_uuid,
+                decision=input.decision,
+                rationale=input.rationale,
+                ttl_seconds=input.ttl_seconds,
+            )
+            gql.db.commit()
+            return ExportReviewResult(
+                view=JSON(service.review_view(row.proposal_id)),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return ExportReviewResult(
+                view=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def set_classification(
+        self, info: strawberry.Info, input: ExportSetClassificationInput
+    ) -> ExportReviewResult:
+        gql = gql_ctx(info)
+        try:
+            p_uuid = _gid_uuid(input.payload_id, "ExportPayload", "payloadId")
+            service = TransformService(gql.db, gql.service_ctx())
+            row = service.set_classification(
+                p_uuid,
+                classification=input.classification,
+                rationale=input.rationale or "",
+            )
+            gql.db.commit()
+            return ExportReviewResult(
+                view=JSON(service.review_view(row.proposal_id)),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return ExportReviewResult(
+                view=None,
                 errors=[_err_payload(exc)],
                 client_mutation_id=input.client_mutation_id,
             )
