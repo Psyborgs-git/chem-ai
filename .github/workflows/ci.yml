@@ -119,3 +119,53 @@ jobs:
           python-version: "3.12"
       - run: uv sync --python 3.12 --group dev --extra engines --frozen
       - run: make test-engines
+
+  frontend-build:
+    name: frontend production build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter studio-web build
+
+  # PAR-10a: browser journeys on a disposable database (serve.sh creates
+  # + truncates `studio_e2e` on a compose postgres). Not a required merge
+  # gate yet — keep it off branch protection until the signal proves
+  # stable; failures here are real failures, never muted.
+  e2e:
+    name: e2e browser journeys (disposable db, not required yet)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: uv sync --python 3.12 --group dev --frozen
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter studio-web exec playwright install --with-deps chromium
+      - run: make test-e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/**
+            test-results/**
+          if-no-files-found: ignore
+          retention-days: 14
