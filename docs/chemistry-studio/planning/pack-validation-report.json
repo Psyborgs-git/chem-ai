@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "checked_at_utc": "2026-10-06T02:06:41.087156+00:00",
+  "checked_at_utc": "2026-10-06T14:23:04.089798+00:00",
   "scope": "Specification consistency only; no application tests, chemistry engines, training jobs or laboratory experiments executed.",
   "passed": true,
   "counts": {
