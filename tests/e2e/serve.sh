@@ -7,8 +7,12 @@ cd "$(dirname "$0")/../.."
 DB_URL="postgresql+psycopg://studio:studio@127.0.0.1:54329/studio_e2e"
 
 docker compose -f infra/local/compose.yaml up -d postgres >/dev/null
-for i in $(seq 1 30); do
-  if docker exec chem-studio-postgres pg_isready -U studio -d studio >/dev/null 2>&1; then
+# First-boot race: the postgres image's temp initdb server also answers
+# socket-local pg_isready/psql before the real postmaster starts. Probe
+# the container's own TCP listener instead — only the real postmaster
+# binds it, so this readiness check cannot pass early.
+for i in $(seq 1 60); do
+  if docker exec chem-studio-postgres pg_isready -h 127.0.0.1 -p 5432 -U studio -d studio >/dev/null 2>&1; then
     break
   fi
   sleep 1
