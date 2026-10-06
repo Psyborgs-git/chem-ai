@@ -1555,6 +1555,99 @@ class ResourceReservation(Base, UUIDPrimaryKey, WorkspaceScoped):
     released_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+FEASIBILITY_VERDICTS = ("feasible", "infeasible")
+EXPORT_PROPOSAL_STATUSES = ("proposed", "approved", "rejected", "withdrawn")
+
+
+class RunFeasibilityReport(Base, UUIDPrimaryKey, WorkspaceScoped):
+    """Append-only local-feasibility evidence report (§20.1).
+
+    One row per evaluation: the requested operation, declared
+    model/data/sequence sizes, bounded estimates with declared
+    uncertainty, every compatible local configuration's verdict per
+    resource group, why the approved configuration fits or fails, and
+    the observed hardware snapshot. Reports record facts and declared
+    uncertainty only — never invented throughput."""
+
+    __tablename__ = "run_feasibility_reports"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "run_id"],
+            ["runs.workspace_id", "runs.id"],
+            name="fk_feasibility_scope_run",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "evaluated_by"],
+            ["principals.workspace_id", "principals.id"],
+            name="fk_feasibility_scope_evaluator",
+        ),
+        UniqueConstraint("workspace_id", "id", name="uq_feasibility_scope_id"),
+        CheckConstraint(f"verdict IN {FEASIBILITY_VERDICTS!r}", name="verdict"),
+        Index("ix_feasibility_scope_run", "workspace_id", "run_id", "created_at", "id"),
+    )
+
+    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    evaluated_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    operation: Mapped[str] = mapped_column(String(80), nullable=False)
+    # "compatibility_check" | "bounded_estimate" — how the verdict was
+    # established (a conservative check, never a full-scale probe run).
+    basis: Mapped[str] = mapped_column(String(40), nullable=False)
+    sizes: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    envelope: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    configurations: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    uncertainty: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    reasons: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    missing: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    hardware: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    verdict: Mapped[str] = mapped_column(String(16), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ExportProposal(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """An inert export-review proposal (§20.1-20.2).
+
+    Created only after every approved compatible local configuration
+    fails feasibility. A proposal is a *review item for a human* — it
+    carries no payload, recipient, provider call or budget reservation
+    and can never submit or spend (AT-1001-3). Approval happens through
+    the separate approvals ledger; a stored credential is not one."""
+
+    __tablename__ = "export_proposals"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "run_id"],
+            ["runs.workspace_id", "runs.id"],
+            name="fk_export_proposals_scope_run",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "feasibility_report_id"],
+            ["run_feasibility_reports.workspace_id", "run_feasibility_reports.id"],
+            name="fk_export_proposals_scope_report",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "proposed_by"],
+            ["principals.workspace_id", "principals.id"],
+            name="fk_export_proposals_scope_proposer",
+        ),
+        UniqueConstraint("workspace_id", "id", name="uq_export_proposals_scope_id"),
+        CheckConstraint(f"status IN {EXPORT_PROPOSAL_STATUSES!r}", name="status"),
+        Index("ix_export_proposals_scope_run", "workspace_id", "run_id", "created_at", "id"),
+    )
+
+    run_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    feasibility_report_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    proposed_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")
+    # The exact document a human's export approval would later bind
+    # (run identity + request digest + verdict) — approvals re-validate
+    # this digest at execution time (§7.4).
+    bound_inputs: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    bound_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    required_capability: Mapped[str] = mapped_column(String(80), nullable=False)
+
+
 class RunCacheEntry(Base, UUIDPrimaryKey, WorkspaceScoped):
     """An immutable cached run result (§13.5).
 

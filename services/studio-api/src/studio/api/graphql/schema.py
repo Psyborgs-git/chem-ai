@@ -77,6 +77,7 @@ from studio.domain.learning.sft import TrainingRunService
 from studio.domain.materials.service import MaterialService
 from studio.domain.projects.service import ProjectService
 from studio.domain.runs.admission import AdmissionService
+from studio.domain.runs.feasibility import FeasibilityService
 from studio.domain.runs.queue import RunService
 from studio.domain.tasks.evaluation import TaskEvaluationService
 from studio.domain.tasks.memory import TaskMemoryService
@@ -1503,6 +1504,17 @@ class Query:
                 ],
             }
         )
+
+    @strawberry.field
+    def run_fallback(self, info: strawberry.Info, run_id: relay.GlobalID) -> JSON:
+        """Latest feasibility evidence + export-proposal state for a
+        run (§20.1-20.2, CS-1001): report verdict/configurations with
+        declared uncertainty, proposal status (never pre-approved),
+        and the honest cloud capability (not_configured here)."""
+        gql = gql_ctx(info)
+        r_uuid = _gid_uuid(run_id, "Run", "runId")
+        service = FeasibilityService(gql.db, gql.service_ctx())
+        return JSON(service.fallback_view(r_uuid))
 
     @strawberry.field
     def import_batches(
@@ -3776,6 +3788,28 @@ class RunResult:
     client_mutation_id: str | None
 
 
+@strawberry.input
+class RunFallbackInput:
+    run_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class FallbackResult:
+    """The fallback decision surface (§20.1-20.2): the persisted
+    feasibility evidence report, the inert export-review proposal
+    (unapproved by default), and the honest cloud capability."""
+
+    run: RunNode | None
+    decision: str | None
+    cloud_authorized: bool
+    report: JSON | None
+    proposal: JSON | None
+    cloud: JSON | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
 @strawberry.type
 class RunsMutation:
     @strawberry.mutation
@@ -3848,6 +3882,43 @@ class RunsMutation:
             gql.db.rollback()
             return RunResult(
                 run=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def request_fallback(self, info: strawberry.Info, input: RunFallbackInput) -> FallbackResult:
+        """Evaluate local feasibility and apply the fallback policy
+        (§20.1-20.2, CS-1001). Feasible runs are untouched; infeasible
+        runs get a persisted evidence report plus an inert export-review
+        proposal — never a submission, transfer or spend (AT-1001-3)."""
+        gql = gql_ctx(info)
+        try:
+            r_uuid = _gid_uuid(input.run_id, "Run", "runId")
+            service = FeasibilityService(gql.db, gql.service_ctx())
+            decision = service.request_fallback(r_uuid)
+            gql.db.commit()
+            view = service.fallback_view(r_uuid)
+            row = gql.db.get(RunRow, r_uuid)
+            return FallbackResult(
+                run=RunNode.from_row(row) if row else None,
+                decision=decision.decision,
+                cloud_authorized=decision.cloud_authorized,
+                report=JSON(view["report"]) if view["report"] else None,
+                proposal=JSON(view["proposal"]) if view["proposal"] else None,
+                cloud=JSON(view["cloud"]),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return FallbackResult(
+                run=None,
+                decision=None,
+                cloud_authorized=False,
+                report=None,
+                proposal=None,
+                cloud=None,
                 errors=[_err_payload(exc)],
                 client_mutation_id=input.client_mutation_id,
             )
