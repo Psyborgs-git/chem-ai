@@ -1,6 +1,6 @@
 # Pilot gate report — Chemistry Studio
 
-Generated: 2026-10-06 17:30 UTC by `infra/local/pilot_gate.py` (CS-0505, AT-0505-3).
+Generated: 2026-10-06 17:33 UTC by `infra/local/pilot_gate.py` (CS-0505, AT-0505-3).
 
 **Software status ≠ scientific validation.** Every workflow executed
 to date runs on synthetic fixture data. No entry below asserts
@@ -20,7 +20,7 @@ scientific capabilities even when the software path is live.
 | BayBE optimization | live (container) | `chem-studio-baybe:0.15.0-v1` present; CS-0603 adapter + independent constraint checks | not_validated | independent constraint re-check; fixture_only — no scientific validation |
 | Property models / training | blocked | chemprop/SFT engine images absent; build engine images then `make test-engines` | not_validated | fixture_only — real endpoints/training need U02/U14 data + U08/U13 hardware/model |
 | RL research decisions | blocked | `chem-studio-rl:0.1.0-v1` absent; build engine image then `make test-engines` | not_validated | promotion-gated; fixture reward climbs ≠ scientific gain |
-| Cloud fallback | not_configured | CS-1001–1004 decision reports + transform + broker + adapter landed; zero providers registered | not_validated | no approved provider/account/region (U08/U09/U11); explicit human approval still required (§20.2) |
+| Cloud fallback | not_configured | CS-1001-1004 decision reports + transform + broker + adapter landed; zero providers registered | not_validated | no approved provider/account/region (U08/U09/U11); explicit human approval still required (§20.2) |
 | Equipment / instrument control | blocked | no adapter by design (manual-first pilot) | not_validated | — |
 | ELN bridge (eLabFTW) | blocked | CS-0506 not implemented; optional integration | not_validated | — |
 

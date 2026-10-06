@@ -83,7 +83,8 @@ def build_report() -> str:
     proptrain = (
         (
             "live (container)",
-            f"`{CHEMPROP_IMAGE}` + `{SFT_IMAGE}` present; CS-0604/CS-0801 mechanism verified on fixtures",
+            f"`{CHEMPROP_IMAGE}` + `{SFT_IMAGE}` present; "
+            "CS-0604/CS-0801 mechanism verified on fixtures",
         )
         if _docker("image", "inspect", CHEMPROP_IMAGE) and _docker("image", "inspect", SFT_IMAGE)
         else (
@@ -170,8 +171,10 @@ def build_report() -> str:
         _row(
             "Cloud fallback",
             "not_configured",
-            "CS-1001–1004 decision reports + transform + broker + adapter landed; zero providers registered",
-            "no approved provider/account/region (U08/U09/U11); explicit human approval still required (§20.2)",
+            "CS-1001-1004 decision reports + transform + broker + adapter landed; "
+            "zero providers registered",
+            "no approved provider/account/region (U08/U09/U11); "
+            "explicit human approval still required (§20.2)",
         ),
         _row(
             "Equipment / instrument control",
