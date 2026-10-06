@@ -153,9 +153,10 @@ def build_report() -> str:
         ),
         _row(
             "ELN bridge (eLabFTW)",
-            "blocked",
-            "CS-0506 not implemented; optional integration",
-            "—",
+            "fixture",
+            "CS-0506 adapter verified vs fixtures (export + review-gated import); "
+            "connector off by default",
+            "live sync deferred (U16 decision); no instance/credentials provisioned",
         ),
     ]
 

@@ -3,9 +3,10 @@
 **Release state: verified pilot + hardening — not a finished
 scientific platform.** All workflows run on synthetic fixture data;
 `scientificStatus` is `not_validated` everywhere. Live compute,
-training-at-scale, ELN, and cloud egress lanes are implemented as
-mechanism-only or remain blocked by their named unknowns
-(`unknowns-register.md`).
+training-at-scale, and cloud egress lanes are implemented as
+mechanism-only or remain blocked by their named unknowns; the ELN
+bridge landed at fixture level with live sync deferred per the U16
+decision (`unknowns-register.md`).
 
 Evidence rule (AT-1104-1): every row traces to a merged commit/PR plus
 a ticket evidence doc (`docs/execution/tickets/CS-*.md`) whose
@@ -35,7 +36,7 @@ where a doc's AT evidence is thin this matrix says so.
 | Evaluation + promotion gate | repo services (CS-0803) | service-level | **live** — hidden labels double-gated, matched baseline required | thresholds synthetic until U14 | U14 |
 | Export broker | `infra/cloud/broker` | in-process | **mechanism live** — permit gate, receipts, revoke stops transfer | zero providers registered | U11 |
 | Confidential cloud adapter | `infra/cloud/providers` | in-process double | **not_configured** — attestation gate verified against double only | no approved provider/account/region | U08, U09, U11 |
-| ELN bridge (eLabFTW) | — | — | **blocked** — CS-0506 not implemented | optional integration | U16 |
+| ELN bridge (eLabFTW) | `packages/engine-adapters/elabftw` | in-process + fixture transport | **fixture** — import/export/conflict/disconnect paths verified vs fixtures | connector off by default; live sync deferred (U16), `not_configured` | U16 (decided — deferred) |
 
 ## 2. Per-ticket verification matrix (definition-of-done, §27)
 
@@ -75,7 +76,7 @@ ticket's own honest status, condensed.
 | CS-0503 | P05 | 713fb88 | CS-0503.md | AT-0503-1/2/3 ✔ | live: gate-first evaluator; server-derived closure packets |
 | CS-0504 | P05 | 713fb88 | CS-0504.md | AT-0504-1/2/3 ✔ (browser journeys) | live: 3 pilot journeys on real backend+PG+prod build, all fixture |
 | CS-0505 | P05 | 998c56a (P05 closeout) | CS-0505.md | AT-0505-1/2/3 ✔ | live: backup/restore + egress check + generated pilot gate; no backup encryption |
-| **CS-0506** | P05 | — | none | AT-0506-* not run | **blocked — U16** (no ELN instance/credentials/ownership; optional integration; never started) |
+| CS-0506 | P05 | draft PR — `devin/*-cs0506-eln-bridge` | CS-0506.md | AT-0506-1/2/3 ✔ (fixture-level) | **fixture**: version/hash review gates, stale/disconnected honesty, `not_configured` default; live sync deferred (U16) |
 | CS-0601 | P06 | 998c56a | CS-0601.md | AT-0601-1/2/3 ✔ | live: dataset snapshots + eligibility; fixture manifests `not_validated` |
 | CS-0602 | P06 | 998c56a | CS-0602.md | AT-0602-1/2/3 ✔ | live: group-aware leakage-safe splits + baseline eval; fixture |
 | CS-0603 | P06 | PR #1 (71bc161) | CS-0603.md | AT-0603-1/2/3 ✔ | engine_smoke_passed / fixture_only: BayBE container + independent constraint checks |
@@ -159,7 +160,9 @@ layer while its domain layer landed last).
 ## 5. Unresolved inputs and next unblocked work
 
 - All U-codes: `unknowns-register.md`.
-- **Next unblocked ticket:** none — CS-1104 is the final planned ticket.
-  Continuation requires resolving unknowns (U16 eLabFTW; U08/U13
-  hardware/model; U11 provider approval; U02/U03/U14 real data and
-  thresholds) before new capability claims.
+- **Next unblocked ticket:** none — all planned tickets landed
+  (CS-0506 last, at fixture level per U16). Continuation requires
+  resolving unknowns (U08/U13 hardware/model; U11 provider approval;
+  U02/U03/U14 real data and thresholds; U16 live ELN needs an instance
+  + a fresh ownership/sync-direction decision) before new capability
+  claims.

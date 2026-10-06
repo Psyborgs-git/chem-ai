@@ -1,0 +1,41 @@
+{
+  "type": "items",
+  "id": 15,
+  "title": "Fixture binder resin",
+  "created_at": "2026-08-11 11:00:00",
+  "modified_at": "2026-08-11 11:00:00",
+  "date": "2026-08-11",
+  "body": "<p>Fixture resource record — no real material is described.</p>",
+  "body_html": "<p>Fixture resource record — no real material is described.</p>",
+  "content_type": 1,
+  "elabid": null,
+  "userid": 7,
+  "fullname": "Fixture User",
+  "team": "Fixture Lab",
+  "status": null,
+  "status_title": null,
+  "category": 5,
+  "category_title": "Fixture resource type",
+  "state": 1,
+  "metadata": {
+    "extra_fields": {
+      "cas_number": {
+        "type": "text",
+        "value": "000-00-0",
+        "description": "placeholder CAS in fixture data"
+      }
+    }
+  },
+  "tags": [],
+  "uploads": [],
+  "comments": [],
+  "items_links": [],
+  "experiments_links": [],
+  "sharelink": "https://eln.fixture.invalid/database.php?mode=view&id=15",
+  "canread": {"base": 20, "teams": [], "users": []},
+  "canwrite": {"base": 30, "teams": [], "users": []},
+  "locked": 0,
+  "timestamped": null,
+  "page": "items",
+  "next": null
+}

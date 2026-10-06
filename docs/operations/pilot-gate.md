@@ -22,7 +22,7 @@ scientific capabilities even when the software path is live.
 | RL research decisions | blocked | not implemented (§19 preconditions unmet) | not_validated | — |
 | Cloud fallback | blocked | no cloud adapter; explicit human approval required (§20.2) | not_validated | — |
 | Equipment / instrument control | blocked | no adapter by design (manual-first pilot) | not_validated | — |
-| ELN bridge (eLabFTW) | blocked | CS-0506 not implemented; optional integration | not_validated | — |
+| ELN bridge (eLabFTW) | fixture | CS-0506 adapter verified vs fixtures (export + review-gated import); connector off by default | not_validated | live sync deferred (U16 decision); no instance/credentials provisioned |
 
 ## Privacy posture (verified)
 

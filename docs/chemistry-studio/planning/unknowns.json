@@ -126,8 +126,8 @@
       "question": "Optional ELN instance, credentials and record ownership",
       "blocks": "Live ELN integration",
       "non_blocking_path": "Fixture adapter tests only; core lab workflow remains native.",
-      "status": "unknown",
-      "answer": null
+      "status": "decided",
+      "answer": "Live external ELN integration deferred and non-blocking for this release: no eLabFTW instance URL or credentials provisioned. Chemistry Studio is authoritative for its native records; sync direction NONE enabled. CS-0506 ships a fixture-level adapter (export + selective import with version/hash review gates). A future live integration requires explicit configuration plus a separate ownership/sync-direction/conflict decision — no bidirectional sync by assumption."
     }
   ]
 }
