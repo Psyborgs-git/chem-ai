@@ -14,6 +14,7 @@ import { EmptyState, ErrorState, LoadingState } from "../components";
 import { EvidencePanel } from "../features/evidence/EvidencePanel";
 import { QualityPanel } from "../features/evidence/quality/QualityPanel";
 import { ComputePanel } from "../features/compute/ComputePanel";
+import { FallbackPanel } from "../features/compute/fallback/FallbackPanel";
 import { ImportReview } from "../features/imports/ImportReview";
 import { LabPage } from "../features/lab/plans/LabPage";
 import { TaskCreateForm } from "../features/tasks/TaskCreateForm";
@@ -147,6 +148,11 @@ function TaskPage() {
   return <TaskWorkspace taskId={decodeURIComponent(taskId)} />;
 }
 
+function FallbackPage() {
+  const { runId = "" } = useParams();
+  return <FallbackPanel runId={decodeURIComponent(runId)} />;
+}
+
 function ViewerStatus() {
   const data = useLazyLoadQuery<AppViewerQueryType>(ViewerQuery, {});
   return <p>Signed in as {data.viewer.displayName}.</p>;
@@ -228,6 +234,10 @@ export function AppRoutes() {
                         />
                         <Route path="/lab" element={<LabPage />} />
                         <Route path="/compute" element={<ComputePanel />} />
+                        <Route
+                          path="/compute/fallback/:runId"
+                          element={<FallbackPage />}
+                        />
                         <Route
                           path="*"
                           element={<EmptyState title="Page not found." />}

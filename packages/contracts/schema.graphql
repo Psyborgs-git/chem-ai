@@ -482,6 +482,17 @@ type ExtractedRecordResult {
   clientMutationId: String
 }
 
+type FallbackResult {
+  run: Run
+  decision: String
+  cloudAuthorized: Boolean!
+  report: JSON
+  proposal: JSON
+  cloud: JSON
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
 type HardwareCapabilities {
   os: String!
   arch: String!
@@ -1104,6 +1115,7 @@ type Query {
   engineCapabilities: ProfileCapabilities!
   hardwareCapabilities: HardwareCapabilities!
   computeResources: JSON!
+  runFallback(runId: ID!): JSON!
   importBatches(first: Int = null, after: String = null, last: Int = null, before: String = null): ImportBatchConnection!
   importRecords(batchId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ExtractedRecordConnection!
   evidenceClaims(kind: String = null, status: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): EvidenceClaimConnection!
@@ -1267,6 +1279,11 @@ type RunEdge {
   node: Run!
 }
 
+input RunFallbackInput {
+  runId: ID!
+  clientMutationId: String = null
+}
+
 input RunRequestInput {
   taskId: ID!
   kind: String!
@@ -1286,6 +1303,7 @@ type RunResult {
 type RunsMutation {
   request(input: RunRequestInput!): RunResult!
   requestCancel(input: RunCancelInput!): RunResult!
+  requestFallback(input: RunFallbackInput!): FallbackResult!
 }
 
 input SampleAddInput {

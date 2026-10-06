@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
 import { Badge } from "../../components/atoms/Badge";
@@ -99,6 +100,9 @@ function RunRow({ run }: { run: RunNode }) {
         >
           cancel
         </Button>
+      )}
+      {!TERMINAL.has(run.status) && (
+        <Link to={`/compute/fallback/${encodeURIComponent(run.id)}`}>fallback review</Link>
       )}
     </li>
   );
