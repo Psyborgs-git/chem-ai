@@ -133,66 +133,84 @@ function EvaluationReport({
       <FindingsList findings={findings} />
 
       {metrics.length > 0 && (
-        <table data-field="metrics-table">
-          <caption>contract metrics</caption>
-          <thead>
-            <tr>
-              <th>metric</th>
-              <th>verdict</th>
-              <th>compared against</th>
-              <th>evidence</th>
-            </tr>
-          </thead>
-          <tbody>
-            {metrics.map((m) => (
-              <tr
-                key={m.metricId}
-                data-field="metric-row"
-                data-verdict={m.verdict}
-              >
-                <td>
-                  {m.label ?? m.metricId}
-                  {m.required === false ? " (optional)" : ""}
-                  <FindingsList findings={m.findings ?? []} />
-                </td>
-                <td data-field="metric-verdict">
-                  <Badge tone={VERDICT_TONE[m.verdict ?? ""] ?? "neutral"}>
-                    {m.verdict ?? "?"}
-                  </Badge>
-                </td>
-                <td>{m.comparedAgainst ?? "—"}</td>
-                <td>{(m.evidenceIds ?? []).length} reading(s)</td>
+        <div
+          className="cs-table-wrap"
+          role="region"
+          aria-label="contract metrics"
+          tabIndex={0}
+        >
+          <table className="cs-table" data-field="metrics-table">
+            <caption>contract metrics</caption>
+            <thead>
+              <tr>
+                <th scope="col" className="cs-table__identity">
+                  metric
+                </th>
+                <th scope="col">verdict</th>
+                <th scope="col">compared against</th>
+                <th scope="col">evidence</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {metrics.map((m) => (
+                <tr
+                  key={m.metricId}
+                  data-field="metric-row"
+                  data-verdict={m.verdict}
+                >
+                  <td className="cs-table__identity">
+                    {m.label ?? m.metricId}
+                    {m.required === false ? " (optional)" : ""}
+                    <FindingsList findings={m.findings ?? []} />
+                  </td>
+                  <td data-field="metric-verdict">
+                    <Badge tone={VERDICT_TONE[m.verdict ?? ""] ?? "neutral"}>
+                      {m.verdict ?? "?"}
+                    </Badge>
+                  </td>
+                  <td>{m.comparedAgainst ?? "—"}</td>
+                  <td>{(m.evidenceIds ?? []).length} reading(s)</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {gates.length > 0 && (
-        <table data-field="gates-table">
-          <caption>hard gates — never compensated by performance</caption>
-          <thead>
-            <tr>
-              <th>gate</th>
-              <th>verdict</th>
-            </tr>
-          </thead>
-          <tbody>
-            {gates.map((g) => (
-              <tr key={g.id} data-field="gate-row" data-verdict={g.verdict}>
-                <td>
-                  {g.text ?? g.id}
-                  <FindingsList findings={g.findings ?? []} />
-                </td>
-                <td data-field="gate-verdict">
-                  <Badge tone={VERDICT_TONE[g.verdict ?? ""] ?? "neutral"}>
-                    {g.verdict ?? "?"}
-                  </Badge>
-                </td>
+        <div
+          className="cs-table-wrap"
+          role="region"
+          aria-label="hard gates"
+          tabIndex={0}
+        >
+          <table className="cs-table" data-field="gates-table">
+            <caption>hard gates — never compensated by performance</caption>
+            <thead>
+              <tr>
+                <th scope="col" className="cs-table__identity">
+                  gate
+                </th>
+                <th scope="col">verdict</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {gates.map((g) => (
+                <tr key={g.id} data-field="gate-row" data-verdict={g.verdict}>
+                  <td className="cs-table__identity">
+                    {g.text ?? g.id}
+                    <FindingsList findings={g.findings ?? []} />
+                  </td>
+                  <td data-field="gate-verdict">
+                    <Badge tone={VERDICT_TONE[g.verdict ?? ""] ?? "neutral"}>
+                      {g.verdict ?? "?"}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {unknowns.length > 0 && (

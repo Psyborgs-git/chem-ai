@@ -1,5 +1,145 @@
 /* Component styles — semantic tokens only (see tokens.css). */
 
+/* Keyboard entry point: hidden until focused, then visible and
+ * on top — never removed from the tab order. */
+.cs-skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-radius: var(--radius-sm);
+  z-index: 100;
+  transform: translateY(-200%);
+}
+.cs-skip-link:focus-visible { transform: none; }
+
+/* App shell — persistent navigation (§22.1). Wraps instead of
+ * clipping on narrow screens; the header never hides nav items. */
+.cs-shell { min-height: 100vh; display: flex; flex-direction: column; }
+.cs-shell__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: var(--border-width) solid var(--border);
+  background: var(--surface-raised);
+}
+.cs-shell__brand { font-weight: 700; color: var(--text); text-decoration: none; }
+.cs-shell__header nav {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.cs-shell__header nav a {
+  color: var(--text);
+  text-decoration: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  border: var(--border-width) solid transparent;
+}
+.cs-shell__header nav a:hover { background: var(--surface-sunken); }
+.cs-shell__header nav a[aria-current="page"] {
+  border-color: var(--border-strong);
+  font-weight: 700;
+}
+.cs-shell main { flex: 1; padding: var(--space-4); }
+
+/* Theme control — an explicit toggle; prefers-color-scheme is only
+ * the first-load default (see main.tsx). */
+.cs-theme-toggle { margin-inline-start: auto; }
+
+/* Section tabs (TaskWorkspace): real buttons with aria-pressed —
+ * the active tab is marked by text weight + border, not color only. */
+.cs-tab {
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.cs-tab--active {
+  font-weight: 700;
+  border-color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+nav[aria-label="task sections"] {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  overflow-x: auto;
+  padding-block-end: var(--space-1);
+}
+
+/* FocusRing atom: wrapper must not disturb layout — the outline
+ * lands on the wrapped control via :focus-visible above. */
+.cs-focus-ring { display: contents; }
+
+/* Scientific tables (§22.5): horizontal scroll on narrow screens
+ * with the identity column pinned — conditions and units stay
+ * reachable, nothing shrinks below legibility. */
+.cs-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+}
+.cs-table {
+  border-collapse: collapse;
+  min-width: 40rem;
+  width: 100%;
+}
+.cs-table th,
+.cs-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width) solid var(--border);
+}
+.cs-table thead th {
+  background: var(--surface-raised);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.cs-table .cs-table__identity {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  border-right: var(--border-width) solid var(--border);
+  min-width: 8rem;
+  z-index: 1;
+}
+.cs-table thead .cs-table__identity { background: var(--surface-raised); }
+
+/* Candidate revision diff — side-by-side on desktop, stacked on
+ * narrow screens (§22.5 stacked detail mode). */
+.cs-diff { display: flex; gap: var(--space-4); align-items: flex-start; }
+.cs-diff > * { flex: 1; min-width: 0; }
+.cs-diff pre {
+  overflow-x: auto;
+  padding: var(--space-3);
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+}
+
+/* dev-only showcase page */
+.cs-dev { padding: var(--space-4); }
+.cs-dev section { margin-block-end: var(--space-6); }
+
+.cs-state--empty { background: var(--surface-raised); }
+.cs-state--unavailable { background: var(--state-surface-info); }
+
+@media (max-width: 48rem) {
+  .cs-shell main { padding: var(--space-2); }
+  .cs-diff { flex-direction: column; }
+}
+
 .cs-field { display: flex; flex-direction: column; gap: var(--space-1); }
 .cs-field__label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
 .cs-field__hint { font-size: 0.8rem; color: var(--text-muted); margin: 0; }

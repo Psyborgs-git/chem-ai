@@ -48,7 +48,7 @@ function dimRow(name: string, cap: number | null | undefined, res: number | unde
     cap === null || cap === undefined ? null : cap - (res ?? 0) - (used ?? 0);
   return (
     <tr key={name}>
-      <td>{name}</td>
+      <td className="cs-table__identity">{name}</td>
       <td>{cap === null || cap === undefined ? 'unobserved' : String(cap)}</td>
       <td>{res ?? 0}</td>
       <td>{used ?? 0}</td>
@@ -78,7 +78,7 @@ export function ComputePanel() {
       </header>
 
       <h3>Hardware</h3>
-      <table className="kv">
+      <table className="cs-table kv">
         <tbody>
           <tr><td>OS / arch</td><td>{hw.os} / {hw.arch}</td></tr>
           <tr><td>Memory model</td><td>{hw.memory_model}</td></tr>
@@ -106,22 +106,31 @@ export function ComputePanel() {
       {view.groups.map((g) => (
         <section key={g.name}>
           <h3>Resource group: {g.name}</h3>
-          <table className="data">
-            <thead>
-              <tr>
-                <th>dimension</th>
-                <th>capacity</th>
-                <th>reserve</th>
-                <th>reserved</th>
-                <th>available</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(['cpu_cores', 'memory_bytes', 'gpu_devices', 'storage_bytes', 'concurrency'] as const).map(
-                (d) => dimRow(d, g.capacity[d], g.reserve[d], g.reserved[d]),
-              )}
-            </tbody>
-          </table>
+          <div
+            className="cs-table-wrap"
+            role="region"
+            aria-label={`resource group ${g.name}`}
+            tabIndex={0}
+          >
+            <table className="cs-table data">
+              <thead>
+                <tr>
+                  <th scope="col" className="cs-table__identity">
+                    dimension
+                  </th>
+                  <th scope="col">capacity</th>
+                  <th scope="col">reserve</th>
+                  <th scope="col">reserved</th>
+                  <th scope="col">available</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(['cpu_cores', 'memory_bytes', 'gpu_devices', 'storage_bytes', 'concurrency'] as const).map(
+                  (d) => dimRow(d, g.capacity[d], g.reserve[d], g.reserved[d]),
+                )}
+              </tbody>
+            </table>
+          </div>
         </section>
       ))}
       {view.groups.length === 0 && (

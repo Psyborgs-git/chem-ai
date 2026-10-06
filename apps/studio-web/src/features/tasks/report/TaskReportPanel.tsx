@@ -84,48 +84,59 @@ function ReportBody({ taskId }: { taskId: string }) {
       </p>
 
       {metrics.length > 0 && (
-        <table data-field="report-metrics">
-          <caption>metrics vs contract</caption>
-          <thead>
-            <tr>
-              <th>metric</th>
-              <th>verdict</th>
-              <th>compared against</th>
-              <th>evidence</th>
-            </tr>
-          </thead>
-          <tbody>
-            {metrics.map((m, i) => {
-              const mf = (m.findings ?? []) as Finding[];
-              return (
-                <tr key={i} data-verdict={String(m.verdict)}>
-                  <td>
-                    {String(m.label ?? m.metricId ?? "?")}
-                    {m.required === false ? " (optional)" : ""}
-                    {mf.length > 0 && (
-                      <ul>
-                        {mf.map((f, j) => (
-                          <li key={j} data-finding-kind={f.kind}>
-                            {f.text}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </td>
-                  <td data-field="report-metric-verdict">
-                    <Badge
-                      tone={VERDICT_TONE[String(m.verdict)] ?? "neutral"}
-                    >
-                      {String(m.verdict ?? "?")}
-                    </Badge>
-                  </td>
-                  <td>{String(m.comparedAgainst ?? "—")}</td>
-                  <td>{(m.evidenceIds as string[] | undefined)?.length ?? 0}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div
+          className="cs-table-wrap"
+          role="region"
+          aria-label="metrics vs contract"
+          tabIndex={0}
+        >
+          <table className="cs-table" data-field="report-metrics">
+            <caption>metrics vs contract</caption>
+            <thead>
+              <tr>
+                <th scope="col" className="cs-table__identity">
+                  metric
+                </th>
+                <th scope="col">verdict</th>
+                <th scope="col">compared against</th>
+                <th scope="col">evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.map((m, i) => {
+                const mf = (m.findings ?? []) as Finding[];
+                return (
+                  <tr key={i} data-verdict={String(m.verdict)}>
+                    <td className="cs-table__identity">
+                      {String(m.label ?? m.metricId ?? "?")}
+                      {m.required === false ? " (optional)" : ""}
+                      {mf.length > 0 && (
+                        <ul>
+                          {mf.map((f, j) => (
+                            <li key={j} data-finding-kind={f.kind}>
+                              {f.text}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </td>
+                    <td data-field="report-metric-verdict">
+                      <Badge
+                        tone={VERDICT_TONE[String(m.verdict)] ?? "neutral"}
+                      >
+                        {String(m.verdict ?? "?")}
+                      </Badge>
+                    </td>
+                    <td>{String(m.comparedAgainst ?? "—")}</td>
+                    <td>
+                      {(m.evidenceIds as string[] | undefined)?.length ?? 0}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {gates.length > 0 && (
@@ -166,36 +177,47 @@ function ReportBody({ taskId }: { taskId: string }) {
           {String(measurements.attributedCount ?? 0)} metric-attributed
         </h4>
         {measurementRows.length > 0 && (
-          <table>
-            <thead>
-              <tr>
-                <th>method</th>
-                <th>metric</th>
-                <th>status</th>
-                <th>repeat</th>
-              </tr>
-            </thead>
-            <tbody>
-              {measurementRows.map((m) => (
-                <tr key={String(m.id)} data-status={String(m.status)}>
-                  <td>{String(m.method)}</td>
-                  <td>{m.metric != null ? String(m.metric) : "unattributed"}</td>
-                  <td>
-                    <Badge tone={VERDICT_TONE[String(m.status)] ?? "neutral"}>
-                      {String(m.status)}
-                    </Badge>
-                    {m.applicable === false && (
-                      <>
-                        {" "}
-                        <Badge tone="warning">not applicable</Badge>
-                      </>
-                    )}
-                  </td>
-                  <td>{String(m.repeatType)}</td>
+          <div
+            className="cs-table-wrap"
+            role="region"
+            aria-label="measurements"
+            tabIndex={0}
+          >
+            <table className="cs-table">
+              <thead>
+                <tr>
+                  <th scope="col" className="cs-table__identity">
+                    method
+                  </th>
+                  <th scope="col">metric</th>
+                  <th scope="col">status</th>
+                  <th scope="col">repeat</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {measurementRows.map((m) => (
+                  <tr key={String(m.id)} data-status={String(m.status)}>
+                    <td className="cs-table__identity">{String(m.method)}</td>
+                    <td>
+                      {m.metric != null ? String(m.metric) : "unattributed"}
+                    </td>
+                    <td>
+                      <Badge tone={VERDICT_TONE[String(m.status)] ?? "neutral"}>
+                        {String(m.status)}
+                      </Badge>
+                      {m.applicable === false && (
+                        <>
+                          {" "}
+                          <Badge tone="warning">not applicable</Badge>
+                        </>
+                      )}
+                    </td>
+                    <td>{String(m.repeatType)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         {Object.keys(byStatus).length > 0 && (
           <p className="cs-hint">by status: {JSON.stringify(byStatus)}</p>

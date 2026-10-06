@@ -111,18 +111,25 @@ export function OptimizationPanel({ taskRef }: { taskRef: OptimizationPanel_task
         <CampaignSummary manifest={manifest} />
         <Button disabled={busy} onClick={() => act(c.id, c.revision, "recommend")}>Request suggestions</Button>
         <details><summary>Frozen definition</summary><pre>{JSON.stringify(manifest.definition, null, 2)}</pre></details>
-        <table><caption>Reserved experiment identities (cancelled/failed remain reserved)</caption>
-          <thead><tr><th>Identity / parameters</th><th>State</th><th>Observation</th><th>Lifecycle</th></tr></thead>
-          <tbody>{manifest.state.experiments.map(e => <tr key={e.id}>
-            <td>{e.id}<pre>{JSON.stringify(e.parameters)}</pre></td><td>{e.status}{e.reason && <p>{e.reason}</p>}</td>
-            <td>{e.outcome === null ? "No observation" : `${e.outcome} ${manifest.definition.target.unit}`}<p>{e.measurement_id ?? ""}</p></td>
-            <td>{e.status === "pending" && <>
-              <Button disabled={busy} onClick={() => act(c.id, c.revision, "observed", e.id)}>Link reviewed observation</Button>
-              <Button disabled={busy} onClick={() => act(c.id, c.revision, "cancelled", e.id)}>Cancel suggestion</Button>
-              <Button disabled={busy} onClick={() => act(c.id, c.revision, "failed", e.id)}>Record failure</Button>
-            </>}</td>
-          </tr>)}</tbody>
-        </table>
+        <div
+          className="cs-table-wrap"
+          role="region"
+          aria-label="reserved experiment identities"
+          tabIndex={0}
+        >
+          <table className="cs-table"><caption>Reserved experiment identities (cancelled/failed remain reserved)</caption>
+            <thead><tr><th scope="col" className="cs-table__identity">Identity / parameters</th><th scope="col">State</th><th scope="col">Observation</th><th scope="col">Lifecycle</th></tr></thead>
+            <tbody>{manifest.state.experiments.map(e => <tr key={e.id}>
+              <td className="cs-table__identity">{e.id}<pre>{JSON.stringify(e.parameters)}</pre></td><td>{e.status}{e.reason && <p>{e.reason}</p>}</td>
+              <td>{e.outcome === null ? "No observation" : `${e.outcome} ${manifest.definition.target.unit}`}<p>{e.measurement_id ?? ""}</p></td>
+              <td>{e.status === "pending" && <>
+                <Button disabled={busy} onClick={() => act(c.id, c.revision, "observed", e.id)}>Link reviewed observation</Button>
+                <Button disabled={busy} onClick={() => act(c.id, c.revision, "cancelled", e.id)}>Cancel suggestion</Button>
+                <Button disabled={busy} onClick={() => act(c.id, c.revision, "failed", e.id)}>Record failure</Button>
+              </>}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
       </section>;
     })}
   </div>;
