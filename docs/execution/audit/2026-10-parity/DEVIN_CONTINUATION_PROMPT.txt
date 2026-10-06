@@ -1,0 +1,53 @@
+Continue implementing Chemistry Studio in Psyborgs-git/chem-ai. This is a corrective execution pass, not a request for another standalone plan and not a project restart.
+
+Read the attached CHEMISTRY_STUDIO_PARITY_AUDIT.md completely. Keep the original docs/chemistry-studio/CHEMISTRY_STUDIO_HANDOFF.md, WORK_PACKAGES.md, planning registers, schemas and acceptance tests authoritative; link this continuation into existing execution records. The audit inspected pushed main at 11fc69350e603898b7cb26c1989e5da09baf710a, after PR #22 / CS-1201. It did not see your uncommitted work or rerun the application. Inspect your actual HEAD, working tree, instructions, PRs and landed fixes first. Do not reset, discard, duplicate, or overwrite correct newer work.
+
+The missing scientific/infrastructure inputs in U02–U15 are NOT a reason to stop deterministic engineering. U16 / CS-0506 is intentionally deferred: native Studio lab records are authoritative; no eLabFTW credentials, provisioning or sync are required. Keep real model, lab, hardware, budget, data-rights and cloud-provider facts unknown unless supplied. Never invent science or permissions to get a test green.
+
+FIRST: reproduce the following P0 source findings with regression tests, then fix them in dependency order.
+
+1. PAR-01 — Contract correctness.
+   apps/studio-web/src/features/tasks/ContractEditor.tsx sends requiredMetrics, while services/studio-api/src/studio/domain/tasks/evaluation.py reads metrics. The mutation/service path inspected stores JSON unchanged. The editor starts with blank viscosity state instead of hydrating saved revisions. Implement one versioned canonical schema, server validation, proper draft hydration/editing/freezing/history/conflict handling, and reviewed compatibility for existing payloads. Preserve signed/frozen history and PR #22's row locks. Prove UI save → reload → freeze → evaluate round-trip without an API helper substituting a different contract.
+
+2. PAR-02 — Evidence binds to what was actually tested.
+   _task_measurements currently filters by task/metric, while _bound_candidate separately selects the accepted candidate with the highest revision number. Bind every evaluation and closeout to the explicit candidate, contract, evaluation cycle and allowed evidence snapshot. Check method/version, units/basis, substrate, actual conditions, quality and reviewed applicability. Do not pool candidate A's best metric with candidate B's best metric to claim either candidate succeeds. Validate real baseline/reference IDs before using them for calculations; unresolved drafts remain allowed.
+
+3. PAR-03 — Hard gates must not pass unknowns.
+   ingredient_absent currently returns pass when no candidate/formulation/composition can be inspected. Missing or incomplete composition must be not_evaluated/insufficient, not pass. Keep declared-ingredient absence distinct from analytical absence. Include hard-gate evidence/dependencies in the signed packet and reassessment tracking. Withdrawn applicability and gate-only evidence corrections/revocations must invalidate current conclusions or pending approval without rewriting historical packets.
+
+4. PAR-04 — Aggregation and corrections.
+   The default fixture-single-value/single implementation uses any(passing reading). Do not silently cherry-pick favorable readings or infer a live aggregation policy. Require the reviewed rule and correct independent-batch/repeat semantics. Trace the amendment service through any DB hooks and downstream queries: it writes MeasurementAmendment and supersedes the original, while the inspected evaluator reads accepted Measurement rows. Add an integration test and repair only if the correction path is actually missing; use the reviewed effective successor exactly once. Preserve immutable originals, review, source lineage and downstream invalidation. Unsupported failure/success labels must not become training truth.
+
+5. PAR-05 — Provenance and readiness.
+   Replace unconditional fixture labels with record-derived origin/readiness, not an unconditional validated flag. Separate synthetic, reported historical, reviewed lab and predicted evidence from scientific validation status. Real uploads do not prove scientific validation, resolve U14, or authorize training/export. Keep existing fixture runs clearly synthetic.
+
+NEXT: finish the operator workflows already required by the plan.
+
+6. PAR-06 — Usable loopback sign-in/logout/session recovery and project creation using existing backend services. A secure administrative owner bootstrap may remain, but normal use cannot require DevTools fetch calls or handwritten GraphQL. Do not add public signup or LAN/cloud deployment.
+
+7. PAR-07 — Real materials/products/reference and structured formulation/candidate editing. Restore required navigation only after usable surfaces exist. Replace raw UUID input with authorized searchable pickers. Provide versioned ingredient/quantity/basis/process editing, candidate diffs and explicit review/accept/reject. Unknown purchased-product recipes stay unknown. Connect exact revisions to native manually approved experiments. Complete local settings/capability surfaces without activating unconfigured providers.
+
+8. PAR-08 — Actual research composer.
+   The mounted ResearchPanel/SessionStream is a session viewer, not a complete send-and-execute flow. Reuse the existing local inference/tool gateway and queue; add durable user messages, bounded turns, citations, structured proposals, safe acceptance, cancellation and recovery. A missing model gives an honest capability state, not a hidden external fallback. Fix initial snapshot failure/retry and snapshot+cursor reconnect reconciliation. Do not treat a status badge as recovery, and do not fabricate assistant/scientific output.
+
+9. PAR-09 — Coherent task workspace.
+   Map existing panels into Overview, Research, Candidates, Experiments, Evidence and Decisions, with advanced learning/analysis progressively disclosed. Preserve deep links, current task/contract, unsaved changes, keyboard access and responsive layouts. Reuse approved actual design artifacts and the existing Relay environment; do not invent Figma references, add a second cache, or do an unrelated visual rewrite.
+
+10. PAR-10 — Test what the operator actually does.
+    Current cs-1201 tests assert required materials/settings links are absent and API-seed contracts in a shape different from the editor. Keep valid fallback/list/concurrency regressions, replace scope-removal assertions with real functionality, and add browser-first journeys for all three task modes. Helpers may bootstrap identities/fixtures but must not bypass the UI action being verified. Add bounded Playwright and production frontend build jobs to CI; the inspected green workflow contains neither. Use disposable isolated databases and synthetic artifacts only.
+
+EXECUTION GUARDRAILS
+
+- The controller owns shared schemas, GraphQL generation, DB migrations, evaluation logic, approvals, dependency locks and CI. PAR-02–05 share files: do not assign them to competing workers. Parallelize independent UI modules only after their contracts stabilize.
+- Preserve correct auth, artifact vault, local-first boundaries, queue isolation, native lab workflow, canonical Node identities, model evaluation controls and PR #22's legitimate fixes.
+- The audit observed public repository visibility. Check for secrets/proprietary content before onboarding real data; do not change visibility, delete history, publish data or upload private logs. No external spend, provider provisioning, model-license acceptance, confidential dataset upload, merge or deployment is authorized by this prompt.
+- Keep ordinary scientific unknowns explicitly unresolved. Use synthetic regression cases to finish software, not to claim chemistry is scientifically validated. Hardware/model/lab limitations block only the relevant live action.
+- If an audit finding is already fixed or contradicted by actual code, show the concrete path and regression evidence, preserve the fix, and move to the next unblocked item. Do not ask the owner to re-decide locked product scope.
+
+Run the real repository commands with their documented prerequisites: make lint, make typecheck, make contracts-check, make test-unit, make test-integration, make test-security, make test-e2e, pnpm --filter studio-web build, and relevant engine/recovery checks. Record blocked optional checks separately. Keep every potentially hanging process and CI job bounded. Do not weaken tests, swallow errors, or report skipped checks as passes.
+
+FINAL REPORT
+
+Give actual base/HEAD/branch/PR state; a PAR-01–10 requirement→implementation→test matrix; changed files and migration/rollback implications; commands and exact outcomes; screenshots/traces for affected UI journeys; preserved behavior; remaining unknowns/blocked integrations; and the exact next decision. Distinguish implemented-and-tested, implemented-but-untested, missing, deferred and externally blocked. Do not end with “all phases done” without this evidence.
+
+Start now with the baseline and the contract/evaluation regressions, then implement the first unblocked fix.
