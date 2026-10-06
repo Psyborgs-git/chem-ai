@@ -111,6 +111,46 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
     else:
         profiles["training"] = {"status": "disabled", "detail": "profile off"}
 
+    if settings.profile_design:
+        from workers.chemistry.design.runtime import IMAGE as DESIGN_IMAGE
+        from workers.chemistry.design.runtime import available, capability
+
+        ok = available()
+        probe = capability() if ok else None
+        detail = DESIGN_IMAGE
+        if probe:
+            methods = {name: m["state"] for name, m in (probe.get("methods") or {}).items()}
+            detail = f"{DESIGN_IMAGE}; methods: {methods}"
+        profiles["design"] = {
+            "status": "available" if ok else "unavailable",
+            "detail": detail
+            if ok
+            else "pinned reinvent worker image unavailable; "
+            "build workers/chemistry/design/Dockerfile",
+        }
+    else:
+        profiles["design"] = {"status": "disabled", "detail": "profile off"}
+
+    if settings.profile_synthesis:
+        from workers.chemistry.synthesis.runtime import IMAGE as SYNTHESIS_IMAGE
+        from workers.chemistry.synthesis.runtime import available, capability
+
+        ok = available()
+        probe = capability() if ok else None
+        detail = SYNTHESIS_IMAGE
+        if probe:
+            methods = {name: m["state"] for name, m in (probe.get("methods") or {}).items()}
+            detail = f"{SYNTHESIS_IMAGE}; methods: {methods}"
+        profiles["synthesis"] = {
+            "status": "available" if ok else "unavailable",
+            "detail": detail
+            if ok
+            else "pinned aizynthfinder worker image unavailable; "
+            "build workers/chemistry/synthesis/Dockerfile",
+        }
+    else:
+        profiles["synthesis"] = {"status": "disabled", "detail": "profile off"}
+
     # The adapter's own probe is authoritative: native import OR the
     # chem-studio-rdkit container image (CS-0404) — whichever is real.
     try:
@@ -203,6 +243,87 @@ def collect_capabilities(settings: Settings) -> dict[str, Any]:
             }
     except ImportError:
         engines["materials"] = {
+            "status": "unavailable",
+            "version": None,
+            "detail": "engine adapter package not importable",
+        }
+
+    # reinvent adapter (CS-0903): §16.1 state probed inside the pinned
+    # image, with the method record's domain/benchmark/limits and the
+    # licensed-asset registry carried verbatim.
+    try:
+        from workers.chemistry.design.runtime import capability as _rv_probe
+
+        _rv = _rv_probe()
+        if _rv is None:
+            engines["reinvent"] = {
+                "status": "unavailable",
+                "version": None,
+                "detail": "pinned reinvent worker image not installed on this host",
+            }
+        else:
+            worst = "available"
+            parts = []
+            rv_cards: dict[str, Any] = {}
+            for name, m in sorted((_rv.get("methods") or {}).items()):
+                parts.append(f"{name}={m['state']}")
+                if m["state"] != "available_tested":
+                    worst = "degraded"
+                rv_cards[name] = {
+                    "endpoint": m.get("endpoint"),
+                    "domain": m.get("domain"),
+                    "benchmark": m.get("benchmark"),
+                    "limitations": m.get("limitations") or [],
+                    "assets": m.get("assets") or {},
+                }
+            engines["reinvent"] = {
+                "status": worst,
+                "version": _rv.get("engine_version"),
+                "detail": f"{_rv.get('adapter_version')}; {', '.join(parts)}",
+                "methods": rv_cards,
+            }
+    except ImportError:
+        engines["reinvent"] = {
+            "status": "unavailable",
+            "version": None,
+            "detail": "engine adapter package not importable",
+        }
+
+    # aizynthfinder adapter (CS-0903): same honest-state pattern —
+    # proposed routes are never execution authority.
+    try:
+        from workers.chemistry.synthesis.runtime import capability as _az_probe
+
+        _az = _az_probe()
+        if _az is None:
+            engines["aizynthfinder"] = {
+                "status": "unavailable",
+                "version": None,
+                "detail": "pinned aizynthfinder worker image not installed on this host",
+            }
+        else:
+            worst = "available"
+            parts = []
+            az_cards: dict[str, Any] = {}
+            for name, m in sorted((_az.get("methods") or {}).items()):
+                parts.append(f"{name}={m['state']}")
+                if m["state"] != "available_tested":
+                    worst = "degraded"
+                az_cards[name] = {
+                    "endpoint": m.get("endpoint"),
+                    "domain": m.get("domain"),
+                    "benchmark": m.get("benchmark"),
+                    "limitations": m.get("limitations") or [],
+                    "assets": m.get("assets") or {},
+                }
+            engines["aizynthfinder"] = {
+                "status": worst,
+                "version": _az.get("engine_version"),
+                "detail": f"{_az.get('adapter_version')}; {', '.join(parts)}",
+                "methods": az_cards,
+            }
+    except ImportError:
+        engines["aizynthfinder"] = {
             "status": "unavailable",
             "version": None,
             "detail": "engine adapter package not importable",

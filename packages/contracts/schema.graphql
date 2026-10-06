@@ -973,6 +973,8 @@ type ProfileCapabilities {
   quantum: CapabilityStatus!
   materials: CapabilityStatus!
   training: CapabilityStatus!
+  design: CapabilityStatus!
+  synthesis: CapabilityStatus!
 }
 
 type Project implements Node {

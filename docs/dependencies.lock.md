@@ -44,6 +44,8 @@ row below.
 | `quantum` | qcengine 0.51.0, qcelemental 0.51.2 [S06] | BSD-3 | xtb ships via conda-forge inside `chem-studio-qcengine:0.51.0-v1` (xtb 6.7.1 + xtb-python 22.1, CS-0701) — verified against the documented water/GFN2-xTB reference; psi4 not installed — probe reports `not_installed` |
 | `materials` | thermo 0.6.1 (chemicals 1.5.2, fluids 1.3.1, scipy 1.18.1, pandas 3.0.6, numpy 2.5.3) | MIT | ships as pip wheels inside `chem-studio-materials:0.6.1-v1` (CS-0702) — UNIFAC-LLE miscibility screen verified against documented water+1-butanol / water+ethanol behavior; adapter fails closed on any other version |
 | `training` | torch 2.14.1, peft 0.21.2 [S13], trl 1.14.1 [S14] | BSD-3 / Apache-2.0 / MIT | deferred to P08/P09; blocked on U08/U13/U14 |
+| `design` | reinvent 4.8 (`git+https://github.com/MolecularAI/REINVENT4.git@80a8d21` = tag v4.8, dist reports 4.8.24), torch 2.12.0, rdkit 2026.3.6 [S22] | Apache-2.0 (code + prior) | ships inside `chem-studio-reinvent:4.8-v1` (CS-0903) — not on PyPI, pinned to the v4.8 commit; licensed prior `reinvent_pubchem.prior` (Zenodo 20701824, Apache-2.0, sha256 fe8cd167…9ef3) baked in at build time; container runs with `--network none` |
+| `synthesis` | aizynthfinder 4.4.1, onnxruntime 1.30.0, rdkit 2023.9.6 | MIT (code) / CC-BY-4.0 (USPTO assets) / MIT (ZINC stock) | ships inside `chem-studio-aizynthfinder:4.4.1-v1` (CS-0903) — USPTO expansion+filter ONNX (Zenodo 7797465), templates (Zenodo 7341155), ZINC stock hdf5 (figshare 23086469) baked in with sha256-verified build gate; no host-side extras — heavy deps stay container-only |
 
 ## Frontend (pnpm workspace, resolved 2026-10-05)
 

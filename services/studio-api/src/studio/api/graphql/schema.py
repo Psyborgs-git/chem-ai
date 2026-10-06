@@ -316,6 +316,8 @@ class ProfileCapabilities:
     quantum: CapabilityStatus
     materials: CapabilityStatus
     training: CapabilityStatus
+    design: CapabilityStatus
+    synthesis: CapabilityStatus
 
 
 @strawberry.type
@@ -1466,6 +1468,8 @@ class Query:
             quantum=_cap(profiles["quantum"]),
             materials=_cap(profiles["materials"]),
             training=_cap(profiles["training"]),
+            design=_cap(profiles["design"]),
+            synthesis=_cap(profiles["synthesis"]),
         )
 
     @strawberry.field

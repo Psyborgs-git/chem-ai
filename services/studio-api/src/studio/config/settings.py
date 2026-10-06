@@ -56,6 +56,8 @@ class Settings:
     profile_quantum: bool = False
     profile_materials: bool = False
     profile_training: bool = False
+    profile_design: bool = False
+    profile_synthesis: bool = False
 
     @property
     def database_dsn_alembic(self) -> str:
@@ -84,6 +86,8 @@ def get_settings() -> Settings:
         profile_quantum=(_env("STUDIO_PROFILE_QUANTUM") or "").lower() in _TRUE,
         profile_materials=(_env("STUDIO_PROFILE_MATERIALS") or "").lower() in _TRUE,
         profile_training=(_env("STUDIO_PROFILE_TRAINING") or "").lower() in _TRUE,
+        profile_design=(_env("STUDIO_PROFILE_DESIGN") or "").lower() in _TRUE,
+        profile_synthesis=(_env("STUDIO_PROFILE_SYNTHESIS") or "").lower() in _TRUE,
     )
 
 
