@@ -1,6 +1,6 @@
 # Pilot gate report — Chemistry Studio
 
-Generated: 2026-10-05 10:41 UTC by `infra/local/pilot_gate.py` (CS-0505, AT-0505-3).
+Generated: 2026-10-06 17:30 UTC by `infra/local/pilot_gate.py` (CS-0505, AT-0505-3).
 
 **Software status ≠ scientific validation.** Every workflow executed
 to date runs on synthetic fixture data. No entry below asserts
@@ -12,15 +12,15 @@ scientific capabilities even when the software path is live.
 | PostgreSQL persistence | live | compose container `chem-studio-postgres` (loopback :54329) | n/a — infrastructure | single-host; no replication |
 | Artifact vault | live | filesystem vault under `STUDIO_VAULT_ROOT`; checksum-verified blobs | n/a — infrastructure | no at-rest encryption in app; relies on OS volume encryption |
 | Deterministic verification | live | CS-0404 verifier; contract-bound deterministic checks | not_validated | covers whitelisted check kinds only |
-| RDKit descriptors | live (container) | `docker image inspect chem-studio-rdkit:2026.3.6` present | not_validated | linux/amd64 container path; native rdkit optional |
-| Local inference (llama.cpp) | live (container) | `ghcr.io/ggml-org/llama.cpp:server` + volume `chem-models` present | not_validated | 2B fixture model; not a validated chemistry assistant |
+| RDKit descriptors | blocked | no chem-studio-rdkit image; `make test-engines` reports UNAVAILABLE | not_validated | linux/amd64 container path; native rdkit optional |
+| Local inference (llama.cpp) | blocked | llama.cpp image or model volume absent; profile_local_ai off | not_validated | 2B fixture model; not a validated chemistry assistant |
 | Lab executions | live (manual-first) | CS-0501/0502 plans, executions, measurements, review | not_validated | no equipment control; all execution is human-performed |
 | Task closeout evaluator | live | CS-0503 gate-first evaluator; server-derived closure packets | not_validated | fixture-only evidence possible; scientific status separate |
 | Backup / restore | live | `make backup-test`; manifest + checksum verification | n/a — operations | no off-site rotation; SSD secure-erasure not promised |
-| BayBE optimization | blocked | not implemented (P06, dependency-gated) | not_validated | — |
-| Property models / training | blocked | not implemented (P06+, U08/U13) | not_validated | — |
-| RL research decisions | blocked | not implemented (§19 preconditions unmet) | not_validated | — |
-| Cloud fallback | blocked | no cloud adapter; explicit human approval required (§20.2) | not_validated | — |
+| BayBE optimization | live (container) | `chem-studio-baybe:0.15.0-v1` present; CS-0603 adapter + independent constraint checks | not_validated | independent constraint re-check; fixture_only — no scientific validation |
+| Property models / training | blocked | chemprop/SFT engine images absent; build engine images then `make test-engines` | not_validated | fixture_only — real endpoints/training need U02/U14 data + U08/U13 hardware/model |
+| RL research decisions | blocked | `chem-studio-rl:0.1.0-v1` absent; build engine image then `make test-engines` | not_validated | promotion-gated; fixture reward climbs ≠ scientific gain |
+| Cloud fallback | not_configured | CS-1001–1004 decision reports + transform + broker + adapter landed; zero providers registered | not_validated | no approved provider/account/region (U08/U09/U11); explicit human approval still required (§20.2) |
 | Equipment / instrument control | blocked | no adapter by design (manual-first pilot) | not_validated | — |
 | ELN bridge (eLabFTW) | blocked | CS-0506 not implemented; optional integration | not_validated | — |
 

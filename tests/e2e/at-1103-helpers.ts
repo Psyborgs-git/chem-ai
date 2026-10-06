@@ -8,16 +8,16 @@ export async function signIn(context: BrowserContext): Promise<string> {
   const res = await api.post("/api/auth/setup", {
     headers: ORIGIN,
     data: {
-      login: "e2e-1103-owner",
-      display_name: "E2E 1103 Owner",
-      password: "e2e-password-1103",
+      login: "e2e-owner",
+      display_name: "E2E Owner",
+      password: "e2e-password-10",
     },
   });
   const res2 = res.ok()
     ? res
     : await api.post("/api/auth/login", {
         headers: ORIGIN,
-        data: { login: "e2e-1103-owner", password: "e2e-password-1103" },
+        data: { login: "e2e-owner", password: "e2e-password-10" },
       });
   expect(res2.ok()).toBeTruthy();
   const setCookie = res2.headers()["set-cookie"] ?? "";
