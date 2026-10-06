@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "kind": "read_only_source_audit",
+  "repository": "Psyborgs-git/chem-ai",
+  "audited_ref": "main",
+  "audited_commit": "11fc69350e603898b7cb26c1989e5da09baf710a",
+  "latest_inspected_pr": 22,
+  "observed_ci": {
+    "run_id": 37523007726,
+    "conclusion": "success",
+    "reviewer_executed": false
+  },
+  "access_limits": [
+    "Only visible Devin screenshot messages; no full authenticated history",
+    "No control of Devin message input",
+    "No access to Devin uncommitted working tree",
+    "No application/test rerun by reviewer; clone failed DNS",
+    "Targeted source audit, not exhaustive security or scientific verification"
+  ],
+  "sources": [
+    {
+      "id": "S01",
+      "title": "Original implementation handoff",
+      "path": "docs/chemistry-studio/CHEMISTRY_STUDIO_HANDOFF.md",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/docs/chemistry-studio/CHEMISTRY_STUDIO_HANDOFF.md"
+    },
+    {
+      "id": "S02",
+      "title": "Application routes, setup state, project list",
+      "path": "apps/studio-web/src/routes/AppRoutes.tsx",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/routes/AppRoutes.tsx"
+    },
+    {
+      "id": "S03",
+      "title": "Task creation and mode input fields",
+      "path": "apps/studio-web/src/features/tasks/TaskCreateForm.tsx",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/features/tasks/TaskCreateForm.tsx"
+    },
+    {
+      "id": "S04",
+      "title": "Success-contract editor",
+      "path": "apps/studio-web/src/features/tasks/ContractEditor.tsx",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/features/tasks/ContractEditor.tsx"
+    },
+    {
+      "id": "S05",
+      "title": "Task service: drafting, freezing, closure",
+      "path": "services/studio-api/src/studio/domain/tasks/service.py",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/services/studio-api/src/studio/domain/tasks/service.py"
+    },
+    {
+      "id": "S06",
+      "title": "GraphQL contract mutation and read paths",
+      "path": "services/studio-api/src/studio/api/graphql/schema.py",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/services/studio-api/src/studio/api/graphql/schema.py"
+    },
+    {
+      "id": "S07",
+      "title": "Task metric evaluation, candidate selection, closeout, hard gates",
+      "path": "services/studio-api/src/studio/domain/tasks/evaluation.py",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/services/studio-api/src/studio/domain/tasks/evaluation.py"
+    },
+    {
+      "id": "S08",
+      "title": "Measurements, applicability, amendment service",
+      "path": "services/studio-api/src/studio/domain/lab/measurements.py",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/services/studio-api/src/studio/domain/lab/measurements.py"
+    },
+    {
+      "id": "S09",
+      "title": "Candidate proposal and JSON comparison surface",
+      "path": "apps/studio-web/src/features/candidates/CandidatePanel.tsx",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/features/candidates/CandidatePanel.tsx"
+    },
+    {
+      "id": "S10",
+      "title": "Research sessions and open questions surface",
+      "path": "apps/studio-web/src/features/research/ResearchPanel.tsx",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/features/research/ResearchPanel.tsx"
+    },
+    {
+      "id": "S11",
+      "title": "Session message snapshot and stream consumer",
+      "path": "apps/studio-web/src/features/research/SessionStream.tsx",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/features/research/SessionStream.tsx"
+    },
+    {
+      "id": "S12",
+      "title": "SSE client",
+      "path": "apps/studio-web/src/features/research/stream.ts",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/features/research/stream.ts"
+    },
+    {
+      "id": "S13",
+      "title": "Task workspace navigation",
+      "path": "apps/studio-web/src/features/tasks/TaskWorkspace.tsx",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/features/tasks/TaskWorkspace.tsx"
+    },
+    {
+      "id": "S14",
+      "title": "Run monitoring and cancellation UI",
+      "path": "apps/studio-web/src/features/runs/RunsPanel.tsx",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/features/runs/RunsPanel.tsx"
+    },
+    {
+      "id": "S15",
+      "title": "Closeout UI and fixture badge",
+      "path": "apps/studio-web/src/features/tasks/closeout/CloseoutPanel.tsx",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/src/features/tasks/closeout/CloseoutPanel.tsx"
+    },
+    {
+      "id": "S16",
+      "title": "CS-1201 browser regression tests",
+      "path": "tests/e2e/cs-1201.spec.ts",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/tests/e2e/cs-1201.spec.ts"
+    },
+    {
+      "id": "S17",
+      "title": "Continuous integration jobs",
+      "path": ".github/workflows/ci.yml",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/.github/workflows/ci.yml"
+    },
+    {
+      "id": "S18",
+      "title": "Command contract",
+      "path": "Makefile",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/Makefile"
+    },
+    {
+      "id": "S19",
+      "title": "Frontend scripts and locked package versions",
+      "path": "apps/studio-web/package.json",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/apps/studio-web/package.json"
+    },
+    {
+      "id": "S20",
+      "title": "Repository-reported implementation status",
+      "path": "README.md",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/README.md"
+    },
+    {
+      "id": "S21",
+      "title": "Capability grants and scope semantics",
+      "path": "packages/policy/chem_studio_policy/capabilities.py",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/packages/policy/chem_studio_policy/capabilities.py"
+    },
+    {
+      "id": "S22",
+      "title": "Service authorization context",
+      "path": "services/studio-api/src/studio/auth/context.py",
+      "url": "https://github.com/Psyborgs-git/chem-ai/blob/11fc69350e603898b7cb26c1989e5da09baf710a/services/studio-api/src/studio/auth/context.py"
+    }
+  ],
+  "finding_ids": [
+    "PAR-01",
+    "PAR-02",
+    "PAR-03",
+    "PAR-04",
+    "PAR-05",
+    "PAR-06",
+    "PAR-07",
+    "PAR-08",
+    "PAR-09",
+    "PAR-10"
+  ],
+  "files": [
+    {
+      "name": "README.md",
+      "bytes": 1321,
+      "sha256": "0b8c8da60fd9add4134a5f2904c01c7629c07eed68884565d1d17cef9b5baf2d"
+    },
+    {
+      "name": "CHEMISTRY_STUDIO_PARITY_AUDIT.md",
+      "bytes": 37731,
+      "sha256": "8c70e1b9bcacbf4c8c7ac122d19e9b9adace398256d750874e9fc912c52d6c66"
+    },
+    {
+      "name": "DEVIN_CONTINUATION_PROMPT.txt",
+      "bytes": 9206,
+      "sha256": "1e1ce0add5779c6a834cc55055bfcf7991b1c6bfb5f2ac5ea9d199faf2b1e9c4"
+    }
+  ]
+}
