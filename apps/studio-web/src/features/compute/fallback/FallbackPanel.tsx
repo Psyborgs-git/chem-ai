@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
 import { Badge } from "../../../components/atoms/Badge";
@@ -297,15 +298,32 @@ export function ReportView({ report }: { report: FeasibilityReport }) {
 export function FallbackPanel({ runId }: { runId: string }) {
   const data = useLazyLoadQuery<fallbackRunViewQuery>(FallbackViewQuery, { runId });
   const [commit, pending] = useMutation<fallbackRequestMutation>(FallbackRequestMutation);
-  const view = data.runFallback as unknown as FallbackView;
+  const [override, setOverride] = useState<FallbackView | null>(null);
+  const [actionErrors, setActionErrors] = useState<ReadonlyArray<string>>([]);
+  const queryView = data.runFallback as unknown as FallbackView;
+  const view = override ?? queryView;
 
   function evaluate() {
+    setActionErrors([]);
     commit({
       variables: { input: { runId } },
-      onCompleted: () => {
-        // The view query re-renders via refetch-on-nav or manual reload;
-        // mutation returns the fresh decision directly.
+      onCompleted: (response) => {
+        const result = response.runs?.requestFallback;
+        if (!result) return;
+        if (result.errors && result.errors.length > 0) {
+          setActionErrors(result.errors.map((e) => e?.message ?? "unknown error"));
+          return;
+        }
+        // The mutation returns the whole fallback view — render it
+        // immediately instead of waiting for a reload/refetch.
+        setOverride({
+          run: { ...view.run, status: result.run?.status ?? view.run.status },
+          report: (result.report ?? null) as FeasibilityReport | null,
+          proposal: (result.proposal ?? null) as ExportProposalView | null,
+          cloud: (result.cloud ?? view.cloud) as CloudCapability,
+        });
       },
+      onError: (error) => setActionErrors([error.message]),
     });
   }
 
@@ -317,6 +335,7 @@ export function FallbackPanel({ runId }: { runId: string }) {
         <Badge tone="neutral">{view.run.kind}</Badge>{" "}
         <Badge tone={view.run.status === "blocked" ? "warning" : "info"}>{view.run.status}</Badge>
       </p>
+      {actionErrors.length > 0 ? <p role="alert">{actionErrors.join("; ")}</p> : null}
       <CloudCard cloud={view.cloud} />
       {report ? (
         <>
