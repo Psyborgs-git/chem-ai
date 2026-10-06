@@ -76,7 +76,7 @@ ticket's own honest status, condensed.
 | CS-0503 | P05 | 713fb88 | CS-0503.md | AT-0503-1/2/3 ✔ | live: gate-first evaluator; server-derived closure packets |
 | CS-0504 | P05 | 713fb88 | CS-0504.md | AT-0504-1/2/3 ✔ (browser journeys) | live: 3 pilot journeys on real backend+PG+prod build, all fixture |
 | CS-0505 | P05 | 998c56a (P05 closeout) | CS-0505.md | AT-0505-1/2/3 ✔ | live: backup/restore + egress check + generated pilot gate; no backup encryption |
-| CS-0506 | P05 | draft PR — `devin/*-cs0506-eln-bridge` | CS-0506.md | AT-0506-1/2/3 ✔ (fixture-level) | **fixture**: version/hash review gates, stale/disconnected honesty, `not_configured` default; live sync deferred (U16) |
+| CS-0506 | P05 | PR #21 | CS-0506.md | AT-0506-1/2/3 ✔ (fixture-level) | **fixture**: version/hash review gates, stale/disconnected honesty, `not_configured` default; live sync deferred (U16) |
 | CS-0601 | P06 | 998c56a | CS-0601.md | AT-0601-1/2/3 ✔ | live: dataset snapshots + eligibility; fixture manifests `not_validated` |
 | CS-0602 | P06 | 998c56a | CS-0602.md | AT-0602-1/2/3 ✔ | live: group-aware leakage-safe splits + baseline eval; fixture |
 | CS-0603 | P06 | PR #1 (71bc161) | CS-0603.md | AT-0603-1/2/3 ✔ | engine_smoke_passed / fixture_only: BayBE container + independent constraint checks |
