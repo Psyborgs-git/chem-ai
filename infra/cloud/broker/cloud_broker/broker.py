@@ -99,6 +99,16 @@ class EgressBroker:
     def lineage(self, job_id: str) -> JobLineage | None:
         return self._lineages.get(job_id)
 
+    def seed_lineage(self, lineage: JobLineage) -> JobLineage:
+        """Restore a persisted lineage (e.g. after a process restart)
+        so callback folding continues where the ledger left off — the
+        seeded state is a floor: real callbacks only advance it."""
+        existing = self._lineages.get(lineage.job_id)
+        if existing is not None:
+            return existing
+        self._lineages[lineage.job_id] = lineage
+        return lineage
+
     # -------------------------------------------------------- validation
 
     def _checks(self, order: TransferOrder, payload: bytes) -> list[tuple[str, bool, str]]:
@@ -192,11 +202,19 @@ class EgressBroker:
             self._record(order, "denied", exc.reason, 0, None)
             return None
 
-        target = (
-            provider
-            or self._providers.get(order.approved.recipient.provider)
-            or get_provider(order.approved.recipient.provider)
-        )
+        try:
+            target = (
+                provider
+                or self._providers.get(order.approved.recipient.provider)
+                or get_provider(order.approved.recipient.provider)
+            )
+        except Exception as exc:
+            # No adapter under the approved name — production providers
+            # stay ``not_configured`` and that lands honestly on the
+            # ledger as a failed attempt, never an exception silently
+            # crossing the boundary.
+            self._record(order, "failed", f"{type(exc).__name__}: {exc}", 0, None)
+            return None
         permit = Permit(
             permit_id=f"permit-{next(self._permit_ids)}",
             attempt_key=order.attempt_key,

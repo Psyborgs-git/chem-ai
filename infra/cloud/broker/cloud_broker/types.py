@@ -31,9 +31,10 @@ def sha256_bytes(data: bytes) -> str:
 
 def canonical_json(doc: Mapping[str, Any]) -> str:
     """Deterministic JSON rendering used for bound-input digests
-    (sorted keys, compact separators) — same convention as
-    ``studio.application.idempotency.canonical_json``."""
-    return json.dumps(doc, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    (sorted keys, compact separators) — byte-identical to
+    ``studio.application.idempotency.canonical_json`` so a binding
+    digest equals the ledger's ``bound_digest`` exactly."""
+    return json.dumps(doc, sort_keys=True, separators=(",", ":"), default=str)
 
 
 def digest_doc(doc: Mapping[str, Any]) -> str:
@@ -95,7 +96,10 @@ class ApprovedBinding:
     """The bound-input document an export approval is over (§20.2).
 
     ``digest()`` over this document is the only comparison the broker
-    accepts — field similarity is never enough (AT-1003-1).
+    accepts — field similarity is never enough (AT-1003-1). When the
+    caller already holds the ledger's canonical bound-input document
+    (e.g. CS-1002's ``bound_inputs``), pass it as ``bound_doc`` so
+    ``digest()`` equals the approvals-ledger digest byte-for-byte.
     """
 
     manifest_digest: str
@@ -110,6 +114,7 @@ class ApprovedBinding:
     limits: TransferLimits
     expiry: datetime
     approver: str
+    bound_doc: Mapping[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -128,6 +133,8 @@ class ApprovedBinding:
         }
 
     def digest(self) -> str:
+        if self.bound_doc is not None:
+            return digest_doc(self.bound_doc)
         return digest_doc(self.to_dict())
 
 

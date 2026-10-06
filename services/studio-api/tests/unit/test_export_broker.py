@@ -191,13 +191,16 @@ def test_provider_failure_recorded_not_hidden(stack) -> None:
 
 
 def test_unknown_provider_reports_not_configured(stack) -> None:
-    """Production providers stay not_configured — no silent fallthrough."""
+    """Production providers stay not_configured — the attempt is
+    honestly recorded as failed, never a silent fallthrough."""
     broker, _ = stack
     binding = _binding(recipient=_recipient(provider="real-cloud"))
     order = _order(binding, recipient=_recipient(provider="real-cloud"))
-    with pytest.raises(Exception) as exc:
-        broker.transfer(order, PAYLOAD)
-    assert getattr(exc.value, "status", None) == "not_configured"
+    assert broker.transfer(order, PAYLOAD) is None
+    last = broker.attempts[-1]
+    assert last.outcome == "failed"
+    assert "not_configured" in last.reason
+    assert last.bytes_emitted == 0
 
 
 def test_cancel_mid_run_records_exposure(stack) -> None:
