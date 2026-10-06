@@ -80,28 +80,37 @@ function ComparisonTable({ comparison }: { comparison: Comparison }) {
         {fmt(comparison.aggregate?.baseline)} (Δ {fmt(comparison.aggregate?.delta)}){" "}
         {denom.small_sample ? <Badge tone="warning">small sample</Badge> : null}
       </p>
-      <table>
-        <thead>
-          <tr>
-            <th>metric</th>
-            <th>baseline</th>
-            <th>candidate</th>
-            <th>Δ</th>
-            <th>n</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(comparison.metrics ?? []).map((m) => (
-            <tr key={m.metric}>
-              <td>{m.metric}</td>
-              <td>{fmt(m.baseline)}</td>
-              <td>{fmt(m.candidate)}</td>
-              <td>{fmt(m.delta)}</td>
-              <td>{m.evaluated ?? 0}</td>
+      <div
+        className="cs-table-wrap"
+        role="region"
+        aria-label="metric comparison"
+        tabIndex={0}
+      >
+        <table className="cs-table">
+          <thead>
+            <tr>
+              <th scope="col" className="cs-table__identity">
+                metric
+              </th>
+              <th scope="col">baseline</th>
+              <th scope="col">candidate</th>
+              <th scope="col">Δ</th>
+              <th scope="col">n</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {(comparison.metrics ?? []).map((m) => (
+              <tr key={m.metric}>
+                <td className="cs-table__identity">{m.metric}</td>
+                <td>{fmt(m.baseline)}</td>
+                <td>{fmt(m.candidate)}</td>
+                <td>{fmt(m.delta)}</td>
+                <td>{m.evaluated ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p role="note">
         denominators — expected {denom.expected?.candidate ?? 0}, evaluated{" "}
         {denom.evaluated?.candidate ?? 0}

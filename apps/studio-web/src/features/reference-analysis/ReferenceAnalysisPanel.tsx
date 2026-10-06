@@ -57,7 +57,7 @@ export function SeriesRow({ manifest }: { manifest: SeriesManifest }) {
   const unsupported = manifest.interpretationState !== "processed";
   return (
     <tr>
-      <td>{manifest.label}</td>
+      <td className="cs-table__identity">{manifest.label}</td>
       <td>{manifest.method}</td>
       <td>{manifest.sourceFormat ?? "unsupported format"}</td>
       <td>
@@ -219,15 +219,22 @@ export function ReferenceAnalysisPanel({ taskRef }: { taskRef: ReferenceAnalysis
         <EmptyState title="No analytical series. Commit an instrument export to the vault, then ingest it here with its method/context." />
       )}
       {task.analyticalSeries.length > 0 && (
-        <table>
-          <caption>raw↔processed lineage, transform versions, and capability state per series</caption>
-          <thead>
-            <tr><th>Label</th><th>Method</th><th>Format</th><th>Interpretation</th><th>Lineage / transform</th><th>Sample / instrument</th></tr>
-          </thead>
-          <tbody>
-            {series.map((s) => <SeriesRow key={s.seriesId} manifest={s} />)}
-          </tbody>
-        </table>
+        <div
+          className="cs-table-wrap"
+          role="region"
+          aria-label="analytical series"
+          tabIndex={0}
+        >
+          <table className="cs-table">
+            <caption>raw↔processed lineage, transform versions, and capability state per series</caption>
+            <thead>
+              <tr><th scope="col" className="cs-table__identity">Label</th><th scope="col">Method</th><th scope="col">Format</th><th scope="col">Interpretation</th><th scope="col">Lineage / transform</th><th scope="col">Sample / instrument</th></tr>
+            </thead>
+            <tbody>
+              {series.map((s) => <SeriesRow key={s.seriesId} manifest={s} />)}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <h4>Compare two processed series</h4>

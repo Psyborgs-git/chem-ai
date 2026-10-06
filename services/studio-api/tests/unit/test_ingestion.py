@@ -151,3 +151,20 @@ class TestSubprocessBoundary:
         assert report.parser_name == "openpyxl"
         assert any(r.kind == "cell" for r in report.records)
         assert not report.timed_out
+
+    def test_large_report_crosses_the_pipe(self) -> None:
+        """CS-1103 regression — a ParseReport larger than the OS pipe
+        buffer must be drained while the child runs; before the fix the
+        child deadlocked on its feeder flush and surfaced as
+        PARSE_TIMEOUT."""
+        rows = "component,amount\n" + "\n".join(
+            f"compound {i} long name solvent blend observation,{i}" for i in range(600)
+        )
+        report = run_parse(
+            rows.encode(),
+            "big.csv",
+            limits=IngestionLimits(parse_timeout_s=15),
+        )
+        assert not report.timed_out
+        assert report.records, "600-row csv must produce records"
+        assert not report.findings

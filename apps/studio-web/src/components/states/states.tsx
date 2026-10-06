@@ -23,7 +23,7 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="cs-state cs-state--empty">
+    <div className="cs-state cs-state--empty" role="status" aria-live="polite">
       <p className="cs-state__title">{title}</p>
       {action}
     </div>

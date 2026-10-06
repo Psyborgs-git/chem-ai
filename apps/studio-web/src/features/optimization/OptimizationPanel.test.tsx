@@ -32,7 +32,9 @@ describe("optimization scientific status boundary", () => {
     expect(screen.getByText(/No frozen campaigns/)).toBeInTheDocument();
     await user.type(screen.getByLabelText("Campaign definition JSON"), "not JSON");
     await user.click(screen.getByRole("button", { name: "Freeze campaign definition" }));
-    expect(screen.getByRole("status")).toHaveTextContent("No parameters or results are invented");
+    // Two status regions now legitimately exist (inline form error +
+    // EmptyState live region); assert the rejection text itself.
+    expect(screen.getByText(/No parameters or results are invented/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Link reviewed observation" })).not.toBeInTheDocument();
   });
 });

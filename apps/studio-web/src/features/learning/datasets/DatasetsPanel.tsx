@@ -158,48 +158,57 @@ function SnapshotCard({
         not scientific validation
       </p>
       {entries.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>record</th>
-              <th>kind</th>
-              <th>source class</th>
-              <th>label</th>
-              <th>training rights</th>
-              <th>semantics</th>
-              <th>status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e) => (
-              <tr key={e.recordId}>
-                <td>
-                  <code>{e.recordId?.slice(0, 8)}…</code>
-                </td>
-                <td>{e.recordKind}</td>
-                <td>
-                  <Badge tone="info">{e.sourceClass}</Badge>
-                </td>
-                <td>{e.labelKind}</td>
-                <td>
-                  <Badge tone={RIGHTS_TONE[e.rightsTraining ?? ""] ?? "neutral"}>
-                    {e.rightsTraining}
-                  </Badge>
-                </td>
-                <td>
-                  <code>{JSON.stringify(e.semantics ?? {})}</code>
-                </td>
-                <td>
-                  {e.excluded ? (
-                    <Badge tone="warning">excluded: {e.exclusionReason}</Badge>
-                  ) : (
-                    <Badge tone="success">included</Badge>
-                  )}
-                </td>
+        <div
+          className="cs-table-wrap"
+          role="region"
+          aria-label="dataset snapshot records"
+          tabIndex={0}
+        >
+          <table className="cs-table">
+            <thead>
+              <tr>
+                <th scope="col" className="cs-table__identity">
+                  record
+                </th>
+                <th scope="col">kind</th>
+                <th scope="col">source class</th>
+                <th scope="col">label</th>
+                <th scope="col">training rights</th>
+                <th scope="col">semantics</th>
+                <th scope="col">status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {entries.map((e) => (
+                <tr key={e.recordId}>
+                  <td className="cs-table__identity">
+                    <code>{e.recordId?.slice(0, 8)}…</code>
+                  </td>
+                  <td>{e.recordKind}</td>
+                  <td>
+                    <Badge tone="info">{e.sourceClass}</Badge>
+                  </td>
+                  <td>{e.labelKind}</td>
+                  <td>
+                    <Badge tone={RIGHTS_TONE[e.rightsTraining ?? ""] ?? "neutral"}>
+                      {e.rightsTraining}
+                    </Badge>
+                  </td>
+                  <td>
+                    <code>{JSON.stringify(e.semantics ?? {})}</code>
+                  </td>
+                  <td>
+                    {e.excluded ? (
+                      <Badge tone="warning">excluded: {e.exclusionReason}</Badge>
+                    ) : (
+                      <Badge tone="success">included</Badge>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       <div role="group" aria-label="snapshot actions">
         {snap.state === "draft" && (

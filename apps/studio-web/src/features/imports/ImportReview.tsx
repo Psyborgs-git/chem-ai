@@ -114,7 +114,7 @@ function RecordRow({
 
   return (
     <tr data-record-id={record.id} data-status={record.status}>
-      <td>
+      <td className="cs-table__identity">
         {/* AT-0302-3: the citation is the exact source locator */}
         <SourceCitation
           sourceId={record.id}
@@ -225,23 +225,32 @@ function RecordsTable({ batchId }: { batchId: string }) {
     return <EmptyState title="No extracted records in this batch." />;
   }
   return (
-    <table className="cs-table">
-      <thead>
-        <tr>
-          <th>source locator</th>
-          <th>original text</th>
-          <th>proposed value</th>
-          <th>ambiguity</th>
-          <th>status</th>
-          <th>actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {records.map((r) => (
-          <RecordRow key={r.id} record={r} />
-        ))}
-      </tbody>
-    </table>
+    <div
+      className="cs-table-wrap"
+      role="region"
+      aria-label="extracted records"
+      tabIndex={0}
+    >
+      <table className="cs-table">
+        <thead>
+          <tr>
+            <th scope="col" className="cs-table__identity">
+              source locator
+            </th>
+            <th scope="col">original text</th>
+            <th scope="col">proposed value</th>
+            <th scope="col">ambiguity</th>
+            <th scope="col">status</th>
+            <th scope="col">actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {records.map((r) => (
+            <RecordRow key={r.id} record={r} />
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

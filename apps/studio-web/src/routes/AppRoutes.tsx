@@ -25,6 +25,7 @@ import {
 } from "../features/tasks/operations";
 import { getRelayEnvironment } from "../relay/environment";
 import { fetchSetupNeeded } from "../relay/network";
+import { writeTheme } from "../theme";
 import { DevComponents } from "./DevComponents";
 import { graphql } from "react-relay";
 
@@ -69,9 +70,33 @@ const NAV = [
   { to: "/settings", label: "Settings" },
 ];
 
+function ThemeToggle() {
+  const [theme, setTheme] = useState(
+    () => document.documentElement.dataset.theme ?? "light",
+  );
+  const next = theme === "dark" ? "light" : "dark";
+  return (
+    <button
+      type="button"
+      className="cs-btn cs-btn--ghost cs-theme-toggle"
+      aria-pressed={theme === "dark"}
+      onClick={() => {
+        document.documentElement.dataset.theme = next;
+        writeTheme(next);
+        setTheme(next);
+      }}
+    >
+      theme: {theme}
+    </button>
+  );
+}
+
 function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="cs-shell">
+      <a className="cs-skip-link" href="#main">
+        Skip to content
+      </a>
       <header className="cs-shell__header">
         <Link to="/" className="cs-shell__brand">
           Chemistry Studio
@@ -83,8 +108,11 @@ function AppShell({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
+        <ThemeToggle />
       </header>
-      <main>{children}</main>
+      <main id="main" tabIndex={-1}>
+        {children}
+      </main>
     </div>
   );
 }
