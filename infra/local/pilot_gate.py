@@ -27,6 +27,10 @@ DEFAULT_OUT = ROOT / "docs" / "operations" / "pilot-gate.md"
 RDKIT_IMAGE = "chem-studio-rdkit:2026.3.6"
 LLAMA_IMAGE = "ghcr.io/ggml-org/llama.cpp:server"
 MODEL_VOLUME = "chem-models"
+BAYBE_IMAGE = "chem-studio-baybe:0.15.0-v1"
+CHEMPROP_IMAGE = "chem-studio-chemprop:2.3.1-v1"
+SFT_IMAGE = "chem-studio-sft:0.1.0-v5"
+RL_IMAGE = "chem-studio-rl:0.1.0-v1"
 
 
 def _docker(*args: str) -> bool:
@@ -67,6 +71,31 @@ def build_report() -> str:
         ("live (container)", f"`{LLAMA_IMAGE}` + volume `{MODEL_VOLUME}` present")
         if _docker("image", "inspect", LLAMA_IMAGE) and _docker("volume", "inspect", MODEL_VOLUME)
         else ("blocked", "llama.cpp image or model volume absent; profile_local_ai off")
+    )
+    baybe = (
+        (
+            "live (container)",
+            f"`{BAYBE_IMAGE}` present; CS-0603 adapter + independent constraint checks",
+        )
+        if _docker("image", "inspect", BAYBE_IMAGE)
+        else ("blocked", f"`{BAYBE_IMAGE}` absent; build engine image then `make test-engines`")
+    )
+    proptrain = (
+        (
+            "live (container)",
+            f"`{CHEMPROP_IMAGE}` + `{SFT_IMAGE}` present; "
+            "CS-0604/CS-0801 mechanism verified on fixtures",
+        )
+        if _docker("image", "inspect", CHEMPROP_IMAGE) and _docker("image", "inspect", SFT_IMAGE)
+        else (
+            "blocked",
+            "chemprop/SFT engine images absent; build engine images then `make test-engines`",
+        )
+    )
+    rl = (
+        ("live (container)", f"`{RL_IMAGE}` present; CS-0901/CS-0902 bounded env + GRPO trainer")
+        if _docker("image", "inspect", RL_IMAGE)
+        else ("blocked", f"`{RL_IMAGE}` absent; build engine image then `make test-engines`")
     )
 
     rows = [
@@ -123,27 +152,29 @@ def build_report() -> str:
         ),
         _row(
             "BayBE optimization",
-            "blocked",
-            "not implemented (P06, dependency-gated)",
-            "—",
+            baybe[0],
+            baybe[1],
+            "independent constraint re-check; fixture_only — no scientific validation",
         ),
         _row(
             "Property models / training",
-            "blocked",
-            "not implemented (P06+, U08/U13)",
-            "—",
+            proptrain[0],
+            proptrain[1],
+            "fixture_only — real endpoints/training need U02/U14 data + U08/U13 hardware/model",
         ),
         _row(
             "RL research decisions",
-            "blocked",
-            "not implemented (§19 preconditions unmet)",
-            "—",
+            rl[0],
+            rl[1],
+            "promotion-gated; fixture reward climbs ≠ scientific gain",
         ),
         _row(
             "Cloud fallback",
-            "blocked",
-            "no cloud adapter; explicit human approval required (§20.2)",
-            "—",
+            "not_configured",
+            "CS-1001-1004 decision reports + transform + broker + adapter landed; "
+            "zero providers registered",
+            "no approved provider/account/region (U08/U09/U11); "
+            "explicit human approval still required (§20.2)",
         ),
         _row(
             "Equipment / instrument control",
