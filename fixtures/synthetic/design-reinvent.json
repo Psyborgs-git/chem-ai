@@ -1,0 +1,62 @@
+{
+  "fixture_only": true,
+  "scientific_status": "not_validated",
+  "note": "synthetic contract fixture for CS-0903 — plumbing only; no chemical or model-quality claim is made by these values",
+  "spec": {
+    "schema_version": "1",
+    "method": "reinvent_de_novo_sampling",
+    "anchor": {"kind": "small_molecule_smiles", "smiles": "c1ccncc1"},
+    "model": {
+      "name": "reinvent_pubchem",
+      "version": "zenodo:20701824",
+      "license": "apache-2.0",
+      "source": "https://zenodo.org/records/20701824/files/reinvent_pubchem.prior",
+      "sha256": "fe8cd1678452ad292a8f93e97cb19a85959b729e17113e157180d5e69ae89ef3"
+    },
+    "num_smiles": 32,
+    "unique_molecules": true,
+    "randomize_smiles": true,
+    "resources": {"wall_seconds": 600, "memory_mebibytes": 4096, "ncores": 2}
+  },
+  "unsupported_input_examples": {
+    "formulation": {
+      "anchor": {"kind": "formulation", "lines": [{"name": "base oil", "pct": 80}]},
+      "note": "a formulation recipe is not an explicit small-molecule representation"
+    },
+    "polymer_distribution": {
+      "anchor": {"kind": "polymer_distribution", "repeat_unit": "*CC*", "mw_range": [5000, 8000]},
+      "note": "a repeat unit with wildcard endpoints is a distribution, not a molecule"
+    },
+    "unknown": {
+      "anchor": {"kind": "unknown", "raw": "opaque blob"},
+      "note": "unknown inputs are never coerced to a generic molecule"
+    }
+  },
+  "polymer_smiles_example": {
+    "anchor": {"kind": "small_molecule_smiles", "smiles": "*CC*"},
+    "note": "wildcard atoms mark an undefined attachment — rejected even at the right kind"
+  },
+  "license_examples": {
+    "unlicensed_license": {
+      "name": "reinvent_pubchem",
+      "version": "zenodo:20701824",
+      "license": "proprietary-weights",
+      "source": "https://example.invalid/model.prior",
+      "sha256": "fe8cd1678452ad292a8f93e97cb19a85959b729e17113e157180d5e69ae89ef3"
+    },
+    "undeclared_model": {
+      "name": "community_prior_v3",
+      "version": "git:main",
+      "license": "apache-2.0",
+      "source": "https://example.invalid/community.prior",
+      "sha256": "fe8cd1678452ad292a8f93e97cb19a85959b729e17113e157180d5e69ae89ef3"
+    },
+    "hash_mismatch": {
+      "name": "reinvent_pubchem",
+      "version": "zenodo:20701824",
+      "license": "apache-2.0",
+      "source": "https://zenodo.org/records/20701824/files/reinvent_pubchem.prior",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  }
+}

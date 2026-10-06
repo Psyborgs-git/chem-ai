@@ -1,0 +1,81 @@
+{
+  "fixture_only": true,
+  "scientific_status": "not_validated",
+  "note": "synthetic contract fixture for CS-0903 — plumbing only; no route-quality or executability claim is made by these values",
+  "spec": {
+    "schema_version": "1",
+    "method": "aizynthfinder_mcts_route",
+    "target": {"kind": "small_molecule_smiles", "smiles": "Cn1c(=O)c2c(ncn2C)n(C)c1=O"},
+    "policy_model": {
+      "name": "uspto_expansion",
+      "version": "zenodo:7797465",
+      "license": "cc-by-4.0",
+      "source": "https://zenodo.org/records/7797465/files/uspto_model.onnx",
+      "sha256": "bd0a3cb74cd7068de474c8fb789a00a66bc42c75636d66510ccac585ebe928f8"
+    },
+    "templates": {
+      "name": "uspto_templates",
+      "version": "zenodo:7341155",
+      "license": "cc-by-4.0",
+      "source": "https://zenodo.org/records/7341155/files/uspto_unique_templates.csv.gz",
+      "sha256": "a4f1945e90cfa195538320833d68aed38f14e2fcc2f8afb5d958bc920edcafbe"
+    },
+    "stock": {
+      "name": "zinc_stock",
+      "version": "figshare:23086469",
+      "license": "mit",
+      "source": "https://ndownloader.figshare.com/files/23086469",
+      "sha256": "99d39a6f807c3e815487500bafc2b4a9dc66a31af189e3b1776874fb0d4a188d"
+    },
+    "filter_model": {
+      "name": "uspto_filter",
+      "version": "zenodo:7797465",
+      "license": "cc-by-4.0",
+      "source": "https://zenodo.org/records/7797465/files/uspto_filter_model.onnx",
+      "sha256": "ad29aa32bdfcbe37065045546493806cf04899c55386c438905d83fb14bb6320"
+    },
+    "search": {"time_limit_seconds": 120, "iteration_limit": 5000, "max_routes": 5},
+    "resources": {"wall_seconds": 600, "memory_mebibytes": 8192, "ncores": 2}
+  },
+  "unsupported_input_examples": {
+    "formulation": {
+      "target": {"kind": "formulation", "lines": [{"name": "resin", "pct": 60}]},
+      "note": "a formulation recipe is not an explicit small-molecule representation"
+    },
+    "polymer_distribution": {
+      "target": {"kind": "polymer_distribution", "repeat_unit": "*CC*", "mw_range": [5000, 8000]},
+      "note": "a repeat unit with wildcard endpoints is a distribution, not a molecule"
+    },
+    "unknown": {
+      "target": {"kind": "unknown", "raw": "opaque blob"},
+      "note": "unknown inputs are never coerced to a generic molecule"
+    },
+    "mixture_smiles": {
+      "target": {"kind": "small_molecule_smiles", "smiles": "CCO.O"},
+      "note": "a multi-component SMILES is a mixture — one target molecule only"
+    }
+  },
+  "license_examples": {
+    "unlicensed_stock": {
+      "name": "zinc_stock",
+      "version": "figshare:23086469",
+      "license": "vendor-restricted",
+      "source": "https://example.invalid/stock.hdf5",
+      "sha256": "99d39a6f807c3e815487500bafc2b4a9dc66a31af189e3b1776874fb0d4a188d"
+    },
+    "undeclared_policy": {
+      "name": "my_policy",
+      "version": "latest",
+      "license": "apache-2.0",
+      "source": "https://example.invalid/policy.onnx",
+      "sha256": "bd0a3cb74cd7068de474c8fb789a00a66bc42c75636d66510ccac585ebe928f8"
+    },
+    "hash_mismatch_templates": {
+      "name": "uspto_templates",
+      "version": "zenodo:7341155",
+      "license": "cc-by-4.0",
+      "source": "https://zenodo.org/records/7341155/files/uspto_unique_templates.csv.gz",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  }
+}
