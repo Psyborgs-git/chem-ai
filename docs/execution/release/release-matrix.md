@@ -146,6 +146,12 @@ layer while its domain layer landed last).
   their environment prerequisites (engine images, `profile_*` flags,
   hardware) are absent. Status detection is honest; the reason text is
   not. Flagged, not edited — the report is generated output.
+- **UI defects surfaced by the CS-1104 user.md walkthrough (reported, not
+  fixed):** nav links `/materials` `/models` `/settings` → "Page not
+  found." (nav declares routes that do not exist); `/compute/fallback/
+  <bad-id>` shows "Not signed in" for a non-auth query failure;
+  candidate/import lists need a full reload after mutations; one
+  transient `contractFreeze` null flake (not reproducible).
 - Residual security risks R1–R12: see
   `docs/execution/security/cs1101-residual-threat-register.md`.
 - Benchmark machine/results: `docs/execution/benchmarks/cs1103-latest.json`.

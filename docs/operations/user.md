@@ -6,8 +6,10 @@ web on `http://127.0.0.1:5173`, owner session cookie set.
 
 Every screen below was exercised by executed e2e journeys
 (`tests/e2e/at-*.spec.ts`; pilot journeys in
-`docs/execution/pilot/journeys.md`). GraphQL mutation names are given
-for scripting; the UI drives the same mutations.
+`docs/execution/pilot/journeys.md`) **and by a verbatim CS-1104 UI
+walkthrough of this runbook**. GraphQL mutation names are given for
+scripting; where a step has no UI control it is marked *console/API
+only* — do not hunt for a button that does not exist.
 
 ## 1. Sign in / sign out
 
@@ -22,42 +24,60 @@ for scripting; the UI drives the same mutations.
 
 ## 2. Projects and tasks
 
-- `/projects` → create a project (`projectCreate`), open it.
-- `/projects/:id` → create a task (`taskCreate`): mode
+- Create a project — *console/API only*: `projectCreate` via GraphQL
+  (`/projects` is a list page; it has no create form).
+- `/projects/:id` → **new task** form (`taskCreate`): mode
   `improve` | `match_reference` | `discover`; `targetKind`
   `formulation|material|molecule|unknown` — `unknown` stays unknown,
-  it is never silently inferred.
-- `/tasks/:taskId` workspace tabs: overview · candidates · contract ·
-  research · runs · datasets · models · training · evaluations ·
-  optimization · closeout · decisions · report · reference analysis.
+  it is never silently inferred. Unresolved inputs are listed
+  honestly on the task header (e.g. `baselineRevisionId`,
+  `variationScope` for `improve` with a blank baseline).
+- `/tasks/:taskId` workspace tabs (exact, in order): overview ·
+  candidates · research · runs · closeout · report · decisions ·
+  datasets · training · models · evaluations · optimization ·
+  analysis. The **contract editor lives inside `overview`** — there
+  is no `contract` tab; `analysis` renders the *reference analysis*
+  panel. `optimization`/`analysis` only render when the task carries
+  those objects.
 - Task states follow §7.1: `draft → active → awaiting_review →
   closed` (closure is human-only, `tasksCloseout*` mutations).
 
 ## 3. Success contract
 
-- Tab **contract** → draft metrics/hard constraints
-  (`contractDraftCreate` / `tasksContractDraftMutation`), then
-  **freeze** (`contractFreeze`). Frozen revisions are immutable —
-  a tighter target is a new revision (`B`) that supersedes, never
-  rewrites, the signed record (verified in pilot journey A step 4).
+- Tab **overview** → contract editor drafts metrics/hard constraints
+  (`contractDraftCreate` / `tasksContractDraftMutation`). **Freeze
+  is console/API only** (`contractFreeze`) — the UI has no freeze
+  button; a second freeze on a frozen revision returns typed
+  `VALIDATION "only a draft revision can be frozen"` (verified).
+  Frozen revisions are immutable — a tighter target is a new
+  revision that supersedes, never rewrites, the signed record
+  (verified in pilot journey A step 4 and in the CS-1104
+  walkthrough: rev 3 froze while rev 2 stayed frozen-superseded).
 - A contract naming required metrics gates `supported_success` —
   without applicable reviewed measurements the evaluator refuses
   (CS-0201 evidence gate; no path fakes past it).
 
 ## 4. Candidates and revisions
 
-- Tab **candidates** → propose (`candidatesProposeMutation` →
-  submit → human review → eligibility). Formula/process revisions use
-  `tasksContract`/candidate revision surfaces; patches go
-  propose → human review. Exact ingredient-set dedup reports
-  duplicates — near-duplicate grouping is a separate, honest
-  operation, not a fuzzy guess.
+- Tab **candidates** → propose (`candidatesCreate` — not
+  `candidatesProposeMutation`; the earlier name was wrong) →
+  "proposed as draft", `eligibility: not_assessed`. Submit/review
+  transitions are *console/API only* — the panel has view + propose
+  controls, no review buttons. Formula/process revisions use the
+  candidate revision surfaces; patches go propose → human review.
+  Exact ingredient-set dedup reports duplicates — near-duplicate
+  grouping is a separate, honest operation, not a fuzzy guess.
+  **Known UI quirk:** the list needs a full reload to show a new
+  candidate (mutations do not auto-refetch — reported defect).
 
 ## 5. Import review (evidence intake)
 
-- **UI:** `/imports` — upload creates an artifact in the private
-  vault (content-addressed, checksum-verified), then
-  `importsArtifactImportMutation` runs the quarantined parse.
+- **Upload is REST-only** (no browser file picker — reported as a UI
+  gap): `POST /api/artifacts/uploads` → `PUT <upload-url>` (bytes) →
+  `POST …/finish` → artifact id in the private vault
+  (content-addressed, checksum-verified). Then on `/imports` paste
+  the artifact id and **run quarantined import**
+  (`importsArtifactImportMutation`).
 - **What you see:** parsed records with per-record flags —
   ambiguous units/fields are marked and stay `provisional`;
   OCR-needed pages report `REQUIRES_OCR_REVIEW`, never a fabricated
@@ -94,10 +114,12 @@ for scripting; the UI drives the same mutations.
 
 ## 8. Runs and compute
 
-- Tab **runs** → `runsRequestMutation` asks for compute; admission
-  either queues the attempt or returns a typed `blocked` with the
-  missing dimensions listed (group capacity, observed dims —
-  CS-0402). `runsRequestCancelMutation` requests cancellation;
+- Requesting compute is *console/API only* (`runsRequestMutation`) —
+  the **runs** tab lists live requests with status badges and a
+  cancel control, no request button. Admission either queues the
+  attempt or returns a typed `blocked` with the missing dimensions
+  listed (group capacity, observed dims — CS-0402).
+  `runsRequestCancelMutation` requests cancellation;
   termination is *confirmed* separately — the API never claims
   children stopped on acknowledgment (§7.3).
 - `/compute` shows capability/admission state; `/compute/fallback/:runId`
@@ -121,7 +143,23 @@ for scripting; the UI drives the same mutations.
 - Reports/decisions persist verbatim — do not enter secrets you would
   not want in a backup.
 
+## Known UI defects (verified in the CS-1104 walkthrough — reported,
+not fixed in this docs-only ticket)
+
+- Persistent nav links **/materials**, **/models**, **/settings**
+  render "Page not found." — the nav declares them but no routes
+  exist. Use the real surfaces: model registry lives on the task's
+  `models` tab; materials work happens inside task flows.
+- `/compute/fallback/<invalid-runId>` renders "Not signed in" — the
+  query boundary maps any failure to the auth copy.
+- Lists do not refetch after mutations (candidates, import records)
+  — a full page reload is required.
+- One transient flake observed: a `contractFreeze` call once
+  returned `null` on first attempt; the retry succeeded. Not
+  reproducible on demand — flagged for awareness.
+
 ## Evidence location
 
 `docs/execution/tickets/CS-0201…CS-0504.md` (tasks, contracts,
-imports, sessions, journeys); `docs/execution/pilot/journeys.md`.
+imports, sessions, journeys); `docs/execution/pilot/journeys.md`;
+CS-1104 walkthrough screenshots/recording attached to PR #19.
