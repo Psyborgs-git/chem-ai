@@ -184,7 +184,7 @@ function EvaluationReport({
           aria-label="hard gates"
           tabIndex={0}
         >
-          <table className="cs-table" data-field="gates-table">
+          <table className="cs-table cs-table--fit" data-field="gates-table">
             <caption>hard gates — never compensated by performance</caption>
             <thead>
               <tr>
@@ -198,8 +198,10 @@ function EvaluationReport({
               {gates.map((g) => (
                 <tr key={g.id} data-field="gate-row" data-verdict={g.verdict}>
                   <td className="cs-table__identity">
-                    {g.text ?? g.id}
-                    <FindingsList findings={g.findings ?? []} />
+                    <span className="cs-table__cell">
+                      {g.text ?? g.id}
+                      <FindingsList findings={g.findings ?? []} />
+                    </span>
                   </td>
                   <td data-field="gate-verdict">
                     <Badge tone={VERDICT_TONE[g.verdict ?? ""] ?? "neutral"}>

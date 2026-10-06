@@ -94,6 +94,14 @@ nav[aria-label="task sections"] {
   min-width: 40rem;
   width: 100%;
 }
+/* --fit: for narrow (2-3 col) tables — the 40rem floor otherwise
+ * forces slack into the widest column and can push the pinned
+ * identity column past the scrollport width, breaking the pin. */
+.cs-table--fit { min-width: 0; }
+/* Cap the content of an identity cell when it holds long prose —
+ * a td's own max-width is ignored by auto table layout, so the
+ * width cap must live on an in-cell element. */
+.cs-table__cell { display: block; max-width: 14rem; overflow-wrap: anywhere; }
 .cs-table th,
 .cs-table td {
   text-align: left;
@@ -113,6 +121,7 @@ nav[aria-label="task sections"] {
   background: var(--surface);
   border-right: var(--border-width) solid var(--border);
   min-width: 8rem;
+  overflow-wrap: anywhere;
   z-index: 1;
 }
 .cs-table thead .cs-table__identity { background: var(--surface-raised); }
@@ -152,6 +161,10 @@ nav[aria-label="task sections"] {
   background: var(--surface);
   color: var(--text);
   font: inherit;
+  /* inputs carry an intrinsic size attribute — let them shrink
+   * inside flex/grid contexts instead of overflowing the viewport */
+  min-width: 0;
+  max-width: 100%;
 }
 .cs-input--decimal { font-family: var(--font-mono); }
 .cs-input[aria-invalid="true"] { border-color: var(--status-danger); }
@@ -247,7 +260,8 @@ nav[aria-label="task sections"] {
 .cs-checkbox { display: flex; align-items: center; gap: var(--space-2); }
 
 .cs-quantity { border: none; padding: 0; margin: 0; }
-.cs-quantity__row { display: flex; gap: var(--space-3); align-items: flex-end; }
+.cs-quantity__row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
+.cs-quantity__row > * { min-width: 0; }
 .cs-quantity__basis { font-size: 0.8rem; color: var(--text-muted); margin: var(--space-1) 0 0; }
 
 .cs-qdisplay { display: inline-flex; gap: var(--space-2); align-items: baseline; flex-wrap: wrap; }
@@ -260,7 +274,7 @@ nav[aria-label="task sections"] {
 .cs-citation__kind { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
 .cs-citation__loc { color: var(--text-muted); }
 
-.cs-metric-target { display: flex; gap: var(--space-3); align-items: flex-end; }
+.cs-metric-target { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
 .cs-metric-target__name { font-weight: 600; }
 .cs-metric-target__op { font-family: var(--font-mono); color: var(--text-muted); }
 

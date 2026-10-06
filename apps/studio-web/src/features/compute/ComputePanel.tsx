@@ -78,30 +78,37 @@ export function ComputePanel() {
       </header>
 
       <h3>Hardware</h3>
-      <table className="cs-table kv">
-        <tbody>
-          <tr><td>OS / arch</td><td>{hw.os} / {hw.arch}</td></tr>
-          <tr><td>Memory model</td><td>{hw.memory_model}</td></tr>
-          <tr><td>CPU (logical / physical)</td><td>{hw.cpu_count_logical ?? 'unknown'} / {hw.cpu_count_physical ?? 'unknown'}</td></tr>
-          <tr><td>RAM total / available</td><td>{gib(hw.ram_total_bytes)} / {gib(hw.ram_available_bytes)}</td></tr>
-          <tr><td>Disk free</td><td>{gib(hw.disk_free_bytes)}</td></tr>
-          <tr>
-            <td>GPUs</td>
-            <td>
-              {hw.gpus.length === 0
-                ? 'none detected'
-                : hw.gpus
-                    .map(
-                      (g) =>
-                        `${g.backend}${g.device ? ` (${g.device})` : ''}${
-                          g.unified ? ' — unified memory' : ''
-                        }`,
-                    )
-                    .join('; ')}
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div
+        className="cs-table-wrap"
+        role="region"
+        aria-label="hardware"
+        tabIndex={0}
+      >
+        <table className="cs-table cs-table--fit kv">
+          <tbody>
+            <tr><td className="cs-table__identity">OS / arch</td><td>{hw.os} / {hw.arch}</td></tr>
+            <tr><td className="cs-table__identity">Memory model</td><td>{hw.memory_model}</td></tr>
+            <tr><td className="cs-table__identity">CPU (logical / physical)</td><td>{hw.cpu_count_logical ?? 'unknown'} / {hw.cpu_count_physical ?? 'unknown'}</td></tr>
+            <tr><td className="cs-table__identity">RAM total / available</td><td>{gib(hw.ram_total_bytes)} / {gib(hw.ram_available_bytes)}</td></tr>
+            <tr><td className="cs-table__identity">Disk free</td><td>{gib(hw.disk_free_bytes)}</td></tr>
+            <tr>
+              <td className="cs-table__identity">GPUs</td>
+              <td>
+                {hw.gpus.length === 0
+                  ? 'none detected'
+                  : hw.gpus
+                      .map(
+                        (g) =>
+                          `${g.backend}${g.device ? ` (${g.device})` : ''}${
+                            g.unified ? ' — unified memory' : ''
+                          }`,
+                      )
+                      .join('; ')}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       {view.groups.map((g) => (
         <section key={g.name}>
