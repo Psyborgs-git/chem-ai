@@ -65,6 +65,12 @@ export const CandidateCreateMutation = graphql`
           revision
           status
           eligibility
+          entityKind
+          entityRevisionId
+          hypothesis
+          payload
+          parentRevisionId
+          createdAt
         }
         errors {
           code

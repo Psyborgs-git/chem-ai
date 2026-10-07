@@ -303,7 +303,9 @@ function CandidateList({
   useEffect(() => {
     listRef(() => refetch({ taskId }, { fetchPolicy: "network-only" }));
   }, [listRef, refetch, taskId]);
-  const all = data.taskCandidateRevisions.edges.map((e) => e.node);
+  const all = data.taskCandidateRevisions.edges
+    .map((e) => e.node)
+    .filter((n): n is CandidateNode => n != null);
   const sorted = [...all].sort((a, b) => a.revision - b.revision);
   const loadNextPage = () => {
     setLoadError(null);
@@ -380,23 +382,20 @@ function ProposeForm({
             // deterministically — a remount that drops the in-flight
             // refetch can never leave the list stale (PAR-09).
             const gid = resp?.candidates?.create?.candidate?.id;
-            const created = gid ? store.get(gid) : null;
-            const conn = store.get(
-              ConnectionHandler.getConnectionID(
-                "client:root",
-                "CandidatePanel_list_taskCandidateRevisions",
-                { taskId },
-              ),
+            const node = gid ? store.get(gid) : null;
+            const conn = ConnectionHandler.getConnection(
+              store.getRoot(),
+              "CandidatePanel_list_taskCandidateRevisions",
+              { taskId },
             );
-            if (created != null && conn != null) {
-              const edge = ConnectionHandler.buildConnectionEdge(
+            if (node != null && conn != null) {
+              const edge = ConnectionHandler.createEdge(
                 store,
                 conn,
-                created,
+                node,
+                "CandidateEdge",
               );
-              if (edge != null) {
-                ConnectionHandler.insertEdgeBefore(conn, edge);
-              }
+              ConnectionHandler.insertEdgeBefore(conn, edge);
             }
           },
           onCompleted: (resp) => {
