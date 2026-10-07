@@ -47,6 +47,12 @@ type AnalyticalSeriesInfo {
   manifest: JSON!
 }
 
+type ApplicabilityMapResult {
+  mappingId: String
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
 input BatchAddInput {
   executionId: ID!
   label: String!
@@ -634,6 +640,7 @@ type LabMeasurementsMutation {
   measurementRecord(input: MeasurementRecordInput!): MeasurementResult!
   measurementReview(input: MeasurementReviewInput!): MeasurementResult!
   measurementApplicability(input: MeasurementApplicabilityInput!): MeasurementResult!
+  measurementMapApplicability(input: MeasurementApplicabilityMapInput!): ApplicabilityMapResult!
   measurementAmend(input: MeasurementAmendInput!): MeasurementResult!
 }
 
@@ -815,6 +822,16 @@ input MeasurementApplicabilityInput {
   measurementId: ID!
   applicable: Boolean!
   note: String = null
+  clientMutationId: String = null
+}
+
+input MeasurementApplicabilityMapInput {
+  measurementId: ID!
+  candidateRevisionId: ID!
+  contractRevisionId: ID = null
+  applicable: Boolean! = true
+  rationale: String! = ""
+  withdraw: Boolean! = false
   clientMutationId: String = null
 }
 
@@ -1143,8 +1160,8 @@ type Query {
   taskExecutions(taskId: ID!): [LabExecution!]!
   replicationSummary(executionId: ID!): JSON!
   measurementContractCheck(measurementId: ID!, metric: JSON!): JSON!
-  taskEvaluation(taskId: ID!): JSON!
-  taskCloseoutPacket(taskId: ID!): JSON!
+  taskEvaluation(taskId: ID!, candidateRevisionId: ID = null): JSON!
+  taskCloseoutPacket(taskId: ID!, candidateRevisionId: ID = null): JSON!
   taskReassessmentStatus(taskId: ID!): JSON!
   taskReport(taskId: ID!): JSON!
   datasetSnapshots(taskId: ID = null): [DatasetSnapshotInfo!]!
@@ -1478,12 +1495,14 @@ type Task implements Node {
   analyticalSeries: [AnalyticalSeriesInfo!]!
   analyticalComparisons: [AnalyticalComparisonInfo!]!
   project: Project
+  invalidInputs: [JSON!]!
 }
 
 input TaskCloseInput {
   taskId: ID!
   closureDecision: String!
   packet: JSON = null
+  candidateRevisionId: ID = null
   idempotencyKey: String = null
   clientMutationId: String = null
 }

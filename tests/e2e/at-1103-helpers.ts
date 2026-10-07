@@ -169,6 +169,24 @@ export async function seedClosedTask(token: string): Promise<string> {
   );
   expect(cand.data.candidates.create.errors ?? []).toEqual([]);
   const candUuid = decodeGlobalId(cand.data.candidates.create.candidate.id);
+  const candGid = cand.data.candidates.create.candidate.id as string;
+  // PAR-02: evaluation only reports accepted candidates — drive the real
+  // draft → submitted → accepted_for_research lifecycle.
+  const candSub = await gql(
+    token,
+    `mutation ($c: ID!) { candidates { submit(input: {candidateId: $c}) {
+       candidate { id status } errors { code message } } } }`,
+    { c: candGid },
+  );
+  expect(candSub.data.candidates.submit.errors).toEqual([]);
+  const candAccept = await gql(
+    token,
+    `mutation ($c: ID!) { candidates { review(input: {candidateId: $c,
+       accept: true}) {
+       candidate { id status } errors { code message } } } }`,
+    { c: candGid },
+  );
+  expect(candAccept.data.candidates.review.errors).toEqual([]);
   const plan = await gql(
     token,
     `mutation ($t: ID!, $p: JSON!) { lab { planCreate(input: {taskId: $t,

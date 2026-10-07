@@ -113,6 +113,24 @@ async function measuredPlan(
     { t: taskId },
   );
   const candUuid = decodeGlobalId(cand.data.candidates.create.candidate.id);
+  const candGid = cand.data.candidates.create.candidate.id as string;
+  // PAR-02: evaluation only reports accepted candidates — drive the real
+  // draft → submitted → accepted_for_research lifecycle.
+  const sub = await gql(
+    token,
+    `mutation ($c: ID!) { candidates { submit(input: {candidateId: $c}) {
+       candidate { id status } errors { code message } } } }`,
+    { c: candGid },
+  );
+  expect(sub.data.candidates.submit.errors).toEqual([]);
+  const accept = await gql(
+    token,
+    `mutation ($c: ID!) { candidates { review(input: {candidateId: $c,
+       accept: true}) {
+       candidate { id status } errors { code message } } } }`,
+    { c: candGid },
+  );
+  expect(accept.data.candidates.review.errors).toEqual([]);
   const plan = await gql(
     token,
     `mutation ($t: ID!, $p: JSON!) { lab { planCreate(input: {taskId: $t,

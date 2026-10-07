@@ -2132,6 +2132,71 @@ class Measurement(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped, Optimistic
     created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
 
 
+EVIDENCE_APPLICABILITY_STATUSES = ("applicable", "not_applicable")
+
+
+class EvidenceApplicability(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """Reviewed evidence→candidate applicability mapping (§12.3, PAR-02).
+
+    The only way evidence without direct plan/sample lineage —
+    historical imports in particular — can substantiate a specific
+    candidate revision. ``not_applicable`` records a reviewed refusal;
+    ``revoked_at`` withdraws the mapping without deleting review
+    history. Never inferred, never implicit.
+    """
+
+    __tablename__ = "evidence_applicability"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["workspace_id", "measurement_id"],
+            ["measurements.workspace_id", "measurements.id"],
+            name="fk_evapp_scope_measurement",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "candidate_revision_id"],
+            ["candidate_revisions.workspace_id", "candidate_revisions.id"],
+            name="fk_evapp_scope_candidate",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "contract_revision_id"],
+            ["success_contract_revisions.workspace_id", "success_contract_revisions.id"],
+            name="fk_evapp_scope_contract",
+        ),
+        ForeignKeyConstraint(
+            ["workspace_id", "reviewed_by"],
+            ["principals.workspace_id", "principals.id"],
+            name="fk_evapp_scope_reviewer",
+        ),
+        UniqueConstraint(
+            "workspace_id",
+            "measurement_id",
+            "candidate_revision_id",
+            name="uq_evapp_pair",
+        ),
+        CheckConstraint(
+            f"status IN {EVIDENCE_APPLICABILITY_STATUSES!r}", name="status"
+        ),
+        Index(
+            "ix_evapp_candidate",
+            "workspace_id",
+            "candidate_revision_id",
+        ),
+        Index("ix_evapp_measurement", "workspace_id", "measurement_id"),
+    )
+
+    measurement_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    candidate_revision_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    contract_revision_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="applicable")
+    rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
 class MeasurementAmendment(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
     """Amendment record (§14.2): a corrected value with reason and
     source. The superseded measurement row keeps its original value —

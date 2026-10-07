@@ -12,6 +12,7 @@ from chem_studio_policy.capabilities import capabilities_for_role
 from sqlalchemy.orm import Session
 
 from studio.auth.context import ServiceContext, load_context
+from studio.domain.lab.measurements import LabMeasurementService
 from studio.domain.tasks.evaluation import TaskEvaluationService
 from studio.domain.tasks.service import TaskService
 from studio.errors import DomainError, ErrorCode
@@ -114,7 +115,7 @@ def _frozen_task(session: Session, res: ServiceContext) -> ResearchTask:
 
 def _accepted_measurement(
     session: Session, res: ServiceContext, task: ResearchTask, value: str = "150"
-) -> None:
+) -> Measurement:
     ex = LabExecution(
         workspace_id=res.workspace_id,
         task_id=task.id,
@@ -129,19 +130,19 @@ def _accepted_measurement(
     sample = LabSample(workspace_id=res.workspace_id, batch_id=batch.id, label="a1", kind="aliquot")
     session.add(sample)
     session.flush()
-    session.add(
-        Measurement(
-            workspace_id=res.workspace_id,
-            sample_id=sample.id,
-            method="ASTM D2196",
-            metric="metric.perf",
-            repeat_type="independent_batch",
-            value_type="numeric",
-            value={"kind": "numeric", "value": value, "unit": "mPa·s"},
-            status="accepted",
-        )
+    m = Measurement(
+        workspace_id=res.workspace_id,
+        sample_id=sample.id,
+        method="ASTM D2196",
+        metric="metric.perf",
+        repeat_type="independent_batch",
+        value_type="numeric",
+        value={"kind": "numeric", "value": value, "unit": "mPa·s"},
+        status="accepted",
     )
+    session.add(m)
     session.flush()
+    return m
 
 
 def _candidate_with_banned(
@@ -188,8 +189,16 @@ class TestHardGateNoCompensation:
         the gate still fails; success is not suggested or allowed."""
         res, sr = ctxs
         task = _frozen_task(session, res)
-        _accepted_measurement(session, res, task, value="999")  # way above 100
-        _candidate_with_banned(session, res, task)
+        m = _accepted_measurement(session, res, task, value="999")  # way above 100
+        cand = _candidate_with_banned(session, res, task)
+        # PAR-02: lineage-less evidence only substantiates a candidate
+        # through a reviewed applicability mapping — never by pooling
+        LabMeasurementService(session, sr).record_applicability(
+            m.id,
+            candidate_revision_id=cand.id,
+            applicable=True,
+            rationale="fixture binds the reading to this candidate",
+        )
 
         report = TaskEvaluationService(session, sr).evaluate(task.id)
         gate = report["gates"][0]

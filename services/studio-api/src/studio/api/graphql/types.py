@@ -374,6 +374,19 @@ class Task(relay.Node):
         loaded = await gql.loaders().projects.load(str(row.project_id))
         return Project.from_row(loaded) if loaded else None
 
+    @strawberry.field
+    def invalid_inputs(self, info: strawberry.Info) -> list[JSON]:
+        """Mode inputs that name entities but do not resolve to an
+        existing workspace-scoped row (PAR-02 §7) — never silently a
+        baseline/reference."""
+        from studio.domain.tasks.service import invalid_inputs
+
+        gql = gql_ctx(info)
+        row = gql.db.get(TaskRow, uuid.UUID(self.id))
+        if row is None:
+            return []
+        return [JSON(i) for i in invalid_inputs(gql.db, row)]
+
     @overload
     @classmethod
     def resolve_nodes(
