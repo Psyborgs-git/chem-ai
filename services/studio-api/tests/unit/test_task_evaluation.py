@@ -86,6 +86,57 @@ class TestAssessMetric:
         assert r["verdict"] == "inconclusive"
         assert r["findings"][0]["kind"] == "unknown"
 
+    def test_unspecified_aggregation_is_unresolved(self) -> None:
+        """PAR-04: no declared rule → unresolved, never silent best-of."""
+        metric = _metric()
+        del metric["aggregation"]
+        r = assess_metric(metric, [_row("9")])
+        assert r["verdict"] == "inconclusive"
+        assert r["findings"][0]["kind"] == "aggregation_unresolved"
+
+    def test_conflicting_readings_cannot_pass_single(self) -> None:
+        """PAR-04: one passing reading must not outweigh a conflicting
+        accepted reading under a single-observation rule."""
+        r = assess_metric(
+            _metric(aggregation="single"), [_row("6"), _row("3", batch="b2")]
+        )
+        assert r["verdict"] == "inconclusive"
+        assert r["findings"][0]["kind"] == "conflicting_readings"
+
+    def test_conflicting_readings_cannot_pass_fixture_single(self) -> None:
+        r = assess_metric(_metric(), [_row("6"), _row("3", batch="b2")])
+        assert r["verdict"] == "inconclusive"
+        assert r["findings"][0]["kind"] == "conflicting_readings"
+
+    def test_agreeing_readings_pass_single(self) -> None:
+        """Repeat readings that agree corroborate — nothing to
+        adjudicate, all readings retained as evidence."""
+        r = assess_metric(_metric(aggregation="single"), [_row("6"), _row("7")])
+        assert r["verdict"] == "met"
+
+    def test_mean_weighs_batches_not_readings(self) -> None:
+        """PAR-04 §3: batch A [9,9,9] + batch B [1] → per-batch means
+        9 and 1 → mean 5 < 6 misses; the flat reading mean (7) let the
+        over-sampled batch carry the verdict."""
+        metric = _metric(aggregation="mean", target_values=["6"])
+        rows = [
+            _row("9", batch="b1"),
+            _row("9", batch="b1"),
+            _row("9", batch="b1"),
+            _row("1", batch="b2"),
+        ]
+        # _row ids collide on equal values — force distinct ids
+        for i, row in enumerate(rows):
+            row["id"] = f"m{i}"
+        r = assess_metric(metric, rows)
+        assert r["verdict"] == "misses"
+        assert r["independentBatches"] == 2
+
+    def test_mean_one_reading_per_batch_matches_flat(self) -> None:
+        metric = _metric(aggregation="mean", target_values=["6"])
+        r = assess_metric(metric, [_row("9", batch="b1"), _row("4", batch="b2")])
+        assert r["verdict"] == "met"  # (9+4)/2 = 6.5 ≥ 6
+
     def test_nonmeasurement_evidence_class_unmet(self) -> None:
         r = assess_metric(
             _metric(required_evidence=["lab_measurement", "replication"]),

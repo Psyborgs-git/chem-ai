@@ -908,6 +908,7 @@ type Measurement implements Node {
   supersededBy: String
   createdAt: DateTime!
   amendments: JSON!
+  effectiveValue: JSON
 }
 
 input MeasurementAmendInput {

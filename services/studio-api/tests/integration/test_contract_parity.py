@@ -187,7 +187,10 @@ class TestServiceRoundTrip:
         assert report["legacyPayload"] is True
         m = report["metrics"][0]
         assert m["metricId"] == "viscosity"
-        assert m["verdict"] == "met"
+        # PAR-04: a legacy payload declares no scientifically reviewed
+        # aggregation rule — unresolved/inconclusive, never best-of
+        assert m["verdict"] == "inconclusive"
+        assert any(f["kind"] == "aggregation_unresolved" for f in m["findings"])
 
     def test_ambiguous_legacy_entry_is_an_issue_not_a_verdict(
         self, session: Session

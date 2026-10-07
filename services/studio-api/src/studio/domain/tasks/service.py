@@ -380,6 +380,8 @@ class TaskService:
         )
         if closure_decision == "supported_success":
             self._success_evidence_gate(bound_packet)
+        elif closure_decision == "supported_failure":
+            self._failure_evidence_gate(bound_packet, packet)
         prior_contract = task.current_contract_revision_id
         task.workflow_state = "closed"
         task.closure_decision = closure_decision
@@ -631,6 +633,44 @@ class TaskService:
                     "unmet": missing,
                     "unprovenGates": gates,
                     "suggestedDecision": packet["suggestedDecision"],
+                },
+            )
+
+    def _failure_evidence_gate(
+        self, packet: dict[str, Any], reviewer_packet: dict[str, Any] | None
+    ) -> None:
+        """supported_failure beyond the evaluator's own suggestion is a
+        reviewer-recorded outcome — it needs the reviewer's rationale
+        plus evidence ids bound into the packet they saw (PAR-04 §6).
+        Otherwise the honest closure is inconclusive/stopped — an
+        unmeasured or unsupported experiment can never carry a measured
+        failure label."""
+        if packet.get("suggestedDecision") == "supported_failure":
+            return
+        reviewer_packet = reviewer_packet or {}
+        rationale = str(reviewer_packet.get("rationale") or "").strip()
+        cited = {str(e) for e in (reviewer_packet.get("evidenceIds") or [])}
+        selection = packet.get("evidenceSelection") or {}
+        bound = (
+            {str(e) for e in (selection.get("includedIds") or [])}
+            | {
+                str(e.get("measurementId"))
+                for e in (selection.get("exclusions") or [])
+                if isinstance(e, dict)
+            }
+            | {str(e) for e in (packet.get("evidenceIds") or [])}
+        )
+        unbound = cited - bound
+        if not rationale or not cited or unbound:
+            raise DomainError(
+                ErrorCode.EVIDENCE_INSUFFICIENT,
+                "supported_failure beyond the evaluator's suggestion requires "
+                "the reviewer's rationale plus evidenceIds bound into the "
+                "closeout packet — otherwise close as inconclusive or stopped",
+                safe_details={
+                    "suggestedDecision": packet.get("suggestedDecision"),
+                    "rationaleProvided": bool(rationale),
+                    "unboundEvidenceIds": sorted(unbound),
                 },
             )
 

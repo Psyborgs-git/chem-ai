@@ -241,6 +241,7 @@ def _metric_gate() -> dict:
             "target_values": ["0.1"],
             "unit": "dimensionless",
             "required_evidence": ["lab_measurement"],
+            "aggregation": "fixture-single-value",
         },
     }
 

@@ -1909,6 +1909,20 @@ class Measurement(relay.Node):
             ]
         )
 
+    @strawberry.field
+    def effective_value(self, info: strawberry.Info) -> JSON | None:
+        """The value a reader may rely on: the amendment that
+        ``superseded_by`` names once the row is superseded, else the
+        row's own value. The superseded original is never the answer
+        (§14.2, PAR-04 §4)."""
+        gql = gql_ctx(info)
+        gql.service_ctx().require(CAP_READ_PROJECT)
+        if self.superseded_by:
+            amd = gql.db.get(MeasurementAmendmentRow, uuid.UUID(self.superseded_by))
+            if amd is not None and amd.workspace_id == gql.service_ctx().workspace_id:
+                return JSON(amd.value)
+        return JSON(self.value)
+
     @classmethod
     def from_row(cls, row: MeasurementRow) -> Self:
         return cls(
