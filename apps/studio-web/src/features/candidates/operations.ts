@@ -10,6 +10,7 @@ export const TaskCandidatesQuery = graphql`
           status
           eligibility
           entityKind
+          entityRevisionId
           hypothesis
           payload
           parentRevisionId

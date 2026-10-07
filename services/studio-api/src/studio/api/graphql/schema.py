@@ -19,6 +19,8 @@ from typing import Any, cast
 import strawberry
 from chem_studio_policy.capabilities import CAP_READ_PROJECT, CAP_REQUEST_COMPUTE
 from fastapi import Request
+from sqlalchemy import String as SaString
+from sqlalchemy import cast as sa_cast
 from sqlalchemy import or_, select
 from sqlalchemy.exc import SQLAlchemyError
 from strawberry import relay
@@ -41,6 +43,8 @@ from studio.api.graphql.types import (
     EvidenceClaim,
     ExperimentPlan,
     ExtractedRecord,
+    FormulationFamily,
+    FormulationRevision,
     ImportBatch,
     LabBatch,
     LabExecution,
@@ -49,6 +53,7 @@ from studio.api.graphql.types import (
     MaterialIdentity,
     Measurement,
     ModelReleaseInfo,
+    ProcessRevision,
     Project,
     PromotionDecisionInfo,
     ReferenceProduct,
@@ -78,6 +83,7 @@ from studio.domain.learning.exports.transform import TransformService
 from studio.domain.learning.models import ModelRegistryService
 from studio.domain.learning.promotion import EvaluationService, PromotionService
 from studio.domain.learning.sft import TrainingRunService
+from studio.domain.materials.formulations import FormulationService
 from studio.domain.materials.service import MaterialService
 from studio.domain.projects.service import ProjectService
 from studio.domain.runs.admission import AdmissionService
@@ -104,6 +110,12 @@ from studio.persistence.models import (
     ExtractedRecord as RecordRow,
 )
 from studio.persistence.models import (
+    FormulationFamily as FamilyRow,
+)
+from studio.persistence.models import (
+    FormulationRevision as FormRevRow,
+)
+from studio.persistence.models import (
     ImportBatch as BatchRow,
 )
 from studio.persistence.models import (
@@ -126,6 +138,9 @@ from studio.persistence.models import (
 )
 from studio.persistence.models import (
     Principal as PrincipalRow,
+)
+from studio.persistence.models import (
+    ProcessRevision as ProcRevRow,
 )
 from studio.persistence.models import (
     Project as ProjectRow,
@@ -312,6 +327,90 @@ class ExperimentPlanEdge:
 @strawberry.type
 class ExperimentPlanConnection:
     edges: list[ExperimentPlanEdge]
+    page_info: PageInfo
+
+
+@strawberry.type
+class MaterialIdentityEdge:
+    cursor: str
+    node: MaterialIdentity
+
+
+@strawberry.type
+class MaterialIdentityConnection:
+    edges: list[MaterialIdentityEdge]
+    page_info: PageInfo
+
+
+@strawberry.type
+class MaterialGradeEdge:
+    cursor: str
+    node: MaterialGrade
+
+
+@strawberry.type
+class MaterialGradeConnection:
+    edges: list[MaterialGradeEdge]
+    page_info: PageInfo
+
+
+@strawberry.type
+class ReferenceProductEdge:
+    cursor: str
+    node: ReferenceProduct
+
+
+@strawberry.type
+class ReferenceProductConnection:
+    edges: list[ReferenceProductEdge]
+    page_info: PageInfo
+
+
+@strawberry.type
+class ReferenceRevisionEdge:
+    cursor: str
+    node: ReferenceProductRevision
+
+
+@strawberry.type
+class ReferenceRevisionConnection:
+    edges: list[ReferenceRevisionEdge]
+    page_info: PageInfo
+
+
+@strawberry.type
+class FormulationFamilyEdge:
+    cursor: str
+    node: FormulationFamily
+
+
+@strawberry.type
+class FormulationFamilyConnection:
+    edges: list[FormulationFamilyEdge]
+    page_info: PageInfo
+
+
+@strawberry.type
+class FormulationRevisionEdge:
+    cursor: str
+    node: FormulationRevision
+
+
+@strawberry.type
+class FormulationRevisionConnection:
+    edges: list[FormulationRevisionEdge]
+    page_info: PageInfo
+
+
+@strawberry.type
+class ProcessRevisionEdge:
+    cursor: str
+    node: ProcessRevision
+
+
+@strawberry.type
+class ProcessRevisionConnection:
+    edges: list[ProcessRevisionEdge]
     page_info: PageInfo
 
 
@@ -777,6 +876,74 @@ class ReferenceRevisionFreezeInput:
 
 
 @strawberry.input
+class FormulationFamilyCreateInput:
+    name: str
+    description: str | None = None
+    idempotency_key: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class FormulationRevisionDraftInput:
+    """PAR-07: the payload is the domain's stored shape — ingredients
+    (materialId | name | alias, amount QuantityDTO, role), amountBasis,
+    declaredTotal, tolerance, completeness, optional
+    processRevisionId/substrateContext/applicationContext/authorSource.
+    The UI builds this from a structured editor; the service validates
+    Quantity DTOs and records findings (never blocks drafts)."""
+
+    family_id: relay.GlobalID
+    payload: JSON
+    parent_revision_id: relay.GlobalID | None = None
+    idempotency_key: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class FormulationRevisionIdInput:
+    revision_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class ProcessRevisionDraftInput:
+    """PAR-07: payload {"steps": [{order, action, inputs?, outputs?,
+    conditions?, equipment?}]} — step order is content (§6.2)."""
+
+    family_id: relay.GlobalID
+    payload: JSON
+    idempotency_key: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class ProcessRevisionIdInput:
+    revision_id: relay.GlobalID
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class FormulationFamilyResult:
+    family: FormulationFamily | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class FormulationRevisionResult:
+    revision: FormulationRevision | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class ProcessRevisionResult:
+    revision: ProcessRevision | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.input
 class MaterialStructureReviewInput:
     identity_id: relay.GlobalID
     client_mutation_id: str | None = None
@@ -1106,6 +1273,339 @@ class Query:
             for r, c in zip(rows, cursors, strict=True)
         ]
         return CandidateConnection(edges=edges, page_info=info_page)
+
+    # --------------------------------------------------------------
+    # PAR-07 — registry search feeds (§5): every picker resolves a
+    # human-typed name to a canonical ID through these connections;
+    # raw uuid entry is never the normal path (CS-1201).
+
+    @strawberry.field
+    def material_identities(
+        self,
+        info: strawberry.Info,
+        search: str | None = None,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+    ) -> MaterialIdentityConnection:
+        """Searchable identity list — name, identifier value, or alias
+        text match (substring, case-insensitive)."""
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        ctx.require(CAP_READ_PROJECT)
+        reject_backward(before, last)
+        sig = scope_signature("material_identities", ctx.workspace_id, "created_at|id")
+        args = page_args(first, after, kind="material_identities", sig=sig)
+        stmt = select(MaterialRow).where(MaterialRow.workspace_id == ctx.workspace_id)
+        if search and search.strip():
+            term = f"%{search.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    MaterialRow.name.ilike(term),
+                    sa_cast(MaterialRow.identifiers, SaString).ilike(term),
+                    sa_cast(MaterialRow.aliases, SaString).ilike(term),
+                )
+            )
+        rows: list[MaterialRow]
+        rows, cursors, info_page = keyset_page(
+            gql.db,
+            stmt,
+            MaterialRow.created_at,
+            MaterialRow.id,
+            args,
+            kind="material_identities",
+            sig=sig,
+        )
+        edges = [
+            MaterialIdentityEdge(cursor=c, node=MaterialIdentity.from_row(r))
+            for r, c in zip(rows, cursors, strict=True)
+        ]
+        return MaterialIdentityConnection(edges=edges, page_info=info_page)
+
+    @strawberry.field
+    def material_grades(
+        self,
+        info: strawberry.Info,
+        material_id: relay.GlobalID | None = None,
+        search: str | None = None,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+    ) -> MaterialGradeConnection:
+        """Supplier grades — optionally scoped to one identity, with a
+        name/supplier search filter."""
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        ctx.require(CAP_READ_PROJECT)
+        reject_backward(before, last)
+        scope = "all"
+        m_uuid: uuid.UUID | None = None
+        if material_id is not None:
+            m_uuid = _gid_uuid(material_id, "MaterialIdentity", "materialId")
+            scope = str(m_uuid)
+        sig = scope_signature("material_grades", ctx.workspace_id, scope, "created_at|id")
+        args = page_args(first, after, kind="material_grades", sig=sig)
+        stmt = select(GradeRow).where(GradeRow.workspace_id == ctx.workspace_id)
+        if m_uuid is not None:
+            stmt = stmt.where(GradeRow.material_id == m_uuid)
+        if search and search.strip():
+            term = f"%{search.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    GradeRow.grade_name.ilike(term),
+                    GradeRow.supplier.ilike(term),
+                    sa_cast(GradeRow.specifications, SaString).ilike(term),
+                )
+            )
+        rows: list[GradeRow]
+        rows, cursors, info_page = keyset_page(
+            gql.db,
+            stmt,
+            GradeRow.created_at,
+            GradeRow.id,
+            args,
+            kind="material_grades",
+            sig=sig,
+        )
+        edges = [
+            MaterialGradeEdge(cursor=c, node=MaterialGrade.from_row(r))
+            for r, c in zip(rows, cursors, strict=True)
+        ]
+        return MaterialGradeConnection(edges=edges, page_info=info_page)
+
+    @strawberry.field
+    def reference_products(
+        self,
+        info: strawberry.Info,
+        search: str | None = None,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+    ) -> ReferenceProductConnection:
+        """Searchable reference-product list — name, supplier,
+        category, or alias match."""
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        ctx.require(CAP_READ_PROJECT)
+        reject_backward(before, last)
+        sig = scope_signature("reference_products", ctx.workspace_id, "created_at|id")
+        args = page_args(first, after, kind="reference_products", sig=sig)
+        stmt = select(RefProductRow).where(RefProductRow.workspace_id == ctx.workspace_id)
+        if search and search.strip():
+            term = f"%{search.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    RefProductRow.name.ilike(term),
+                    RefProductRow.supplier.ilike(term),
+                    RefProductRow.category.ilike(term),
+                    sa_cast(RefProductRow.aliases, SaString).ilike(term),
+                )
+            )
+        rows: list[RefProductRow]
+        rows, cursors, info_page = keyset_page(
+            gql.db,
+            stmt,
+            RefProductRow.created_at,
+            RefProductRow.id,
+            args,
+            kind="reference_products",
+            sig=sig,
+        )
+        edges = [
+            ReferenceProductEdge(cursor=c, node=ReferenceProduct.from_row(r))
+            for r, c in zip(rows, cursors, strict=True)
+        ]
+        return ReferenceProductConnection(edges=edges, page_info=info_page)
+
+    @strawberry.field
+    def reference_product_revisions(
+        self,
+        info: strawberry.Info,
+        product_id: relay.GlobalID,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+    ) -> ReferenceRevisionConnection:
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        ctx.require(CAP_READ_PROJECT)
+        reject_backward(before, last)
+        p_uuid = _gid_uuid(product_id, "ReferenceProduct", "productId")
+        sig = scope_signature(
+            "reference_product_revisions", ctx.workspace_id, str(p_uuid), "created_at|id"
+        )
+        args = page_args(first, after, kind="reference_product_revisions", sig=sig)
+        stmt = select(RefRevRow).where(
+            RefRevRow.workspace_id == ctx.workspace_id, RefRevRow.product_id == p_uuid
+        )
+        rows: list[RefRevRow]
+        rows, cursors, info_page = keyset_page(
+            gql.db,
+            stmt,
+            RefRevRow.created_at,
+            RefRevRow.id,
+            args,
+            kind="reference_product_revisions",
+            sig=sig,
+        )
+        edges = [
+            ReferenceRevisionEdge(cursor=c, node=ReferenceProductRevision.from_row(r))
+            for r, c in zip(rows, cursors, strict=True)
+        ]
+        return ReferenceRevisionConnection(edges=edges, page_info=info_page)
+
+    @strawberry.field
+    def formulation_families(
+        self,
+        info: strawberry.Info,
+        search: str | None = None,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+    ) -> FormulationFamilyConnection:
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        ctx.require(CAP_READ_PROJECT)
+        reject_backward(before, last)
+        sig = scope_signature("formulation_families", ctx.workspace_id, "created_at|id")
+        args = page_args(first, after, kind="formulation_families", sig=sig)
+        stmt = select(FamilyRow).where(FamilyRow.workspace_id == ctx.workspace_id)
+        if search and search.strip():
+            stmt = stmt.where(FamilyRow.name.ilike(f"%{search.strip()}%"))
+        rows: list[FamilyRow]
+        rows, cursors, info_page = keyset_page(
+            gql.db,
+            stmt,
+            FamilyRow.created_at,
+            FamilyRow.id,
+            args,
+            kind="formulation_families",
+            sig=sig,
+        )
+        edges = [
+            FormulationFamilyEdge(cursor=c, node=FormulationFamily.from_row(r))
+            for r, c in zip(rows, cursors, strict=True)
+        ]
+        return FormulationFamilyConnection(edges=edges, page_info=info_page)
+
+    @strawberry.field
+    def formulation_revisions(
+        self,
+        info: strawberry.Info,
+        family_id: relay.GlobalID | None = None,
+        search: str | None = None,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+    ) -> FormulationRevisionConnection:
+        """Revision feed for one family, or a cross-family search —
+        the baseline picker joins family names so an operator types a
+        formulation name and gets canonical revisions back."""
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        ctx.require(CAP_READ_PROJECT)
+        reject_backward(before, last)
+        f_uuid: uuid.UUID | None = None
+        if family_id is not None:
+            f_uuid = _gid_uuid(family_id, "FormulationFamily", "familyId")
+        sig = scope_signature(
+            "formulation_revisions",
+            ctx.workspace_id,
+            str(f_uuid) if f_uuid else "all",
+            "created_at|id",
+        )
+        args = page_args(first, after, kind="formulation_revisions", sig=sig)
+        stmt = select(FormRevRow).where(FormRevRow.workspace_id == ctx.workspace_id)
+        if f_uuid is not None:
+            stmt = stmt.where(FormRevRow.family_id == f_uuid)
+        elif search and search.strip():
+            term = f"%{search.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    sa_cast(FormRevRow.payload, SaString).ilike(term),
+                    select(FamilyRow.id)
+                    .where(
+                        FamilyRow.workspace_id == ctx.workspace_id,
+                        FamilyRow.name.ilike(term),
+                        FamilyRow.id == FormRevRow.family_id,
+                    )
+                    .exists(),
+                )
+            )
+        rows: list[FormRevRow]
+        rows, cursors, info_page = keyset_page(
+            gql.db,
+            stmt,
+            FormRevRow.created_at,
+            FormRevRow.id,
+            args,
+            kind="formulation_revisions",
+            sig=sig,
+        )
+        fam_ids = {r.family_id for r in rows}
+        names: dict[str, str] = {}
+        if fam_ids:
+            fams = (
+                gql.db.execute(
+                    select(FamilyRow).where(
+                        FamilyRow.workspace_id == ctx.workspace_id,
+                        FamilyRow.id.in_(fam_ids),
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            names = {str(f.id): f.name for f in fams}
+        edges = [
+            FormulationRevisionEdge(
+                cursor=c,
+                node=FormulationRevision.from_row(r, family_name=names.get(str(r.family_id))),
+            )
+            for r, c in zip(rows, cursors, strict=True)
+        ]
+        return FormulationRevisionConnection(edges=edges, page_info=info_page)
+
+    @strawberry.field
+    def process_revisions(
+        self,
+        info: strawberry.Info,
+        family_id: relay.GlobalID,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+    ) -> ProcessRevisionConnection:
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        ctx.require(CAP_READ_PROJECT)
+        reject_backward(before, last)
+        f_uuid = _gid_uuid(family_id, "FormulationFamily", "familyId")
+        sig = scope_signature("process_revisions", ctx.workspace_id, str(f_uuid), "created_at|id")
+        args = page_args(first, after, kind="process_revisions", sig=sig)
+        stmt = select(ProcRevRow).where(
+            ProcRevRow.workspace_id == ctx.workspace_id, ProcRevRow.family_id == f_uuid
+        )
+        rows: list[ProcRevRow]
+        rows, cursors, info_page = keyset_page(
+            gql.db,
+            stmt,
+            ProcRevRow.created_at,
+            ProcRevRow.id,
+            args,
+            kind="process_revisions",
+            sig=sig,
+        )
+        edges = [
+            ProcessRevisionEdge(cursor=c, node=ProcessRevision.from_row(r))
+            for r, c in zip(rows, cursors, strict=True)
+        ]
+        return ProcessRevisionConnection(edges=edges, page_info=info_page)
 
     @strawberry.field
     def research_task(self, info: strawberry.Info, id: relay.GlobalID) -> Task | None:
@@ -2176,6 +2676,12 @@ class Mutation:
     def materials(self) -> MaterialsMutation:
         """Materials-registry commands under one namespace (CS-0203)."""
         return MaterialsMutation()
+
+    @strawberry.mutation
+    def formulations(self) -> FormulationsMutation:
+        """Formulation family/revision commands (PAR-07): the
+        structured editor's write path."""
+        return FormulationsMutation()
 
     @strawberry.mutation
     def candidates(self) -> CandidatesMutation:
@@ -3451,6 +3957,224 @@ class MaterialsMutation:
         except DomainError as exc:
             gql.db.rollback()
             return ReferenceRevisionResult(
+                revision=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+
+@strawberry.type
+class FormulationsMutation:
+    """Formulation family/revision commands (PAR-07, §5-§6): drafts
+    may be incomplete; the declared-basis gate runs on accept —
+    amounts are never normalized (AT-0204-1). Process steps keep
+    their authored order verbatim (AT-0204-3)."""
+
+    @strawberry.mutation
+    def family_create(
+        self, info: strawberry.Info, input: FormulationFamilyCreateInput
+    ) -> FormulationFamilyResult:
+        gql = gql_ctx(info)
+        try:
+            svc = FormulationService(gql.db, gql.service_ctx())
+            payload = {"name": input.name, "description": input.description}
+
+            def _do() -> dict[str, str]:
+                row = svc.create_family(name=input.name, description=input.description)
+                return {"id": str(row.id)}
+
+            result = _mutate(
+                gql,
+                key=input.idempotency_key,
+                operation="formulation.family_create",
+                payload=payload,
+                fn=_do,
+            )
+            gql.db.commit()
+            row = gql.db.get(FamilyRow, uuid.UUID(result["id"]))
+            return FormulationFamilyResult(
+                family=FormulationFamily.from_row(row) if row else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return FormulationFamilyResult(
+                family=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def revision_draft(
+        self, info: strawberry.Info, input: FormulationRevisionDraftInput
+    ) -> FormulationRevisionResult:
+        gql = gql_ctx(info)
+        try:
+            svc = FormulationService(gql.db, gql.service_ctx())
+            f_uuid = _gid_uuid(input.family_id, "FormulationFamily", "familyId")
+            p_uuid = (
+                _gid_uuid(input.parent_revision_id, "FormulationRevision", "parentRevisionId")
+                if input.parent_revision_id is not None
+                else None
+            )
+            if not isinstance(input.payload, dict):
+                raise DomainError(
+                    ErrorCode.VALIDATION,
+                    "payload must be an object",
+                    field_path="input.payload",
+                )
+            payload = {
+                "familyId": str(f_uuid),
+                "parentRevisionId": str(p_uuid) if p_uuid else None,
+                "payload": input.payload,
+            }
+
+            def _do() -> dict[str, str]:
+                row = svc.draft_revision(
+                    family_id=f_uuid,
+                    payload=cast(dict[str, Any], input.payload),
+                    parent_revision_id=p_uuid,
+                )
+                return {"id": str(row.id)}
+
+            result = _mutate(
+                gql,
+                key=input.idempotency_key,
+                operation="formulation.revision_draft",
+                payload=payload,
+                fn=_do,
+            )
+            gql.db.commit()
+            row = gql.db.get(FormRevRow, uuid.UUID(result["id"]))
+            fam = gql.db.get(FamilyRow, row.family_id) if row else None
+            return FormulationRevisionResult(
+                revision=FormulationRevision.from_row(row, family_name=fam.name if fam else None)
+                if row
+                else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return FormulationRevisionResult(
+                revision=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def revision_accept(
+        self, info: strawberry.Info, input: FormulationRevisionIdInput
+    ) -> FormulationRevisionResult:
+        gql = gql_ctx(info)
+        try:
+            svc = FormulationService(gql.db, gql.service_ctx())
+            r_uuid = _gid_uuid(input.revision_id, "FormulationRevision", "revisionId")
+
+            def _do() -> dict[str, str]:
+                row = svc.accept_revision(revision_id=r_uuid)
+                return {"id": str(row.id)}
+
+            result = _mutate(
+                gql,
+                key=None,
+                operation="formulation.revision_accept",
+                payload={"revisionId": str(r_uuid)},
+                fn=_do,
+            )
+            gql.db.commit()
+            row = gql.db.get(FormRevRow, uuid.UUID(result["id"]))
+            fam = gql.db.get(FamilyRow, row.family_id) if row else None
+            return FormulationRevisionResult(
+                revision=FormulationRevision.from_row(row, family_name=fam.name if fam else None)
+                if row
+                else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return FormulationRevisionResult(
+                revision=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def process_draft(
+        self, info: strawberry.Info, input: ProcessRevisionDraftInput
+    ) -> ProcessRevisionResult:
+        gql = gql_ctx(info)
+        try:
+            svc = FormulationService(gql.db, gql.service_ctx())
+            f_uuid = _gid_uuid(input.family_id, "FormulationFamily", "familyId")
+            if not isinstance(input.payload, dict):
+                raise DomainError(
+                    ErrorCode.VALIDATION,
+                    "payload must be an object",
+                    field_path="input.payload",
+                )
+            payload = {"familyId": str(f_uuid), "payload": input.payload}
+
+            def _do() -> dict[str, str]:
+                row = svc.draft_process_revision(
+                    family_id=f_uuid, payload=cast(dict[str, Any], input.payload)
+                )
+                return {"id": str(row.id)}
+
+            result = _mutate(
+                gql,
+                key=input.idempotency_key,
+                operation="formulation.process_draft",
+                payload=payload,
+                fn=_do,
+            )
+            gql.db.commit()
+            row = gql.db.get(ProcRevRow, uuid.UUID(result["id"]))
+            return ProcessRevisionResult(
+                revision=ProcessRevision.from_row(row) if row else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return ProcessRevisionResult(
+                revision=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def process_accept(
+        self, info: strawberry.Info, input: ProcessRevisionIdInput
+    ) -> ProcessRevisionResult:
+        gql = gql_ctx(info)
+        try:
+            svc = FormulationService(gql.db, gql.service_ctx())
+            r_uuid = _gid_uuid(input.revision_id, "ProcessRevision", "revisionId")
+
+            def _do() -> dict[str, str]:
+                row = svc.accept_process_revision(revision_id=r_uuid)
+                return {"id": str(row.id)}
+
+            result = _mutate(
+                gql,
+                key=None,
+                operation="formulation.process_accept",
+                payload={"revisionId": str(r_uuid)},
+                fn=_do,
+            )
+            gql.db.commit()
+            row = gql.db.get(ProcRevRow, uuid.UUID(result["id"]))
+            return ProcessRevisionResult(
+                revision=ProcessRevision.from_row(row) if row else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return ProcessRevisionResult(
                 revision=None,
                 errors=[_err_payload(exc)],
                 client_mutation_id=input.client_mutation_id,

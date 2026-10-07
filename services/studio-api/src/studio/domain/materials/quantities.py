@@ -415,6 +415,17 @@ class Quantity:
 
     @classmethod
     def from_dto(cls, data: dict[str, Any]) -> Self:
+        if not isinstance(data, dict):
+            raise DomainError(
+                ErrorCode.VALIDATION, "quantity must be an object", field_path="amount"
+            )
+        if "value" not in data or "unit" not in data:
+            raise DomainError(
+                ErrorCode.VALIDATION,
+                "quantity requires 'value' and 'unit'",
+                field_path="amount",
+                safe_details={"missing": [k for k in ("value", "unit") if k not in data]},
+            )
         return cls.create(
             data["value"],
             data["unit"],

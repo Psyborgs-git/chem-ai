@@ -6,6 +6,10 @@ import { Button } from "../../../components/atoms/Button";
 import { TextField } from "../../../components/atoms/TextField";
 import { EmptyState } from "../../../components/states/states";
 import {
+  CandidateRevisionPicker,
+  ContractRevisionPicker,
+} from "../../registry/pickers";
+import {
   PacketExportMutation,
   PlanCreateMutation,
   PlanReviewMutation,
@@ -38,21 +42,6 @@ const STATUS_TONE: Record<
 
 const MANUAL_LABEL =
   "MANUAL EXECUTION — qualified operator required; the system does not start equipment";
-
-const PAYLOAD_TEMPLATE = JSON.stringify(
-  {
-    candidateRevisionId: "",
-    contractRevisionId: "",
-    processRevisionId: "",
-    method: "",
-    samplePlan: [{ batch: "A", aliquots: 2 }],
-    acceptanceCriteria: "",
-    hazardNotes: "",
-    resourceNeeds: "",
-  },
-  null,
-  2,
-);
 
 function PlanCard({
   plan,
@@ -218,6 +207,9 @@ function PlanCard({
   );
 }
 
+/** Structured plan form (§14.1, PAR-07): bound revisions are picked by
+ * name — candidate revision, contract revision, optional process
+ * revision — never a uuid typed by hand. */
 function PlanCreateForm({
   taskId,
   onCreated,
@@ -228,18 +220,30 @@ function PlanCreateForm({
   const [commit, pending] =
     useMutation<labPlansPlanCreateMutation>(PlanCreateMutation);
   const [title, setTitle] = useState("");
-  const [payloadText, setPayloadText] = useState(PAYLOAD_TEMPLATE);
+  const [candidateRevisionId, setCandidateRevisionId] = useState("");
+  const [contractRevisionId, setContractRevisionId] = useState("");
+  const [method, setMethod] = useState("");
+  const [batches, setBatches] = useState("1");
+  const [acceptanceCriteria, setAcceptanceCriteria] = useState("");
+  const [hazardNotes, setHazardNotes] = useState("");
+  const [resourceNeeds, setResourceNeeds] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const create = () => {
     setError(null);
-    let payload: unknown;
-    try {
-      payload = JSON.parse(payloadText);
-    } catch {
-      setError("payload is not valid JSON");
-      return;
-    }
+    const batchCount = Math.max(1, Number.parseInt(batches, 10) || 1);
+    const payload = {
+      ...(candidateRevisionId ? { candidateRevisionId } : {}),
+      ...(contractRevisionId ? { contractRevisionId } : {}),
+      method,
+      samplePlan: Array.from({ length: batchCount }, (_, i) => ({
+        batch: String.fromCharCode(65 + i),
+        aliquots: 2,
+      })),
+      ...(acceptanceCriteria ? { acceptanceCriteria } : {}),
+      ...(hazardNotes ? { hazardNotes } : {}),
+      ...(resourceNeeds ? { resourceNeeds } : {}),
+    };
     commit({
       variables: { input: { taskId, title, payload } },
       onCompleted: (res) => {
@@ -248,6 +252,12 @@ function PlanCreateForm({
           setError(errs.map((e) => `${e.code}: ${e.message}`).join("; "));
         } else {
           setTitle("");
+          setCandidateRevisionId("");
+          setContractRevisionId("");
+          setMethod("");
+          setAcceptanceCriteria("");
+          setHazardNotes("");
+          setResourceNeeds("");
           onCreated();
         }
       },
@@ -262,20 +272,46 @@ function PlanCreateForm({
         label="plan title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
+        required
       />
-      <div className="cs-field">
-        <label className="cs-field__label" htmlFor="plan-payload">
-          plan payload (JSON — bound revision ids, method, sample plan,
-          acceptance criteria, hazard notes, resource needs)
-        </label>
-        <textarea
-          id="plan-payload"
-          rows={10}
-          value={payloadText}
-          onChange={(e) => setPayloadText(e.target.value)}
-          className="cs-input"
+      <fieldset>
+        <legend>bound revisions</legend>
+        <CandidateRevisionPicker
+          taskId={taskId}
+          onPick={(p) => setCandidateRevisionId(p.uuid)}
         />
-      </div>
+        <ContractRevisionPicker
+          taskId={taskId}
+          onPick={(p) => setContractRevisionId(p.uuid)}
+        />
+      </fieldset>
+      <TextField
+        label="method"
+        hint="what the manual experiment does, in operator terms"
+        value={method}
+        onChange={(e) => setMethod(e.target.value)}
+      />
+      <TextField
+        label="batch count"
+        inputMode="numeric"
+        value={batches}
+        onChange={(e) => setBatches(e.target.value)}
+      />
+      <TextField
+        label="acceptance criteria (optional)"
+        value={acceptanceCriteria}
+        onChange={(e) => setAcceptanceCriteria(e.target.value)}
+      />
+      <TextField
+        label="hazard notes (optional)"
+        value={hazardNotes}
+        onChange={(e) => setHazardNotes(e.target.value)}
+      />
+      <TextField
+        label="resource needs (optional)"
+        value={resourceNeeds}
+        onChange={(e) => setResourceNeeds(e.target.value)}
+      />
       {error && (
         <p role="alert" className="cs-field__error">
           {error}
@@ -283,7 +319,7 @@ function PlanCreateForm({
       )}
       <Button
         type="button"
-        disabled={pending || !title.trim()}
+        disabled={pending || !title.trim() || !method.trim()}
         onClick={create}
       >
         create plan
