@@ -315,8 +315,9 @@ class TestRunnerCancellation:
         turn_id = str(uuid.uuid4())
         runtime = ScriptedRuntime(
             [
-                '{"tool": "summarize_task_evidence", "arguments": {"task_id": "%s"}}'
-                % str(task.id),
+                '{"tool": "summarize_task_evidence", "arguments": {"task_id": "'
+                + str(task.id)
+                + '"}}',
                 '{"final": "should not be emitted"}',
             ]
         )

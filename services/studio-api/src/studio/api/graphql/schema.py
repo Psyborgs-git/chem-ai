@@ -4355,9 +4355,10 @@ class ResearchMutation:
                     turn_id=turn_id,
                     cancel_check=cancel_check,
                 )
+                final_id = outcome.final_message_id
                 return {
                     "finishedReason": outcome.finished_reason,
-                    "finalMessageId": str(outcome.final_message_id) if outcome.final_message_id else None,
+                    "finalMessageId": str(final_id) if final_id else None,
                     "toolCalls": outcome.tool_calls,
                     "detail": outcome.detail,
                 }
