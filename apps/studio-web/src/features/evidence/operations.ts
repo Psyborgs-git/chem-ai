@@ -3,7 +3,23 @@ import { graphql } from "react-relay";
 
 export const EvidenceClaimsQuery = graphql`
   query evidenceClaimsQuery($kind: String, $status: String) {
-    evidenceClaims(kind: $kind, status: $status, first: 50) {
+    ...EvidencePanel_claims @arguments(kind: $kind, status: $status)
+  }
+`;
+
+/** pageInfo-driven claims list (PAR-09): kind/status filters stay
+ * connection-keyed so each filtered view paginates its own cursor. */
+export const ClaimsFragment = graphql`
+  fragment EvidencePanel_claims on Query
+  @argumentDefinitions(
+    kind: { type: "String" }
+    status: { type: "String" }
+    count: { type: "Int", defaultValue: 20 }
+    cursor: { type: "String" }
+  )
+  @refetchable(queryName: "evidenceClaimsPaginationQuery") {
+    evidenceClaims(kind: $kind, status: $status, first: $count, after: $cursor)
+      @connection(key: "EvidencePanel_claims_evidenceClaims") {
       edges {
         node {
           id

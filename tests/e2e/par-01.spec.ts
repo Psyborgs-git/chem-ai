@@ -191,13 +191,19 @@ test.describe("PAR-01 contract editor ↔ evaluator parity", () => {
     await editor.getByLabel("metric label").first().fill("tack revised");
     await expect(page.locator("[data-save-state='unsaved']")).toBeVisible();
     const sections = page.locator('nav[aria-label="task sections"]');
-    await sections.getByRole("button", { name: "runs" }).click();
+    // runs lives under the advanced group (PAR-09 progressive
+    // disclosure) — leaving overview still unmounts the editor
+    await sections.getByRole("link", { name: "advanced" }).click();
+    await page
+      .locator('nav[aria-label="section views"]')
+      .getByRole("link", { name: "runs" })
+      .click();
     await expect(
       page.locator('[aria-label="success contract editor"]'),
     ).toHaveCount(0);
 
     // back to overview — the unsaved form is restored, not lost
-    await sections.getByRole("button", { name: "overview" }).click();
+    await sections.getByRole("link", { name: "overview" }).click();
     const editorBack = page.locator('[aria-label="success contract editor"]');
     await expect(
       editorBack.getByLabel("metric label").first(),

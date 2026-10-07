@@ -1,11 +1,14 @@
-import { Suspense } from "react";
-import { useLazyLoadQuery } from "react-relay";
+import { Suspense, useState } from "react";
+import { useLazyLoadQuery, usePaginationFragment } from "react-relay";
 
 import { Badge } from "../../../components/atoms/Badge";
+import { PaginationControls } from "../../../components/molecules/PaginationControls";
 import { EmptyState, LoadingState } from "../../../components/states/states";
-import { TaskDecisionsQuery } from "./operations";
+import { DecisionsListFragment, TaskDecisionsQuery } from "./operations";
 
+import type { tasksDecisionsPaginationQuery } from "../../../__generated__/tasksDecisionsPaginationQuery.graphql";
 import type { tasksDecisionsQuery } from "../../../__generated__/tasksDecisionsQuery.graphql";
+import type { DecisionsPanel_list$key } from "../../../__generated__/DecisionsPanel_list.graphql";
 
 import {
   provenanceSummary,
@@ -22,18 +25,26 @@ const KIND_TONE: Record<string, "success" | "danger" | "warning" | "neutral" | "
 };
 
 function DecisionsBody({ taskId }: { taskId: string }) {
-  const data = useLazyLoadQuery<tasksDecisionsQuery>(
+  // network-only preserves the CS-1201 correction: decisions recorded
+  // elsewhere (close/reopen) must never replay a stale cached log.
+  const query = useLazyLoadQuery<tasksDecisionsQuery>(
     TaskDecisionsQuery,
     { taskId },
     { fetchPolicy: "network-only" },
   );
+  const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment<
+    tasksDecisionsPaginationQuery,
+    DecisionsPanel_list$key
+  >(DecisionsListFragment, query);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const edges = data.taskDecisions.edges;
   if (edges.length === 0) {
     return <EmptyState title="no decisions recorded yet" />;
   }
   return (
-    <ol data-field="decision-log">
-      {edges.map(({ node }) => {
+    <>
+      <ol data-field="decision-log">
+        {edges.map(({ node }) => {
         const payload = (node.payload ?? {}) as Json;
         const packet = (payload.packet ?? null) as Json | null;
         return (
@@ -117,7 +128,21 @@ function DecisionsBody({ taskId }: { taskId: string }) {
           </li>
         );
       })}
-    </ol>
+      </ol>
+      <PaginationControls
+        hasNext={hasNext}
+        loading={isLoadingNext}
+        error={loadError}
+        onLoadNext={() => {
+          setLoadError(null);
+          loadNext(20, {
+            onComplete: (e) => {
+              if (e) setLoadError(e.message);
+            },
+          });
+        }}
+      />
+    </>
   );
 }
 

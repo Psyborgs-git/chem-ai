@@ -232,7 +232,8 @@ test("closeout: eligible evaluation → human close (AT-0503-3)", async ({
   await transition(token, s.taskId, "active");
 
   await page.goto(`/tasks/${encodeURIComponent(s.taskId)}`);
-  await page.getByRole("button", { name: "closeout" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "decisions" }).click();
+  await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "closeout" }).click();
 
   const report = page.locator('[data-field="evaluation-report"]');
   await expect(report).toBeVisible();
@@ -285,7 +286,8 @@ test("closeout: unmeasured metric stays inconclusive (AT-0503-1)", async ({
   await transition(token, s.taskId, "awaiting_review");
 
   await page.goto(`/tasks/${encodeURIComponent(s.taskId)}`);
-  await page.getByRole("button", { name: "closeout" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "decisions" }).click();
+  await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "closeout" }).click();
 
   await expect(
     page.locator('[data-field="evaluation-report"]'),

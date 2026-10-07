@@ -1291,6 +1291,7 @@ type Query {
   workspace: Workspace!
   projects(first: Int = null, after: String = null, last: Int = null, before: String = null): ProjectConnection!
   projectTasks(projectId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): TaskConnection!
+  tasks(workflowState: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): TaskConnection!
   taskDecisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): DecisionConnection!
   taskContractRevisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ContractConnection!
   taskCandidateRevisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): CandidateConnection!

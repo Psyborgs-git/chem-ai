@@ -245,7 +245,7 @@ test("candidate revision history shows distinct canonical IDs (AT-0206-3)", asyn
   expect(reviewed.data.candidates.patchReview.status).toBe("accepted");
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.getByRole("button", { name: "candidates" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "candidates" }).click();
 
   const rows = page.locator(".cs-candidate");
   await expect(rows).toHaveCount(2);

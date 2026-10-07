@@ -1,31 +1,37 @@
-import { Suspense, useState } from "react";
-import { useLazyLoadQuery, useMutation } from "react-relay";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { ConnectionHandler } from "relay-runtime";
+import { useLazyLoadQuery, useMutation, usePaginationFragment } from "react-relay";
 import { Link } from "react-router";
 
 import { Badge } from "../../components/atoms/Badge";
 import { Button } from "../../components/atoms/Button";
 import { TextField } from "../../components/atoms/TextField";
 import { InlineFinding } from "../../components/molecules/InlineFinding";
+import { PaginationControls } from "../../components/molecules/PaginationControls";
 import { EmptyState, LoadingState } from "../../components/states/states";
 import {
   FormulationRevisionPicker,
   MaterialIdentityPicker,
 } from "../registry/pickers";
 import { RevisionDiff } from "../registry/RevisionDiff";
+import { taskUrl } from "../tasks/TaskWorkspace";
 import {
   CandidateCreateMutation,
   CandidateReviewMutation,
   CandidateSubmitMutation,
+  CandidatesListFragment,
   TaskCandidatesQuery,
 } from "./operations";
 
 import type { candidatesCreateMutation } from "../../__generated__/candidatesCreateMutation.graphql";
+import type { candidatesPaginationQuery } from "../../__generated__/candidatesPaginationQuery.graphql";
 import type { candidatesReviewMutation } from "../../__generated__/candidatesReviewMutation.graphql";
 import type { candidatesSubmitMutation } from "../../__generated__/candidatesSubmitMutation.graphql";
 import type { candidatesTaskCandidatesQuery } from "../../__generated__/candidatesTaskCandidatesQuery.graphql";
+import type { CandidatePanel_list$key, CandidatePanel_list$data } from "../../__generated__/CandidatePanel_list.graphql";
 
 type CandidateNode = NonNullable<
-  candidatesTaskCandidatesQuery["response"]["taskCandidateRevisions"]["edges"][number]["node"]
+  CandidatePanel_list$data["taskCandidateRevisions"]["edges"][number]["node"]
 >;
 
 type Errs = readonly { code: string; message: string }[];
@@ -107,10 +113,10 @@ function RevisionContent({
 
 function CandidateActions({
   cand,
-  onChanged,
+  taskId,
 }: {
   cand: CandidateNode;
-  onChanged: () => void;
+  taskId: string;
 }) {
   const [submit, submitting] =
     useMutation<candidatesSubmitMutation>(CandidateSubmitMutation);
@@ -136,7 +142,10 @@ function CandidateActions({
             submit({
               variables: { input: { candidateId: cand.id } },
               onCompleted: (res) => {
-                if (!showErrs(res.candidates.submit.errors)) onChanged();
+                // the mutation response carries the updated node — the
+                // normalized store repaints this row in place (no
+                // second cache layer, no list refetch needed).
+                showErrs(res.candidates.submit.errors);
               },
               onError: (e) =>
                 setErrors([{ code: "NETWORK", message: e.message }]),
@@ -161,7 +170,7 @@ function CandidateActions({
                   },
                 },
                 onCompleted: (res) => {
-                  if (!showErrs(res.candidates.review.errors)) onChanged();
+                  showErrs(res.candidates.review.errors);
                 },
                 onError: (e) =>
                   setErrors([{ code: "NETWORK", message: e.message }]),
@@ -184,7 +193,7 @@ function CandidateActions({
                   },
                 },
                 onCompleted: (res) => {
-                  if (!showErrs(res.candidates.review.errors)) onChanged();
+                  showErrs(res.candidates.review.errors);
                 },
                 onError: (e) =>
                   setErrors([{ code: "NETWORK", message: e.message }]),
@@ -197,8 +206,9 @@ function CandidateActions({
       )}
       {cand.status === "accepted_for_research" && (
         <p className="cs-candidate__next">
-          accepted — link this exact revision into a manual experiment plan in{" "}
-          <Link to="/lab">Lab</Link>
+          accepted — link this exact revision into a manual experiment plan
+          under{" "}
+          <Link to={taskUrl(taskId, "experiments")}>experiments</Link>
         </p>
       )}
       {errors.map((e) => (
@@ -215,11 +225,11 @@ function CandidateActions({
 function CandidateRow({
   cand,
   parent,
-  onChanged,
+  taskId,
 }: {
   cand: CandidateNode;
   parent: CandidateNode | undefined;
-  onChanged: () => void;
+  taskId: string;
 }) {
   const [diffOpen, setDiffOpen] = useState(false);
   const [contentOpen, setContentOpen] = useState(false);
@@ -266,47 +276,71 @@ function CandidateRow({
         </Suspense>
       )}
       {contentOpen && <RevisionContent cand={cand} parent={parent} />}
-      <CandidateActions cand={cand} onChanged={onChanged} />
+      <CandidateActions cand={cand} taskId={taskId} />
     </li>
   );
 }
 
 function CandidateList({
   taskId,
-  fetchKey,
-  onChanged,
+  listRef,
 }: {
   taskId: string;
-  fetchKey: number;
-  onChanged: () => void;
+  listRef: (refetch: () => void) => void;
 }) {
-  // fetchKey + network-only forces a real refetch on propose — a
-  // remount alone replays the cached query result (CS-1201).
-  const data = useLazyLoadQuery<candidatesTaskCandidatesQuery>(
+  const query = useLazyLoadQuery<candidatesTaskCandidatesQuery>(
     TaskCandidatesQuery,
     { taskId },
-    { fetchKey, fetchPolicy: "network-only" },
   );
-  const all = data.taskCandidateRevisions.edges.map((e) => e.node);
+  const { data, loadNext, hasNext, isLoadingNext, refetch } =
+    usePaginationFragment<candidatesPaginationQuery, CandidatePanel_list$key>(
+      CandidatesListFragment,
+      query,
+    );
+  const [loadError, setLoadError] = useState<string | null>(null);
+  // New rows can't be inferred into the connection — a real network
+  // refetch (not a cache replay) refreshes page one (CS-1201).
+  useEffect(() => {
+    listRef(() => refetch({ taskId }, { fetchPolicy: "network-only" }));
+  }, [listRef, refetch, taskId]);
+  const all = data.taskCandidateRevisions.edges
+    .map((e) => e.node)
+    .filter((n): n is CandidateNode => n != null);
   const sorted = [...all].sort((a, b) => a.revision - b.revision);
+  const loadNextPage = () => {
+    setLoadError(null);
+    loadNext(20, {
+      onComplete: (e) => {
+        if (e) setLoadError(e.message);
+      },
+    });
+  };
   if (sorted.length === 0) {
     return <EmptyState title="No candidates proposed yet." />;
   }
   return (
-    <ul className="cs-candidate-list" aria-label="candidate revisions">
-      {sorted.map((c) => (
-        <CandidateRow
-          key={c.id}
-          cand={c}
-          parent={
-            c.parentRevisionId
-              ? all.find((x) => nodeId(x.id) === c.parentRevisionId)
-              : undefined
-          }
-          onChanged={onChanged}
-        />
-      ))}
-    </ul>
+    <>
+      <ul className="cs-candidate-list" aria-label="candidate revisions">
+        {sorted.map((c) => (
+          <CandidateRow
+            key={c.id}
+            taskId={taskId}
+            cand={c}
+            parent={
+              c.parentRevisionId
+                ? all.find((x) => nodeId(x.id) === c.parentRevisionId)
+                : undefined
+            }
+          />
+        ))}
+      </ul>
+      <PaginationControls
+        hasNext={hasNext}
+        loading={isLoadingNext}
+        error={loadError}
+        onLoadNext={loadNextPage}
+      />
+    </>
   );
 }
 
@@ -342,6 +376,27 @@ function ProposeForm({
                 ? [difference]
                 : undefined,
             },
+          },
+          updater: (store, resp) => {
+            // Insert the created revision into the paginated connection
+            // deterministically — a remount that drops the in-flight
+            // refetch can never leave the list stale (PAR-09).
+            const gid = resp?.candidates?.create?.candidate?.id;
+            const node = gid ? store.get(gid) : null;
+            const conn = ConnectionHandler.getConnection(
+              store.getRoot(),
+              "CandidatePanel_list_taskCandidateRevisions",
+              { taskId },
+            );
+            if (node != null && conn != null) {
+              const edge = ConnectionHandler.createEdge(
+                store,
+                conn,
+                node,
+                "CandidateEdge",
+              );
+              ConnectionHandler.insertEdgeBefore(conn, edge);
+            }
           },
           onCompleted: (resp) => {
             const errs = resp.candidates.create.errors;
@@ -420,13 +475,20 @@ function ProposeForm({
 }
 
 export function CandidatePanel({ taskId }: { taskId: string }) {
-  const [fetchKey, setFetchKey] = useState(0);
-  const bump = () => setFetchKey((k) => k + 1);
+  const refreshRef = useRef<(() => void) | null>(null);
   return (
     <div>
-      <ProposeForm taskId={taskId} onProposed={bump} />
+      <ProposeForm
+        taskId={taskId}
+        onProposed={() => refreshRef.current?.()}
+      />
       <Suspense fallback={<LoadingState label="loading candidates…" />}>
-        <CandidateList taskId={taskId} fetchKey={fetchKey} onChanged={bump} />
+        <CandidateList
+          taskId={taskId}
+          listRef={(fn) => {
+            refreshRef.current = fn;
+          }}
+        />
       </Suspense>
     </div>
   );

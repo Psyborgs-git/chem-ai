@@ -9,9 +9,9 @@ import {
   RegistryIdentitiesQuery,
   RegistryProductsQuery,
 } from "./operations";
-import { TaskCandidatesQuery } from "../candidates/operations";
+import { CandidateRevisionPickerQuery } from "../candidates/operations";
 
-import type { candidatesTaskCandidatesQuery } from "../../__generated__/candidatesTaskCandidatesQuery.graphql";
+import type { candidatesRevisionPickerQuery } from "../../__generated__/candidatesRevisionPickerQuery.graphql";
 import type { registryFormulationRevisionsQuery } from "../../__generated__/registryFormulationRevisionsQuery.graphql";
 import type { registryIdentitiesQuery } from "../../__generated__/registryIdentitiesQuery.graphql";
 import type { registryProductsQuery } from "../../__generated__/registryProductsQuery.graphql";
@@ -367,8 +367,8 @@ export function CandidateRevisionPicker({
 }) {
   const listId = useId();
   const [picked, setPicked] = useState<Picked | null>(null);
-  const data = useLazyLoadQuery<candidatesTaskCandidatesQuery>(
-    TaskCandidatesQuery,
+  const data = useLazyLoadQuery<candidatesRevisionPickerQuery>(
+    CandidateRevisionPickerQuery,
     { taskId },
     { fetchPolicy: "network-only" },
   );

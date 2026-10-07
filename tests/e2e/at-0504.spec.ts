@@ -316,7 +316,7 @@ test("improve journey: close binds contract; new revision cannot rewrite it (AT-
 
   // report + decisions tabs render the bound packet in the browser
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.getByRole("button", { name: "decisions" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "decisions" }).click();
   await expect(page.locator('[data-field="decision-log"]')).toBeVisible();
   await expect(
     page.locator('[data-field="decision-closure"]'),
@@ -329,7 +329,8 @@ test("improve journey: close binds contract; new revision cannot rewrite it (AT-
     page.locator("text=scientific validation: not_validated"),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "report" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "decisions" }).click();
+  await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "report" }).click();
   await expect(page.locator('[data-field="task-report"]')).toBeVisible();
   await expect(
     page.locator('[data-field="report-contract"]'),
@@ -388,7 +389,8 @@ test("match journey: functional scope only, composition not established (AT-0504
   await closeTask(token, taskId, "supported_success");
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.getByRole("button", { name: "report" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "decisions" }).click();
+  await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "report" }).click();
   const report = page.locator('[data-field="task-report"]');
   await expect(report).toBeVisible();
   // functional metric met, optional analytical metric honestly
@@ -468,7 +470,7 @@ test("discover journey: failed experiment informs the next session (AT-0504-3)",
 
   // the manifest renders in the research tab
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.getByRole("button", { name: "research" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "research" }).click();
   await expect(
     page.locator('[data-kind="experiment_outcome"]'),
   ).toContainText("emulsion broke", { timeout: 15000 });

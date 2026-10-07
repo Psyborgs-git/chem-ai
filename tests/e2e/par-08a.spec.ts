@@ -52,7 +52,7 @@ async function postMessage(
 /** Navigate to the session stream on the task's research section. */
 async function openSessionStream(page: import("@playwright/test").Page, taskId: string) {
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.getByRole("button", { name: "research" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "research" }).click();
   await page.locator("details summary").first().click();
 }
 
@@ -120,7 +120,8 @@ test.describe("PAR-08a stream recovery", () => {
     expect(run.data.runs.request.errors).toEqual([]);
 
     await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-    await page.getByRole("button", { name: "runs" }).click();
+    await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "advanced" }).click();
+    await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "runs" }).click();
     await expect(
       page.locator('ul[aria-label="task runs"] li').first(),
     ).toContainText("requested");

@@ -26,6 +26,7 @@ import { EvidencePanel } from "../features/evidence/EvidencePanel";
 import { QualityPanel } from "../features/evidence/quality/QualityPanel";
 import { ComputePanel } from "../features/compute/ComputePanel";
 import { FallbackPanel } from "../features/compute/fallback/FallbackPanel";
+import { HomePage } from "../features/home/HomePage";
 import { ImportReview } from "../features/imports/ImportReview";
 import { ExportReviewPanel } from "../features/privacy/export-review/ExportReviewPanel";
 import { LabPage } from "../features/lab/plans/LabPage";
@@ -388,6 +389,10 @@ function ShellContent() {
             element={<ProjectDetailPage />}
           />
           <Route path="/tasks/:taskId" element={<TaskPage />} />
+          {/* PAR-09: the group segment carries the workspace section
+             so deep links, refresh and back restore context; an
+             unknown group redirects to overview inside the workspace. */}
+          <Route path="/tasks/:taskId/:group" element={<TaskPage />} />
           <Route path="/materials" element={<MaterialsPage />} />
           <Route path="/imports" element={<ImportReview />} />
           <Route path="/evidence" element={<EvidencePanel />} />
@@ -413,17 +418,6 @@ function ShellContent() {
         </Routes>
       </Suspense>
     </QueryBoundary>
-  );
-}
-
-function HomePage() {
-  return (
-    <div>
-      <h1>Chemistry Studio</h1>
-      <p>
-        <Link to="/projects">Open projects</Link>
-      </p>
-    </div>
   );
 }
 

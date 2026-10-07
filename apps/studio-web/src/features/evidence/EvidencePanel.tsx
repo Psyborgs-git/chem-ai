@@ -3,7 +3,7 @@
  * distinct. Contradiction links keep both sides on screen. */
 import { Suspense, useState } from "react";
 import { Link } from "react-router";
-import { useLazyLoadQuery, useMutation } from "react-relay";
+import { useLazyLoadQuery, useMutation, usePaginationFragment } from "react-relay";
 
 import {
   Badge,
@@ -13,12 +13,16 @@ import {
   LoadingState,
   SourceCitation,
 } from "../../components";
+import { PaginationControls } from "../../components/molecules/PaginationControls";
 import type { evidenceClaimsQuery } from "../../__generated__/evidenceClaimsQuery.graphql";
+import type { evidenceClaimsPaginationQuery } from "../../__generated__/evidenceClaimsPaginationQuery.graphql";
 import type { evidenceClaimLinksQuery } from "../../__generated__/evidenceClaimLinksQuery.graphql";
 import type { evidenceClaimReviewMutation } from "../../__generated__/evidenceClaimReviewMutation.graphql";
+import type { EvidencePanel_claims$key, EvidencePanel_claims$data } from "../../__generated__/EvidencePanel_claims.graphql";
 import {
   ClaimLinksQuery,
   ClaimReviewMutation,
+  ClaimsFragment,
   EvidenceClaimsQuery,
 } from "./operations";
 
@@ -48,8 +52,9 @@ function locatorText(locator: unknown): string | undefined {
   return undefined;
 }
 
-type ClaimNode =
-  evidenceClaimsQuery["response"]["evidenceClaims"]["edges"][number]["node"];
+type ClaimNode = NonNullable<
+  EvidencePanel_claims$data["evidenceClaims"]["edges"][number]["node"]
+>;
 
 function ClaimLinks({ claimId }: { claimId: string }) {
   const data = useLazyLoadQuery<evidenceClaimLinksQuery>(ClaimLinksQuery, {
@@ -151,8 +156,21 @@ function ClaimCard({ claim }: { claim: ClaimNode }) {
 }
 
 function Claims() {
-  const data = useLazyLoadQuery<evidenceClaimsQuery>(EvidenceClaimsQuery, {});
+  const query = useLazyLoadQuery<evidenceClaimsQuery>(EvidenceClaimsQuery, {});
+  const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment<
+    evidenceClaimsPaginationQuery,
+    EvidencePanel_claims$key
+  >(ClaimsFragment, query);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const claims = data.evidenceClaims.edges.map((e) => e.node);
+  const loadNextPage = () => {
+    setLoadError(null);
+    loadNext(20, {
+      onComplete: (e) => {
+        if (e) setLoadError(e.message);
+      },
+    });
+  };
   if (claims.length === 0) {
     return <EmptyState title="No evidence claims yet." />;
   }
@@ -161,6 +179,12 @@ function Claims() {
       {claims.map((c) => (
         <ClaimCard key={c.id} claim={c} />
       ))}
+      <PaginationControls
+        hasNext={hasNext}
+        loading={isLoadingNext}
+        error={loadError}
+        onLoadNext={loadNextPage}
+      />
     </div>
   );
 }

@@ -82,7 +82,7 @@ test.describe("CS-1201 ui gap fixes", () => {
     const token = await signIn(context);
     const taskId = await seedTask(token);
     await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-    await page.getByRole("button", { name: "candidates" }).click();
+    await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "candidates" }).click();
     await expect(page.getByText("No candidates proposed yet.")).toBeVisible();
 
     await page.getByLabel("hypothesis").fill("e2e hypothesis");

@@ -61,11 +61,47 @@ export const TaskDetailQuery = graphql`
         workflowState
         targetKind
         objective
+        closureDecision
         evaluationCycle
         unresolvedInputs
         createdAt
+        project {
+          id
+          name
+        }
       }
     }
+    # PAR-09 context header — real reads, same request as the task:
+    taskContractRevisions(taskId: $id, first: 1) {
+      edges {
+        node {
+          id
+          revision
+          status
+          createdAt
+        }
+      }
+    }
+    taskCandidateRevisions(taskId: $id, first: 50) {
+      edges {
+        node {
+          status
+        }
+      }
+    }
+    taskPlans(taskId: $id, first: 50) {
+      edges {
+        node {
+          status
+        }
+      }
+    }
+    taskQuestions(taskId: $id) {
+      id
+      blocking
+      status
+    }
+    taskReassessmentStatus(taskId: $id)
   }
 `;
 
