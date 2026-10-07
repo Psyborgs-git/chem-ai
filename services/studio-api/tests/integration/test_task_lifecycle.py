@@ -272,6 +272,7 @@ class TestClosureAndContracts:
                         "target_values": ["80"],
                         "unit": "dimensionless",
                         "required_evidence": ["lab_measurement"],
+                        "aggregation": "fixture-single-value",
                     }
                 ],
                 "hard_constraints": [],
@@ -281,23 +282,25 @@ class TestClosureAndContracts:
         session.commit()
         contract_a = rev_a.id
 
-        # active -> awaiting_review -> closed (supported_failure: honest
-        # negative result — no evidence gate needed for it)
+        # active -> awaiting_review -> closed — the unmeasured
+        # experiment's honest closure label is
+        # inconclusive (PAR-04 §6: supported_failure beyond the
+        # evaluator's suggestion needs rationale + bound evidence)
         svc_r.transition(task_id=task_id, to_state="active")
         svc_r.transition(task_id=task_id, to_state="awaiting_review")
-        svc_rev.close(task_id=task_id, closure_decision="supported_failure")
+        svc_rev.close(task_id=task_id, closure_decision="inconclusive")
         session.commit()
         row = session.get(ResearchTask, task_id)
         assert row is not None
         assert row.workflow_state == "closed"
-        assert row.closure_decision == "supported_failure"
+        assert row.closure_decision == "inconclusive"
         closure = session.execute(
             select(TaskDecision).where(
                 TaskDecision.task_id == task_id, TaskDecision.kind == "closure"
             )
         ).scalar_one()
         assert closure.payload["contractRevisionId"] == str(contract_a)
-        assert closure.payload["closureDecision"] == "supported_failure"
+        assert closure.payload["closureDecision"] == "inconclusive"
 
         # reopen → new cycle, old packet retained
         svc_r.reopen(task_id=task_id, reason="new evidence arrived")
@@ -322,6 +325,7 @@ class TestClosureAndContracts:
                         "target_values": ["90"],
                         "unit": "dimensionless",
                         "required_evidence": ["lab_measurement"],
+                        "aggregation": "fixture-single-value",
                     }
                 ],
                 "hard_constraints": [],
@@ -402,6 +406,7 @@ class TestClosureAndContracts:
                         "target_values": ["5"],
                         "unit": "dimensionless",
                         "required_evidence": ["lab_measurement"],
+                        "aggregation": "fixture-single-value",
                     }
                 ],
                 "hard_constraints": [],
@@ -507,6 +512,7 @@ class TestLifecycleThroughGraphQL:
                                 "target_values": ["1"],
                                 "unit": "dimensionless",
                                 "required_evidence": ["lab_measurement"],
+                                "aggregation": "fixture-single-value",
                             }
                         ],
                         "hard_constraints": [],

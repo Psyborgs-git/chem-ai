@@ -73,6 +73,7 @@ from studio.persistence.models import (
     LabSample,
     MaterialIdentity,
     Measurement,
+    MeasurementAmendment,
     ReferenceProduct,
     ReferenceProductRevision,
     ResearchTask,
@@ -81,7 +82,7 @@ from studio.persistence.models import (
 )
 
 EVIDENCE_CLASS_MEASUREMENT = "lab_measurement"
-EVALUATOR_VERSION = "par-03.1"
+EVALUATOR_VERSION = "par-04.1"
 
 # Ingredient-line keys that can carry a resolvable identity. Supplier
 # strings resolve only against registered identifier values — an
@@ -254,19 +255,65 @@ def assess_metric(metric: dict[str, Any], rows: list[dict[str, Any]]) -> dict[st
         if row.get("batch_id") is not None:
             batches.add(row["batch_id"])
 
+    report["amendedIds"] = sorted(
+        str(row["id"]) for row in rows if row.get("amended")
+    )
+    report["observations"] = len(satisfying)
     if not satisfying:
         return report  # findings already explain why inconclusive
 
-    aggregation = str(metric.get("aggregation") or "fixture-single-value").strip()
-    values = [v for _, v, _ in satisfying]
+    # PAR-04 §1: a live evaluation requires an explicitly declared
+    # aggregation rule. An unspecified rule is unresolved — never
+    # permission to take the best reading.
+    aggregation_raw = metric.get("aggregation")
+    aggregation = str(aggregation_raw).strip() if aggregation_raw is not None else ""
+    if not aggregation:
+        findings.append(
+            {
+                "kind": "aggregation_unresolved",
+                "text": "contract metric declares no aggregation rule — "
+                "an unspecified rule is unresolved, not permission to "
+                "choose the best value (§12.3, PAR-04)",
+                "action": "declare_aggregation_rule",
+            }
+        )
+        return report
+
     if aggregation in ("fixture-single-value", "single"):
-        ok = any(compare(v, op, target_val) for v in values)
+        # Single-observation rule (PAR-04 §2): the designated
+        # observation carries the metric; repeat readings that agree
+        # corroborate it and stay listed as evidence. Usable readings
+        # that disagree are a conflict — inconclusive, never silently
+        # reduced with ``any`` to whichever reading passes.
+        outcomes = [(rid, compare(v, op, target_val)) for rid, v, _ in satisfying]
+        passing = sum(1 for _, ok_flag in outcomes if ok_flag)
+        if 0 < passing < len(outcomes):
+            findings.append(
+                {
+                    "kind": "conflicting_readings",
+                    "text": f"usable readings disagree under a "
+                    f"single-observation rule — {passing} pass, "
+                    f"{len(outcomes) - passing} miss; conflicting "
+                    "readings are never silently reduced to the best one",
+                    "action": "designate_observation_or_review_conflict",
+                }
+            )
+            return report
+        ok = bool(passing)
     elif aggregation == "min":
-        ok = compare(min(values), op, target_val)
+        ok = compare(min(v for _, v, _ in satisfying), op, target_val)
     elif aggregation == "max":
-        ok = compare(max(values), op, target_val)
+        ok = compare(max(v for _, v, _ in satisfying), op, target_val)
     elif aggregation == "mean":
-        ok = compare(sum(values) / Decimal(len(values)), op, target_val)
+        # PAR-04 §3: weigh independent preparations, not instrument
+        # readings — each batch contributes its own mean, so a batch
+        # with more repeats is never overweighted. Readings without a
+        # batch each stand alone.
+        unit_values: dict[Any, list[Decimal]] = {}
+        for rid, v, bid in satisfying:
+            unit_values.setdefault(bid if bid is not None else rid, []).append(v)
+        unit_means = [sum(us) / Decimal(len(us)) for us in unit_values.values()]
+        ok = compare(sum(unit_means) / Decimal(len(unit_means)), op, target_val)
     else:
         findings.append(
             {
@@ -276,6 +323,8 @@ def assess_metric(metric: dict[str, Any], rows: list[dict[str, Any]]) -> dict[st
         )
         return report
 
+    report["aggregation"] = aggregation
+    report["independentBatches"] = len(batches)
     replication = metric.get("replication_rule") or metric.get("replicationRule")
     if isinstance(replication, dict) and replication.get("minIndependentBatches"):
         need = int(replication["minIndependentBatches"])
@@ -304,14 +353,15 @@ def assess_metric(metric: dict[str, Any], rows: list[dict[str, Any]]) -> dict[st
 
     report["verdict"] = "met" if ok else "misses"
     report["comparedAgainst"] = f"{op} {target_val} {target_unit or ''}".strip()
-    report["aggregation"] = aggregation
-    report["independentBatches"] = len(batches)
     return report
 
 
 @dataclass
 class _Evidence:
-    """One task measurement with its resolved lineage (PAR-02 §2)."""
+    """One task measurement with its resolved lineage (PAR-02 §2) and
+    the reviewed correction that supersedes it, when present (PAR-04
+    §4): the original row keeps its value; the amendment is the
+    effective version every consumer reads."""
 
     measurement: Measurement
     batch_id: uuid.UUID | None
@@ -321,6 +371,24 @@ class _Evidence:
     lineage_contracts: set[uuid.UUID] = field(default_factory=set)
     mappings: dict[uuid.UUID, EvidenceApplicability] = field(default_factory=dict)
     # candidate_revision_id → non-revoked applicability row
+    amendment: MeasurementAmendment | None = None
+
+    @property
+    def effective_value(self) -> dict[str, Any]:
+        """The value an evaluation may rely on: the reviewed
+        amendment's value once the row is superseded, else the row's
+        own. The superseded original is never read (PAR-04 §4)."""
+        if self.amendment is not None:
+            return self.amendment.value
+        return self.measurement.value
+
+    @property
+    def effective_conditions(self) -> dict[str, Any]:
+        """Corrected conditions when the amendment supplies them;
+        otherwise the measurement's own record."""
+        if self.amendment is not None and self.amendment.conditions:
+            return self.amendment.conditions
+        return self.measurement.conditions
 
 
 @dataclass
@@ -566,10 +634,27 @@ class TaskEvaluationService:
                 if mid_str in supporting or mid_str in evidence_ids:
                     stale.append({"id": mid_str, "status": "missing"})
                 continue
-            if (
-                recorded.get("status") is not None and m.status != recorded["status"]
-            ) or m.status in ("superseded", "rejected"):
+            if recorded.get("status") is not None and m.status != recorded["status"]:
+                # any status drift since the packet was signed
                 stale.append({"id": mid_str, "status": m.status})
+            elif m.status == "rejected":
+                stale.append({"id": mid_str, "status": m.status})
+            elif m.status == "superseded":
+                # PAR-04 §4: a superseded row is a recorded dependency
+                # only when the packet itself names the effective
+                # amendment that replaced it — anything else (a missing
+                # amendment row, a different supersession pointer, or an
+                # old-format packet that predates effective versions)
+                # is drift on the conclusion's basis.
+                amd = (
+                    self.db.get(MeasurementAmendment, m.superseded_by)
+                    if m.superseded_by
+                    else None
+                )
+                if amd is None or str(amd.id) != str(
+                    recorded.get("effectiveAmendmentId") or ""
+                ):
+                    stale.append({"id": mid_str, "status": m.status})
             if mid_str in supporting and recorded.get("applicable") is not None:
                 if bool(m.applicable) != bool(recorded["applicable"]):
                     stale.append({"id": mid_str, "status": "applicability_changed"})
@@ -843,8 +928,9 @@ class TaskEvaluationService:
                 {
                     "id": str(ev.measurement.id),
                     "value_type": ev.measurement.value_type,
-                    "value": ev.measurement.value,
+                    "value": ev.effective_value,
                     "batch_id": ev.batch_id,
+                    "amended": ev.amendment is not None,
                 }
                 for ev in usable
                 if ev.measurement.metric == mid
@@ -1539,7 +1625,10 @@ class TaskEvaluationService:
         """Whether ``ev`` may count in ``scope`` — the attribution rule
         the audit requires (PAR-02 §2-4)."""
         m = ev.measurement
-        if m.status != "accepted":
+        if m.status == "superseded" and ev.amendment is not None:
+            pass  # reviewed correction: the amendment is the effective
+            # version; the superseded value is never read (PAR-04 §4)
+        elif m.status != "accepted":
             return _Bound(False, "status_not_accepted", f"status={m.status}")
         if not m.applicable:
             return _Bound(
@@ -1626,7 +1715,7 @@ class TaskEvaluationService:
         return None
 
     def _payload_chain(self, ev: _Evidence) -> list[dict[str, Any]]:
-        out: list[dict[str, Any]] = [ev.measurement.conditions]
+        out: list[dict[str, Any]] = [ev.effective_conditions]
         sample = self.db.get(LabSample, ev.measurement.sample_id)
         if sample is not None:
             out.append(sample.payload)
@@ -1667,12 +1756,30 @@ class TaskEvaluationService:
         ).scalars():
             by_measurement.setdefault(row.measurement_id, {})[row.candidate_revision_id] = row
 
+        collected = self.db.execute(stmt).all()
+        # PAR-04 §4: a superseded row's effective version is the
+        # amendment ``superseded_by`` names — resolve it once so every
+        # consumer reads the corrected value and corrected conditions.
+        supersession_ids = [
+            m.superseded_by for m, *_ in collected if m.superseded_by is not None
+        ]
+        amendments: dict[uuid.UUID, MeasurementAmendment] = {}
+        if supersession_ids:
+            for amd_row in self.db.execute(
+                select(MeasurementAmendment).where(
+                    MeasurementAmendment.id.in_(supersession_ids)
+                )
+            ).scalars():
+                amendments[amd_row.id] = amd_row
+
         rows: list[_Evidence] = []
-        for m, sample, batch, execution, plan in self.db.execute(stmt).all():
+        for m, sample, batch, execution, plan in collected:
+            amd = amendments.get(m.superseded_by) if m.superseded_by else None
+            conditions = amd.conditions if amd is not None and amd.conditions else m.conditions
             lineage_c: set[uuid.UUID] = set()
             lineage_k: set[uuid.UUID] = set()
             for payload in (
-                m.conditions,
+                conditions,
                 sample.payload,
                 batch.payload,
                 execution.actual,
@@ -1691,6 +1798,7 @@ class TaskEvaluationService:
                     lineage_candidates=lineage_c,
                     lineage_contracts=lineage_k,
                     mappings=by_measurement.get(m.id, {}),
+                    amendment=amd,
                 )
             )
         return rows
@@ -1727,6 +1835,7 @@ class TaskEvaluationService:
         approval_ids: set[str] = set()
         for ev in evidence:
             m = ev.measurement
+            amd = ev.amendment
             entries.append(
                 {
                     "measurementId": str(m.id),
@@ -1734,12 +1843,31 @@ class TaskEvaluationService:
                     "method": m.method,
                     "methodRevisionId": self._declared_ref(ev, _REF_METHOD),
                     "pipelineVersion": m.pipeline_version,
+                    # the hash covers the value the verdict rests on —
+                    # the reviewed amendment's value once superseded
+                    # (PAR-04 §4)
                     "valueHash": hashlib.sha256(
-                        json.dumps(m.value, sort_keys=True, default=str).encode()
+                        json.dumps(ev.effective_value, sort_keys=True, default=str).encode()
                     ).hexdigest(),
                     "status": m.status,
                     "applicable": m.applicable,
                     "supersededBy": str(m.superseded_by) if m.superseded_by else None,
+                    "effectiveAmendmentId": str(amd.id) if amd else None,
+                    "amendment": (
+                        {
+                            "id": str(amd.id),
+                            "reason": amd.reason,
+                            "source": amd.source,
+                            "createdBy": (
+                                str(amd.created_by) if amd.created_by else None
+                            ),
+                            "createdAt": (
+                                amd.created_at.isoformat() if amd.created_at else None
+                            ),
+                        }
+                        if amd
+                        else None
+                    ),
                     "included": str(m.id) in included_ids,
                     "planId": str(ev.plan.id) if ev.plan else None,
                     "executionId": str(ev.execution.id) if ev.execution else None,

@@ -29,6 +29,7 @@ from studio.errors import DomainError, ErrorCode, not_found
 from studio.persistence.models import (
     DatasetSnapshot,
     Measurement,
+    MeasurementAmendment,
     OptimizationCampaign,
     ResearchTask,
     SuccessContractRevision,
@@ -258,29 +259,40 @@ class OptimizationService:
                 Measurement.id == measurement_id, Measurement.workspace_id == self.ctx.workspace_id
             )
         )
+        # PAR-04 §4: a superseded row's effective version is its
+        # amendment — the reviewed corrected value is the observation,
+        # never the superseded original.
+        amd = (
+            self.db.get(MeasurementAmendment, m.superseded_by)
+            if m is not None and m.superseded_by
+            else None
+        )
         if (
             not entry
             or not m
-            or m.status != "accepted"
+            or (m.status != "accepted" and not (m.status == "superseded" and amd))
             or not m.reviewed_by
             or not m.applicable
-            or m.superseded_by
             or m.value_type != "numeric"
         ):
             raise DomainError(
                 ErrorCode.VALIDATION,
                 "observations require reviewed applicable numeric measurements with frozen rights",
             )
+        effective_value = amd.value if amd else m.value
+        effective_conditions = (
+            amd.conditions if amd and amd.conditions else m.conditions
+        )
         target = campaign.spec.target
         if (
             m.metric != target.name
             or m.method != target.method
-            or m.value.get("unit") != target.unit
+            or effective_value.get("unit") != target.unit
         ):
             raise DomainError(
                 ErrorCode.VALIDATION, "measurement metric/method/unit differs from campaign target"
             )
-        actual = m.conditions.get("actual", {}).get("optimization", {})
+        actual = effective_conditions.get("actual", {}).get("optimization", {})
         experiment = next((e for e in campaign.state.experiments if e.id == experiment_id), None)
         try:
             measured_point = point(campaign.spec, actual.get("parameters", {}))
@@ -292,7 +304,7 @@ class OptimizationService:
                 or actual.get("experimentId") != experiment_id
             ):
                 raise ValueError("measurement identity mismatch")
-            value = Decimal(str(m.value["value"]))
+            value = Decimal(str(effective_value["value"]))
             if not value.is_finite() or (expected_hash and entry["hash"] != expected_hash):
                 raise ValueError("nonfinite or changed observation")
         except (ValueError, KeyError, InvalidOperation) as exc:

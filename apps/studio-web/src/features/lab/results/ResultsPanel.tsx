@@ -245,6 +245,19 @@ function MeasurementItem({
         <dd>
           <ValueLabel m={m} />
         </dd>
+        {m.supersededBy && ((m.amendments ?? []) as Json[]).length > 0 && (
+          <>
+            <dt>effective value</dt>
+            <dd data-field="effective-value">
+              {JSON.stringify(
+                ((m.amendments ?? []) as Json[])[
+                  ((m.amendments ?? []) as Json[]).length - 1
+                ]?.value ?? {},
+              )}{" "}
+              <Badge tone="warning">corrected</Badge>
+            </dd>
+          </>
+        )}
         {m.reviewNote && (
           <>
             <dt>review note</dt>

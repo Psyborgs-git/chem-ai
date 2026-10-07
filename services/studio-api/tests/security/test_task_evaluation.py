@@ -92,6 +92,7 @@ def _frozen_task(session: Session, res: ServiceContext) -> ResearchTask:
                     "target_values": ["100"],
                     "unit": "mPa·s",
                     "required_evidence": ["lab_measurement"],
+                    "aggregation": "fixture-single-value",
                 }
             ],
             "hard_constraints": [

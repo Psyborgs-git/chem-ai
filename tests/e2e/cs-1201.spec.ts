@@ -114,6 +114,7 @@ test.describe("CS-1201 ui gap fixes", () => {
           target_values: ["5"],
           unit: "dimensionless",
           required_evidence: ["lab_measurement"],
+          aggregation: "fixture-single-value",
         },
       ],
       hard_constraints: [],

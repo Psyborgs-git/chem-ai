@@ -45,6 +45,7 @@ from studio.persistence.models import (
     LabExecution,
     LabSample,
     Measurement,
+    MeasurementAmendment,
     ResearchSession,
     SessionMessage,
 )
@@ -61,8 +62,15 @@ def _record_hash(fields: dict[str, Any]) -> str:
     return hashlib.sha256(_canon(fields)).hexdigest()
 
 
-def _measurement_fields(m: Measurement) -> dict[str, Any]:
-    return {
+def _measurement_fields(
+    m: Measurement, amendment: MeasurementAmendment | None = None
+) -> dict[str, Any]:
+    """Fields hashed into a snapshot entry. A superseded row with a
+    resolvable amendment hashes the *effective* (corrected) value and
+    names the successor — the pre-amendment value is never re-read
+    (PAR-04 §4). Non-amended rows keep the exact pre-PAR-04 field set
+    so older frozen manifests still hash identically."""
+    fields: dict[str, Any] = {
         "kind": "measurement",
         "metric": m.metric,
         "method": m.method,
@@ -73,6 +81,11 @@ def _measurement_fields(m: Measurement) -> dict[str, Any]:
         "status": m.status,
         "superseded_by": str(m.superseded_by) if m.superseded_by else None,
     }
+    if amendment is not None:
+        fields["value"] = amendment.value
+        fields["conditions"] = amendment.conditions or m.conditions
+        fields["effective_amendment"] = str(amendment.id)
+    return fields
 
 
 def _claim_fields(c: EvidenceClaim, artifact: Artifact | None) -> dict[str, Any]:
@@ -107,9 +120,13 @@ def _session_fields(s: ResearchSession, messages: Sequence[SessionMessage]) -> d
     }
 
 
-def _semantics_measurement(m: Measurement) -> dict[str, Any]:
-    """Missing/censored/failure semantics are retained, not dropped."""
-    value = m.value or {}
+def _semantics_measurement(
+    m: Measurement, amendment: MeasurementAmendment | None = None
+) -> dict[str, Any]:
+    """Missing/censored/failure semantics are retained, not dropped —
+    read from the effective value once a correction supersedes the
+    original (PAR-04 §4-5)."""
+    value = (amendment.value if amendment is not None else m.value) or {}
     semantics: dict[str, Any] = {
         "valueType": m.value_type,
         "status": m.status,
@@ -120,6 +137,13 @@ def _semantics_measurement(m: Measurement) -> dict[str, Any]:
     if m.value_type in ("below_detection", "above_quantification"):
         semantics["censored"] = True
         semantics["censorBound"] = value.get("value")
+    if amendment is not None:
+        semantics["effectiveFromAmendment"] = str(amendment.id)
+        semantics["correctionReason"] = amendment.reason
+        semantics["correctionSource"] = amendment.source
+        semantics["correctedBy"] = (
+            str(amendment.created_by) if amendment.created_by else None
+        )
     return semantics
 
 
@@ -140,13 +164,29 @@ class DatasetService:
             .where(Measurement.workspace_id == ws)
         )
         rows = self.db.execute(stmt).all()
+        # PAR-04 §4: a superseded row's effective version is the
+        # amendment ``superseded_by`` names — the corrected reading
+        # enters exactly once under the measurement's own identity; a
+        # supersession with no resolvable amendment stays excluded.
+        supersession_ids = [m.superseded_by for m, _ in rows if m.superseded_by]
+        amendments: dict[uuid.UUID, MeasurementAmendment] = {}
+        if supersession_ids:
+            for amd_row in self.db.execute(
+                select(MeasurementAmendment).where(
+                    MeasurementAmendment.id.in_(supersession_ids)
+                )
+            ).scalars():
+                amendments[amd_row.id] = amd_row
         entries: list[dict[str, Any]] = []
         for m, exec_task_id in rows:
             if task_id is not None and exec_task_id != task_id:
                 continue
+            amd = amendments.get(m.superseded_by) if m.superseded_by else None
             excluded_reason: str | None = None
-            if m.status in ("rejected", "superseded"):
-                excluded_reason = f"status:{m.status}"
+            if m.status == "rejected":
+                excluded_reason = "status:rejected"
+            elif m.status == "superseded" and amd is None:
+                excluded_reason = "status:superseded"
             elif not m.applicable:
                 excluded_reason = "not_applicable"
             elif m.value_type not in _TRAINABLE_VALUE_TYPES:
@@ -156,11 +196,11 @@ class DatasetService:
                     "recordId": str(m.id),
                     "recordKind": "measurement",
                     "sourceClass": "lab_measurement",
-                    "hash": _record_hash(_measurement_fields(m)),
+                    "hash": _record_hash(_measurement_fields(m, amd)),
                     "rightsTraining": "owned",
                     "labelKind": "measured_value",
                     "metric": m.metric,
-                    "semantics": _semantics_measurement(m),
+                    "semantics": _semantics_measurement(m, amd),
                     "excluded": excluded_reason is not None,
                     "exclusionReason": excluded_reason,
                 }
@@ -343,7 +383,14 @@ class DatasetService:
         rid = uuid.UUID(str(entry["recordId"]))
         if entry["recordKind"] == "measurement":
             m = self.db.get(Measurement, rid)
-            return _record_hash(_measurement_fields(m)) if m else None
+            if m is None:
+                return None
+            amd = (
+                self.db.get(MeasurementAmendment, m.superseded_by)
+                if m.superseded_by
+                else None
+            )
+            return _record_hash(_measurement_fields(m, amd))
         if entry["recordKind"] == "session":
             s = self.db.get(ResearchSession, rid)
             if s is None:

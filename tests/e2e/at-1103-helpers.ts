@@ -130,6 +130,7 @@ export async function seedClosedTask(token: string): Promise<string> {
             target_values: ["5"],
             unit: "dimensionless",
             required_evidence: ["lab_measurement"],
+            aggregation: "fixture-single-value",
           },
         ],
         hard_constraints: [
@@ -143,6 +144,7 @@ export async function seedClosedTask(token: string): Promise<string> {
               target_values: ["5"],
               unit: "dimensionless",
               required_evidence: ["lab_measurement"],
+              aggregation: "fixture-single-value",
             },
           },
         ],

@@ -268,6 +268,7 @@ test("improve journey: close binds contract; new revision cannot rewrite it (AT-
       target_values: ["5"],
       unit: "dimensionless",
       required_evidence: ["lab_measurement"],
+      aggregation: "fixture-single-value",
     },
   ]);
   await measuredPlan(token, taskId, "imp", contractA, "7");
@@ -286,6 +287,7 @@ test("improve journey: close binds contract; new revision cannot rewrite it (AT-
       target_values: ["9"],
       unit: "dimensionless",
       required_evidence: ["lab_measurement"],
+      aggregation: "fixture-single-value",
     },
   ]);
   expect(contractB).not.toBe(contractA);
@@ -367,6 +369,7 @@ test("match journey: functional scope only, composition not established (AT-0504
       target_values: ["5"],
       unit: "dimensionless",
       required_evidence: ["lab_measurement"],
+      aggregation: "fixture-single-value",
     },
     {
       id: "metric.spectral-match",
@@ -376,6 +379,7 @@ test("match journey: functional scope only, composition not established (AT-0504
       target_values: ["0.95"],
       unit: "fraction",
       required_evidence: ["lab_measurement"],
+      aggregation: "fixture-single-value",
     },
   ]);
   await measuredPlan(token, taskId, "mat", contract, "8");
@@ -419,6 +423,7 @@ test("discover journey: failed experiment informs the next session (AT-0504-3)",
       target_values: ["5"],
       unit: "dimensionless",
       required_evidence: ["lab_measurement"],
+      aggregation: "fixture-single-value",
     },
   ]);
   await measuredPlan(token, taskId, "dis", contract, "2");

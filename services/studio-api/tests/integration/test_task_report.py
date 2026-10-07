@@ -88,6 +88,7 @@ def _task(session: Session, ctx: ServiceContext, mode: str = "discover") -> Rese
                     "target_values": ["5"],
                     "unit": "dimensionless",
                     "required_evidence": ["lab_measurement"],
+                    "aggregation": "fixture-single-value",
                 }
             ],
             "hard_constraints": [],
