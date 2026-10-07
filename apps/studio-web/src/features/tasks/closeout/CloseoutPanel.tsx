@@ -15,6 +15,11 @@ import type { tasksCloseoutEvaluationQuery } from "../../../__generated__/tasksC
 import type { tasksCloseoutCloseMutation } from "../../../__generated__/tasksCloseoutCloseMutation.graphql";
 import type { tasksCloseoutTransitionMutation } from "../../../__generated__/tasksCloseoutTransitionMutation.graphql";
 
+import {
+  provenanceSummary,
+  type ProvenanceBlock,
+} from "../provenance";
+
 type Json = Record<string, unknown>;
 type Finding = { kind?: string; text?: string; action?: string };
 type MetricReport = {
@@ -320,7 +325,23 @@ function EvaluationReport({
         >
           suggestion: {String(report.suggestedDecision ?? "?")}
         </Badge>{" "}
-        <Badge tone="info">fixture-only — not scientific validation</Badge>{" "}
+        {/* PAR-05: provenance is derived per packet — the badge names
+            the actual composition instead of asserting fixture-only. */}
+        <Badge
+          tone={
+            provenanceSummary(
+              report.provenance as ProvenanceBlock | undefined,
+              report.fixtureOnly !== false,
+            ).tone
+          }
+        >
+          {
+            provenanceSummary(
+              report.provenance as ProvenanceBlock | undefined,
+              report.fixtureOnly !== false,
+            ).text
+          }
+        </Badge>{" "}
         <Badge tone="neutral">
           cycle {String(report.evaluationCycle ?? "?")}
         </Badge>

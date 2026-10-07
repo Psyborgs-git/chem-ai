@@ -45,6 +45,14 @@ from studio.application.idempotency import canonical_json
 from studio.audit.log import record as audit_record
 from studio.auth.context import ServiceContext
 from studio.domain.learning.datasets import DatasetService
+from studio.domain.provenance import (
+    ORIGIN_UNKNOWN,
+    claim_origin,
+    claim_source_resolvable,
+    measurement_chain,
+    measurement_origin,
+    session_origin,
+)
 from studio.domain.runs.feasibility import cloud_capability
 from studio.errors import DomainError, ErrorCode
 from studio.persistence.models import (
@@ -754,6 +762,12 @@ class TransformService:
             # Ref tracks the manifest position — stable across rebuilds
             # and unique even when entries are skipped or merged.
             ref = f"r-{i:04d}"
+            # PAR-05: provenance rides on the record envelope — a record
+            # whose origin cannot be established is excluded at the same
+            # plane as unresolved rights. Manifests built before
+            # provenance existed (no evidenceOrigin field) are derived
+            # live, never trusted silently.
+            origin = e.get("evidenceOrigin")
             if kind == "measurement":
                 row = self.db.execute(
                     select(Measurement).where(
@@ -765,6 +779,13 @@ class TransformService:
                         {"recordId": rid, "recordKind": kind, "reason": "source_missing"}
                     )
                     continue
+                if origin is None:
+                    sample, batch, execution, plan = measurement_chain(
+                        self.db, ws, row
+                    )
+                    origin = measurement_origin(
+                        row, sample=sample, batch=batch, execution=execution, plan=plan
+                    )["origin"]
                 fields = self._measurement_fields(row, scan, ref)
                 scan.residuals["outcomes"].append(
                     {
@@ -785,6 +806,11 @@ class TransformService:
                         {"recordId": rid, "recordKind": kind, "reason": "source_missing"}
                     )
                     continue
+                if origin is None:
+                    origin = claim_origin(
+                        claim,
+                        source_resolvable=claim_source_resolvable(self.db, claim),
+                    )["origin"]
                 artifact = self._claim_artifact(claim)
                 export_right = (
                     (artifact.rights or {}).get("export", "unknown") if artifact else "unknown"
@@ -810,9 +836,16 @@ class TransformService:
                         {"recordId": rid, "recordKind": kind, "reason": "source_missing"}
                     )
                     continue
+                if origin is None:
+                    origin = session_origin(sess)["origin"]
                 fields = self._session_fields(sess, scan, ref)
             else:
                 excluded.append({"recordId": rid, "recordKind": kind, "reason": "unsupported_kind"})
+                continue
+            if origin == ORIGIN_UNKNOWN:
+                excluded.append(
+                    {"recordId": rid, "recordKind": kind, "reason": "provenance_unknown"}
+                )
                 continue
             key = hashlib.sha256(
                 canonical_json({"kind": kind, "fields": fields}).encode()
@@ -821,7 +854,9 @@ class TransformService:
                 merged += 1
                 continue
             seen[key] = i
-            records.append({"ref": ref, "kind": kind, "fields": fields})
+            records.append(
+                {"ref": ref, "kind": kind, "evidenceOrigin": origin, "fields": fields}
+            )
         return records, excluded, merged
 
     # ---------------------------------------------------- reports
@@ -991,6 +1026,7 @@ class TransformService:
                 "id": str(snap.id),
                 "digest": snap.digest,
                 "purpose": snap.purpose,
+                "provenance": (snap.manifest or {}).get("provenance"),
             },
             "payload": {
                 "digest": payload_digest,

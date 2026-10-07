@@ -59,6 +59,13 @@ from sqlalchemy.orm import Session
 from studio.auth.context import ServiceContext
 from studio.domain.lab.units import compare, compatible, convert, metric_bound, to_decimal
 from studio.domain.materials.formulations import ingredient_key
+from studio.domain.provenance import (
+    fixture_only,
+    measurement_chain,
+    measurement_origin,
+    provenance_block,
+    summarize,
+)
 from studio.domain.tasks.contract import resolve_metrics
 from studio.errors import DomainError, ErrorCode, not_found
 from studio.persistence.models import (
@@ -82,7 +89,7 @@ from studio.persistence.models import (
 )
 
 EVIDENCE_CLASS_MEASUREMENT = "lab_measurement"
-EVALUATOR_VERSION = "par-04.1"
+EVALUATOR_VERSION = "par-05.1"
 
 # Ingredient-line keys that can carry a resolvable identity. Supplier
 # strings resolve only against registered identifier values — an
@@ -367,6 +374,9 @@ class _Evidence:
     batch_id: uuid.UUID | None
     execution: LabExecution | None
     plan: ExperimentPlan | None
+    sample: LabSample | None = None
+    batch: LabBatch | None = None
+    origin: dict[str, Any] = field(default_factory=dict)
     lineage_candidates: set[uuid.UUID] = field(default_factory=set)
     lineage_contracts: set[uuid.UUID] = field(default_factory=set)
     mappings: dict[uuid.UUID, EvidenceApplicability] = field(default_factory=dict)
@@ -426,10 +436,16 @@ class TaskEvaluationService:
         self.ctx.require(CAP_READ_PROJECT, task.project_id)
         contract = self._frozen_contract(task)
         invalid = self._invalid_inputs(task)
+        empty_provenance = provenance_block([])
         base: dict[str, Any] = {
             "taskId": str(task.id),
             "evaluationCycle": task.evaluation_cycle,
-            "fixtureOnly": True,
+            # derived, never constant (PAR-05): the packet is fixture-only
+            # exactly when no real-origin evidence is bound
+            "fixtureOnly": fixture_only(
+                empty_provenance["evidenceOrigin"]["composition"]
+            ),
+            "provenance": empty_provenance,
             "evaluatorVersion": EVALUATOR_VERSION,
             "invalidInputs": invalid,
         }
@@ -484,6 +500,17 @@ class TaskEvaluationService:
             evidence_ids: list[str] = []
             suggested = "inconclusive"
             scope_cand = None
+            # the packet-level provenance union over every candidate's
+            # bound set — never pooled into a verdict, only summarized
+            merged: dict[str, dict[str, Any]] = {}
+            for cand_report in candidates:
+                for rec in (
+                    (cand_report.get("provenance") or {})
+                    .get("evidenceOrigin", {})
+                    .get("records", [])
+                ):
+                    merged[str(rec["id"])] = rec
+            top_provenance = provenance_block(list(merged.values()))
         else:
             scope_cand = scope
             scoped = self._evaluate_scope(task, contract, resolved, scope_cand, evidence)
@@ -492,6 +519,11 @@ class TaskEvaluationService:
             selection = scoped["evidenceSelection"]
             evidence_ids = scoped["evidenceIds"]
             suggested = scoped["suggestedDecision"]
+            top_provenance = scoped["provenance"]
+        base["fixtureOnly"] = fixture_only(
+            top_provenance["evidenceOrigin"]["composition"]
+        )
+        base["provenance"] = top_provenance
 
         unknowns = [
             u for m in metrics for u in (f["text"] for f in m["findings"] if f["kind"] == "unknown")
@@ -525,6 +557,7 @@ class TaskEvaluationService:
             "candidates": candidates,
             "metrics": metrics,
             "gates": gates,
+            "provenance": top_provenance,
             "findings": findings,
             "unknowns": unknowns,
             "evidenceIds": evidence_ids,
@@ -569,7 +602,10 @@ class TaskEvaluationService:
             "supportedSuccessEligible": report["supportedSuccessEligible"],
             "manifest": manifest,
             "manifestDigest": _manifest_digest(manifest),
-            "fixtureOnly": True,
+            # derived from the bound evidence (PAR-05): real provenance
+            # never upgrades scientific validation — U14 stays unresolved
+            "fixtureOnly": bool(report.get("fixtureOnly", True)),
+            "provenance": report.get("provenance"),
             "scientificValidation": "not_validated",
         }
 
@@ -659,6 +695,20 @@ class TaskEvaluationService:
                 if bool(m.applicable) != bool(recorded["applicable"]):
                     stale.append({"id": mid_str, "status": "applicability_changed"})
                     changes.add("applicability_changed")
+            # PAR-05: provenance drift — a bound record whose derived
+            # origin no longer matches what the packet recorded changes
+            # the conclusion's basis (old packets without a recorded
+            # origin simply skip the check; they are not mutated)
+            if recorded.get("origin") is not None:
+                sample, batch, execution, plan = measurement_chain(
+                    self.db, self.ctx.workspace_id, m
+                )
+                current = measurement_origin(
+                    m, sample=sample, batch=batch, execution=execution, plan=plan
+                )["origin"]
+                if current != recorded["origin"]:
+                    stale.append({"id": mid_str, "status": "provenance_changed"})
+                    changes.add("provenance_changed")
 
         # hard-gate dependencies: composition revision drift, target
         # identity edits and candidate entity-link moves all invalidate
@@ -1594,6 +1644,22 @@ class TaskEvaluationService:
         # stays visible, with the reason, never silently dropped (§12.2).
         blocks = [f for g in gates if g["verdict"] != "pass" for f in g.get("findings", [])]
 
+        # PAR-05: provenance decomposes the bound evidence per axis —
+        # origin (synthetic/historical/lab/prediction/unknown), integrity
+        # review state, and engine applicability are independent fields.
+        provenance = provenance_block(
+            [
+                {
+                    "id": str(ev.measurement.id),
+                    "origin": ev.origin.get("origin"),
+                    "originVia": ev.origin.get("via"),
+                    "reviewState": ev.measurement.status,
+                    "engineApplicable": bool(ev.measurement.applicable),
+                }
+                for ev in bound
+            ]
+        )
+
         return {
             "candidateRevisionId": str(scope.id) if scope else None,
             "candidateRevision": scope.revision if scope else None,
@@ -1614,6 +1680,7 @@ class TaskEvaluationService:
             },
             "suggestedDecision": suggested,
             "supportedSuccessEligible": suggested == "supported_success",
+            "provenance": provenance,
         }
 
     def _bind(
@@ -1795,6 +1862,14 @@ class TaskEvaluationService:
                     batch_id=sample.batch_id,
                     execution=execution,
                     plan=plan,
+                    sample=sample,
+                    batch=batch,
+                    # PAR-05: evidence origin derived once from the stored
+                    # chain — declared markers → naming markers → import
+                    # provenance → recorded lab observation
+                    origin=measurement_origin(
+                        m, sample=sample, batch=batch, execution=execution, plan=plan
+                    ),
                     lineage_candidates=lineage_c,
                     lineage_contracts=lineage_k,
                     mappings=by_measurement.get(m.id, {}),
@@ -1851,6 +1926,8 @@ class TaskEvaluationService:
                     ).hexdigest(),
                     "status": m.status,
                     "applicable": m.applicable,
+                    "origin": ev.origin.get("origin"),
+                    "originVia": ev.origin.get("via"),
                     "supersededBy": str(m.superseded_by) if m.superseded_by else None,
                     "effectiveAmendmentId": str(amd.id) if amd else None,
                     "amendment": (
@@ -1947,6 +2024,9 @@ class TaskEvaluationService:
             "candidateRevisionId": scope_id,
             "evaluatorVersion": EVALUATOR_VERSION,
             "evidence": entries,
+            "provenanceSummary": summarize(
+                str(e.get("origin") or "unknown") for e in entries
+            ),
             "applicabilityDecisions": app_decisions,
             "gateDependencies": gate_deps,
             "dependencies": {

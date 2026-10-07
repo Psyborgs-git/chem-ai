@@ -54,6 +54,7 @@ from studio.config.settings import Settings
 from studio.domain.evidence.vault import Vault
 from studio.domain.learning import sft_examples
 from studio.domain.learning.datasets import DatasetService, _canon
+from studio.domain.provenance import corpus_data_status
 from studio.domain.runs.admission import AdmissionService
 from studio.domain.runs.queue import RunService
 from studio.errors import DomainError, ErrorCode, not_found
@@ -164,10 +165,15 @@ def _merge_spec(raw: dict[str, Any] | None) -> dict[str, Any]:
     return spec
 
 
-def _capability_labels(*, image_available: bool) -> dict[str, Any]:
+def _capability_labels(*, image_available: bool, composition: str | None = None) -> dict[str, Any]:
+    """Honesty labels (CS-0801): PAR-05 derives ``dataStatus`` from the
+    snapshot's provenance composition — fixture corpora stay
+    ``fixture_only``, a real-origin corpus is ``real_unvalidated``
+    (provenance real; method + independent validation still missing),
+    a mixed corpus says ``mixed`` — never ``validated``."""
     return {
         "scientificStatus": "not_validated",
-        "dataStatus": "fixture_only",
+        "dataStatus": corpus_data_status(composition),
         "engineCapability": "live" if image_available else "not_installed",
         "baseModel": "pico-gpt-char-v1 (locally constructed fixture, ~0.9M params)",
         "promotion": "gated — CS-0803 evaluation machinery required",
@@ -330,7 +336,13 @@ class TrainingRunService:
                 "createdAt": _now().isoformat(),
                 "chain": [],
             },
-            capability=_capability_labels(image_available=sft_runtime.available()),
+            capability=_capability_labels(
+                image_available=sft_runtime.available(),
+                composition=(snap.manifest or {})
+                .get("provenance", {})
+                .get("evidenceOrigin", {})
+                .get("composition"),
+            ),
             created_by=self.ctx.principal_id,
         )
         self.db.add(run)
@@ -805,6 +817,14 @@ class TrainingRunService:
             blocked_records = self._live_rights_violations(snap)
             if blocked_records:
                 problems["trainingRights"] = blocked_records
+
+        # 2b. live provenance for every included record (PAR-05) — same
+        #     plane as rights: an origin that went unknown or drifted
+        #     from the frozen label blocks the run before it trains.
+        if snap is not None:
+            provenance_issues = self.datasets.provenance_violations(snap.id)
+            if provenance_issues:
+                problems["provenance"] = provenance_issues
 
         # 3. model license approval — the license must still permit
         #    training for this architecture.
