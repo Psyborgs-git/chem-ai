@@ -607,6 +607,26 @@ class MessagePostInput:
 
 
 @strawberry.input
+class TurnRequestInput:
+    session_id: relay.GlobalID
+    content: str
+    # Client-minted turn id: the composer can cancel a turn that is
+    # still in flight because it already knows the id. Also doubles
+    # as the idempotency anchor for the request itself.
+    turn_id: str
+    idempotency_key: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class TurnCancelInput:
+    session_id: relay.GlobalID
+    turn_id: str
+    idempotency_key: str | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
 class QuestionRaiseInput:
     task_id: relay.GlobalID
     question: str
@@ -658,6 +678,24 @@ class ResearchSessionResult:
 @strawberry.type
 class SessionMessageResult:
     message: SessionMessage | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class TurnRequestResult:
+    turn_id: str | None
+    finished_reason: str | None
+    final_message: SessionMessage | None
+    tool_calls: int
+    detail: str | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class TurnCancelResult:
+    recorded: bool
     errors: list[DomainErrorPayload]
     client_mutation_id: str | None
 
@@ -4273,6 +4311,126 @@ class ResearchMutation:
             gql.db.rollback()
             return SessionMessageResult(
                 message=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def turn_request(
+        self, info: strawberry.Info, input: TurnRequestInput
+    ) -> TurnRequestResult:
+        """Run one agent turn for the session (§10.2, PAR-08).
+
+        The user message persists first — it is durable even when no
+        model runtime is running. The turn then executes synchronously
+        inside the turn budget; a ``turn_cancel`` marker posted by a
+        separate request is observed between tool-loop iterations and
+        ends the turn as ``cancelled``. ``model_unavailable`` is an
+        honest outcome, never a fabricated reply."""
+        gql = gql_ctx(info)
+        try:
+            s_uuid = _gid_uuid(input.session_id, "ResearchSession", "sessionId")
+            turn_id = input.turn_id.strip()
+            payload = {"sessionId": str(s_uuid), "content": input.content, "turnId": turn_id}
+
+            def cancel_check() -> bool:
+                row = (
+                    gql.db.query(SessionMessageRow.id)
+                    .filter(
+                        SessionMessageRow.session_id == s_uuid,
+                        SessionMessageRow.workspace_id == gql.service_ctx().workspace_id,
+                        SessionMessageRow.kind == "message",
+                        SessionMessageRow.refs["turn_cancel"].astext == turn_id,
+                    )
+                    .first()
+                )
+                return row is not None
+
+            def _do() -> dict[str, Any]:
+                from studio.application.agent_tools import AgentTurnRunner
+
+                outcome = AgentTurnRunner(gql.db, gql.service_ctx()).run_turn(
+                    s_uuid,
+                    input.content,
+                    turn_id=turn_id,
+                    cancel_check=cancel_check,
+                )
+                final_id = outcome.final_message_id
+                return {
+                    "finishedReason": outcome.finished_reason,
+                    "finalMessageId": str(final_id) if final_id else None,
+                    "toolCalls": outcome.tool_calls,
+                    "detail": outcome.detail,
+                }
+
+            result = _mutate(
+                gql,
+                key=input.idempotency_key or f"turn:{turn_id}",
+                operation="research.turn_request",
+                payload=payload,
+                fn=_do,
+            )
+            gql.db.commit()
+            final = result.get("finalMessageId")
+            row = gql.db.get(SessionMessageRow, uuid.UUID(final)) if final else None
+            return TurnRequestResult(
+                turn_id=turn_id,
+                finished_reason=result.get("finishedReason"),
+                final_message=SessionMessage.from_row(row) if row else None,
+                tool_calls=int(result.get("toolCalls") or 0),
+                detail=result.get("detail"),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return TurnRequestResult(
+                turn_id=None,
+                finished_reason=None,
+                final_message=None,
+                tool_calls=0,
+                detail=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def turn_cancel(self, info: strawberry.Info, input: TurnCancelInput) -> TurnCancelResult:
+        """Record a cancel marker the running turn observes between
+        tool-loop iterations. A late cancel on a finished turn is an
+        inert record, not an error — the marker itself is durable."""
+        gql = gql_ctx(info)
+        try:
+            s_uuid = _gid_uuid(input.session_id, "ResearchSession", "sessionId")
+            payload = {"sessionId": str(s_uuid), "turnId": input.turn_id}
+
+            def _do() -> dict[str, str]:
+                row = TaskMemoryService(gql.db, gql.service_ctx()).post_message(
+                    s_uuid,
+                    role="user",
+                    kind="message",
+                    content="cancel requested",
+                    refs={"turn_cancel": input.turn_id},
+                )
+                return {"id": str(row.id)}
+
+            _mutate(
+                gql,
+                key=input.idempotency_key or f"turn-cancel:{input.turn_id}",
+                operation="research.turn_cancel",
+                payload=payload,
+                fn=_do,
+            )
+            gql.db.commit()
+            return TurnCancelResult(
+                recorded=True,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return TurnCancelResult(
+                recorded=False,
                 errors=[_err_payload(exc)],
                 client_mutation_id=input.client_mutation_id,
             )

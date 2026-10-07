@@ -15,6 +15,37 @@ export type StreamEvent = {
 
 import { rawUuid } from "../../relay/network";
 
+/** Terminal-vs-retryable failure for the snapshot probe. EventSource
+ * reports HTTP errors opaquely, so the class is read from the
+ * snapshot fetch instead (§8 PAR-08a). */
+export type StreamFailure = "unauthenticated" | "forbidden" | "not_found" | "transient";
+
+export const TERMINAL_FAILURES = new Set<StreamFailure>([
+  "unauthenticated",
+  "forbidden",
+  "not_found",
+]);
+
+export function classifySnapshotError(err: unknown): StreamFailure {
+  const match = /(\d{3})/.exec(err instanceof Error ? err.message : String(err));
+  const status = match ? Number(match[1]) : 0;
+  if (status === 401) return "unauthenticated";
+  if (status === 403) return "forbidden";
+  if (status === 404) return "not_found";
+  return "transient";
+}
+
+/** Bounded exponential backoff for snapshot retries (0.5s → 30s cap). */
+export function retryDelayMs(attempt: number): number {
+  return Math.min(30_000, 500 * 2 ** Math.min(Math.max(attempt - 1, 0), 6));
+}
+
+/** True when the EventSource gave up permanently (non-2xx response).
+ * Numeric compare: jsdom does not expose the EventSource.CLOSED const. */
+export function streamClosed(source: EventSource): boolean {
+  return source.readyState === 2;
+}
+
 export function openStream(
   channel: "session" | "task",
   aggregateId: string,

@@ -1238,6 +1238,8 @@ type ResearchMutation {
   sessionStart(input: SessionStartInput!): ResearchSessionResult!
   sessionEnd(input: SessionEndInput!): ResearchSessionResult!
   messagePost(input: MessagePostInput!): SessionMessageResult!
+  turnRequest(input: TurnRequestInput!): TurnRequestResult!
+  turnCancel(input: TurnCancelInput!): TurnCancelResult!
   questionRaise(input: QuestionRaiseInput!): TaskQuestionResult!
   questionResolve(input: QuestionResolveInput!): TaskQuestionResult!
   summaryCreate(input: SummaryCreateInput!): TaskSummaryResult!
@@ -1617,6 +1619,37 @@ input TrainingRunTransitionInput {
   toState: String!
   rationale: String = null
   clientMutationId: String = null
+}
+
+input TurnCancelInput {
+  sessionId: ID!
+  turnId: String!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type TurnCancelResult {
+  recorded: Boolean!
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input TurnRequestInput {
+  sessionId: ID!
+  content: String!
+  turnId: String!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type TurnRequestResult {
+  turnId: String
+  finishedReason: String
+  finalMessage: SessionMessage
+  toolCalls: Int!
+  detail: String
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
 }
 
 type User implements Node {

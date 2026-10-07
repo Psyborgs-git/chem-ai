@@ -94,3 +94,34 @@ export const QuestionRaiseMutation = graphql`
     }
   }
 `;
+
+export const TurnRequestMutation = graphql`
+  mutation researchTurnRequestMutation($input: TurnRequestInput!) {
+    research {
+      turnRequest(input: $input) {
+        turnId
+        finishedReason
+        toolCalls
+        detail
+        errors {
+          code
+          message
+        }
+      }
+    }
+  }
+`;
+
+export const TurnCancelMutation = graphql`
+  mutation researchTurnCancelMutation($input: TurnCancelInput!) {
+    research {
+      turnCancel(input: $input) {
+        recorded
+        errors {
+          code
+          message
+        }
+      }
+    }
+  }
+`;
