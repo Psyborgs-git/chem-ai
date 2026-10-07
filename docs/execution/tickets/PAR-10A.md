@@ -92,15 +92,22 @@ $ ls -d playwright-report test-results
 playwright-report  test-results
 ```
 
-CI job 本身需在本 PR 的 workflow run 中首验；e2e job 若因 runner
-环境差异（docker/浏览器依赖）出现失败，按真实失败修，不降级。
+CI job 首验已发生（本 PR）：
+
+- run 1（`37548560602`）：e2e job 真实失败 —— 冷启动竞争：fresh
+  volume 上 `docker exec pg_isready`（socket）被 postgres 镜像临时
+  initdb server 提前答通，psql 落到真实 postmaster 未起的死 socket。
+  按真实失败修复 `serve.sh`：改为探测容器内 TCP `pg_isready -h
+  127.0.0.1 -p 5432`（initdb 临时 server 不绑 TCP，只有真实
+  postmaster 监听）。
+- run 2：**8/8 job 全绿**，含 `e2e browser journeys` 与
+  `frontend production build`；artifact 收集步执行成功。
 
 ## 已知限制
 
-- e2e job 在 GitHub runner 的首次执行尚未发生（本 PR CI 见结果）；
-  docker compose postgres 与 `--with-deps` 系统包安装依赖 runner
-  默认能力，若不可用需改 `services:` postgres + serve.sh 外接 DB
-  参数化（当前未做，避免发明第二路径）。
+- docker compose postgres 与 `--with-deps` 已在 ubuntu-24.04 runner
+  实测可用；若未来镜像缺 docker，再考虑 `services:` postgres +
+  serve.sh 外接 DB 参数化（当前未做，避免发明第二路径）。
 - PAR-10 的浏览器旅程与对抗性评估用例未交付 —— 明确留给后续 lane。
 - 分支保护 required-check 变更不在工作流内可控，需 owner 在仓库
   设置中执行；文档与 job 名已如实标注 "not required yet"。
