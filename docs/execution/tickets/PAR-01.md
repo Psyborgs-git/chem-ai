@@ -167,6 +167,20 @@ inconclusive，payload 原样。
 | 新增单测 | `pytest tests/unit/test_contract_schema.py` | 29 passed |
 | 新增集成 | `pytest tests/integration/test_contract_parity.py` | 9 passed（testcontainers postgres:16.10） |
 
+## 后续修复（dev-mode 缺陷）
+
+- 录制走查发现：vite dev + React 19 StrictMode 下 `ContractRevisionsQuery`
+  每 ~300ms 无限重取、编辑器永远停在 "loading contract…"（生产构建
+  不受影响）。根因：mount 后在 `useEffect` 里 `setState` 水合 —
+  post-commit 的二次 commit 让 `network-only` 的
+  `useLazyLoadQuery` 在 Suspense hide/reveal 间反复触发 Relay 的
+  remount `forceUpdate`，每次变更 `cacheBreaker` → 新 fetch。修复：
+  水合改为 render-time derived state（React 官方 "adjust state
+  during render" 模式，不产生额外 commit）。dev 实测：mount=2 次
+  POST（StrictMode 正常双取）→ save→refetch→freeze→refetch→稳定；
+  `pnpm --filter studio-web typecheck|test|build`、par-01+at-0206
+  e2e 6/6 全绿。
+
 ## 已知限制
 
 - freeze gate 比 pack 完整冻结规则**窄**：当前只要求 canonical 词汇 +
