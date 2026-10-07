@@ -6,7 +6,12 @@ import { Badge } from "../../components/atoms/Badge";
 import { Button } from "../../components/atoms/Button";
 import { EmptyState } from "../../components/states/states";
 import { fetchEventSnapshot } from "../../relay/network";
-import { openStream } from "../research/stream";
+import {
+  classifySnapshotError,
+  openStream,
+  retryDelayMs,
+  streamClosed,
+} from "../research/stream";
 import { RunRequestCancelMutation, TaskRunsQuery } from "./operations";
 
 import type { runsRequestCancelMutation } from "../../__generated__/runsRequestCancelMutation.graphql";
@@ -108,12 +113,24 @@ function RunRow({ run }: { run: RunNode }) {
   );
 }
 
+type RunsStreamStatus = "connecting" | "live" | "reconnecting" | "unavailable" | "ended";
+
+const RUNS_BADGE: Record<RunsStreamStatus, { tone: "info" | "neutral" | "warning"; label: string }> = {
+  connecting: { tone: "neutral", label: "connecting…" },
+  live: { tone: "info", label: "live" },
+  reconnecting: { tone: "neutral", label: "reconnecting…" },
+  unavailable: { tone: "warning", label: "updates unavailable — retrying" },
+  ended: { tone: "warning", label: "updates ended" },
+};
+
 /** Runs for a task, kept live via the bounded task channel: every
  * outbox event triggers a refetch of the authoritative snapshot, so a
- * reconnect can never duplicate or resurrect state. */
+ * reconnect can never duplicate or resurrect state. Snapshot failure
+ * is classified (PAR-08a): terminal 401/403/404 stops retrying instead
+ * of presenting a dead channel as reconnecting. */
 export function RunsPanel({ taskId }: { taskId: string }) {
   const [fetchKey, setFetchKey] = useState(0);
-  const [live, setLive] = useState(false);
+  const [status, setStatus] = useState<RunsStreamStatus>("connecting");
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const data = useLazyLoadQuery<runsTaskRunsQuery>(
@@ -125,39 +142,77 @@ export function RunsPanel({ taskId }: { taskId: string }) {
   useEffect(() => {
     let source: EventSource | null = null;
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let attempt = 0;
     const bump = () => {
       if (debounce.current) clearTimeout(debounce.current);
       debounce.current = setTimeout(() => setFetchKey((k) => k + 1), 100);
     };
-    void fetchEventSnapshot("task", taskId)
-      .then((snap) => {
+    function closeSource() {
+      source?.close();
+      source = null;
+    }
+    function scheduleRetry() {
+      if (cancelled || retryTimer != null) return;
+      attempt += 1;
+      retryTimer = setTimeout(() => {
+        retryTimer = null;
+        void connect();
+      }, retryDelayMs(attempt));
+    }
+    async function connect() {
+      try {
+        const snap = await fetchEventSnapshot("task", taskId);
         if (cancelled) return;
-        source = openStream("task", taskId, snap.maxSeq, {
-          onEvent: bump,
-          onOpen: () => {
-            setLive(true);
-            bump(); // snapshot may have changed while connecting
-          },
-          onError: () => setLive(false),
-        });
-      })
-      .catch(() => setLive(false));
+        attempt = 0;
+        if (source == null || streamClosed(source)) {
+          closeSource();
+          source = openStream("task", taskId, snap.maxSeq, {
+            onEvent: bump,
+            onOpen: () => {
+              if (cancelled) return;
+              setStatus("live");
+              bump(); // snapshot may have changed while connecting
+            },
+            onError: () => {
+              if (cancelled) return;
+              setStatus("reconnecting");
+              // EventSource auto-retries network drops; a closed socket
+              // (non-2xx) is classified via a snapshot probe instead.
+              if (source != null && streamClosed(source)) {
+                closeSource();
+                void connect();
+              }
+            },
+          });
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const kind = classifySnapshotError(err);
+        if (kind === "transient") {
+          setStatus("unavailable");
+          scheduleRetry();
+          return;
+        }
+        closeSource();
+        setStatus("ended");
+      }
+    }
+    void connect();
     return () => {
       cancelled = true;
-      source?.close();
+      if (retryTimer != null) clearTimeout(retryTimer);
+      closeSource();
       if (debounce.current) clearTimeout(debounce.current);
     };
   }, [taskId]);
 
   const runs = data.taskRuns.edges.map((e) => e.node).filter((n) => n != null);
+  const badge = RUNS_BADGE[status];
   return (
     <section aria-label="runs">
       <p>
-        {live ? (
-          <Badge tone="info">live</Badge>
-        ) : (
-          <Badge tone="neutral">reconnecting…</Badge>
-        )}
+        <Badge tone={badge.tone}>{badge.label}</Badge>
       </p>
       {runs.length === 0 ? (
         <EmptyState title="no runs yet" />
