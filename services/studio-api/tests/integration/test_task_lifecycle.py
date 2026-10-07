@@ -258,10 +258,24 @@ class TestClosureAndContracts:
         session.commit()
         task_id = task.id
 
-        # contract A frozen
+        # contract A frozen — canonical success contract (PAR-01)
         rev_a = svc_r.draft_contract(
             task_id=task_id,
-            payload={"requiredMetrics": [], "thresholds": {"gloss": ">80"}},
+            payload={
+                "metrics": [
+                    {
+                        "id": "m.gloss",
+                        "label": "gloss",
+                        "required": True,
+                        "value_kind": "numeric",
+                        "operator": "gte",
+                        "target_values": ["80"],
+                        "unit": "dimensionless",
+                        "required_evidence": ["lab_measurement"],
+                    }
+                ],
+                "hard_constraints": [],
+            },
         )
         svc_r.freeze_contract(revision_id=rev_a.id)
         session.commit()
@@ -295,7 +309,24 @@ class TestClosureAndContracts:
         assert row.evaluation_cycle == 2
 
         # contract B frozen — original closure still points at A
-        rev_b = svc_r.draft_contract(task_id=task_id, payload={"thresholds": {"gloss": ">90"}})
+        rev_b = svc_r.draft_contract(
+            task_id=task_id,
+            payload={
+                "metrics": [
+                    {
+                        "id": "m.gloss",
+                        "label": "gloss",
+                        "required": True,
+                        "value_kind": "numeric",
+                        "operator": "gte",
+                        "target_values": ["90"],
+                        "unit": "dimensionless",
+                        "required_evidence": ["lab_measurement"],
+                    }
+                ],
+                "hard_constraints": [],
+            },
+        )
         svc_r.freeze_contract(revision_id=rev_b.id)
         session.commit()
         row = session.get(ResearchTask, task_id)
@@ -462,7 +493,26 @@ class TestLifecycleThroughGraphQL:
             client,
             "mutation($input: ContractDraftCreateInput!) { contractDraftCreate(input: $input) "
             "{ contractRevision { id revision status } errors { code } } }",
-            {"input": {"taskId": task_gid, "payload": {"thresholds": {"t": 1}}}},
+            {
+                "input": {
+                    "taskId": task_gid,
+                    "payload": {
+                        "metrics": [
+                            {
+                                "id": "m.t",
+                                "label": "t",
+                                "required": True,
+                                "value_kind": "numeric",
+                                "operator": "gte",
+                                "target_values": ["1"],
+                                "unit": "dimensionless",
+                                "required_evidence": ["lab_measurement"],
+                            }
+                        ],
+                        "hard_constraints": [],
+                    },
+                }
+            },
         )["data"]["contractDraftCreate"]
         assert draft["errors"] == []
         rev_gid = draft["contractRevision"]["id"]

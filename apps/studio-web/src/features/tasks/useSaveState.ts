@@ -38,9 +38,9 @@ export function useSaveState() {
     }
   }, []);
 
-  // warn before navigation while dirty (§22.4)
+  // warn before navigation while dirty or in unresolved conflict (§22.4)
   useEffect(() => {
-    if (state !== "unsaved") return;
+    if (state !== "unsaved" && state !== "conflict") return;
     const handler = (e: BeforeUnloadEvent) => {
       e.preventDefault();
     };
@@ -48,5 +48,15 @@ export function useSaveState() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [state]);
 
-  return { state, lastError, markDirty, attemptSave };
+  const markConflict = useCallback((message: string) => {
+    setState("conflict");
+    setLastError(message);
+  }, []);
+
+  const markSaved = useCallback(() => {
+    setState("saved");
+    setLastError(null);
+  }, []);
+
+  return { state, lastError, markDirty, attemptSave, markConflict, markSaved };
 }

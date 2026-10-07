@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from engine_adapter_rdkit import EngineError, RDKitAdapter, StructuralResult
 from studio.audit.log import record as audit_record
 from studio.auth.context import ServiceContext
+from studio.domain.tasks.contract import resolve_metrics
 from studio.errors import not_found
 from studio.persistence.models import (
     CandidateRevision,
@@ -330,7 +331,12 @@ class VerificationService:
         present = set(VERIFIER_EVIDENCE)
         metrics: list[dict[str, Any]] = []
         missing: list[str] = []
-        for m in contract.payload.get("metrics", []):
+        # Same contract vocabulary as the task evaluator (PAR-01):
+        # canonical 'metrics' wins; legacy 'requiredMetrics' payloads
+        # resolve through the explicit read path rather than silently
+        # reporting zero requirements.
+        resolved = resolve_metrics(contract.payload)
+        for m in resolved.metrics:
             required = m.get("required_evidence") or m.get("requiredEvidence") or []
             unmet = [e for e in required if e not in present]
             metrics.append(
@@ -343,9 +349,13 @@ class VerificationService:
                 }
             )
             missing.extend(unmet)
-        eligible = not missing and bool(metrics or contract.payload.get("metrics") is not None)
+        eligible = not missing and bool(
+            metrics or contract.payload.get("metrics") is not None
+        )
         return {
             "assessable": True,
+            "legacyPayload": resolved.legacy,
+            "contractIssues": resolved.issues,
             "contractRevisionId": str(contract.id),
             "metrics": metrics,
             "missingEvidence": sorted(set(missing)),

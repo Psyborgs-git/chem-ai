@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session
 
 from studio.auth.context import ServiceContext
 from studio.domain.lab.units import compare, compatible, convert, metric_bound, to_decimal
+from studio.domain.tasks.contract import resolve_metrics
 from studio.errors import DomainError, not_found
 from studio.persistence.models import (
     CandidateRevision,
@@ -263,16 +264,27 @@ class TaskEvaluationService:
                 "suggestedDecision": "inconclusive",
             }
 
-        metrics = [self._evaluate_metric(task, m) for m in contract.payload.get("metrics", [])]
-        gates = [
-            self._evaluate_gate(task, g)
-            for g in contract.payload.get("hard_constraints", [])
-            or contract.payload.get("hardConstraints", [])
-            or []
-        ]
+        # Canonical + legacy vocabulary share one resolver (PAR-01):
+        # 'metrics' is authoritative; pre-fix UI 'requiredMetrics'
+        # payloads translate through the explicit legacy path with
+        # review issues surfaced — never silently zero metrics.
+        resolved = resolve_metrics(contract.payload)
+        metrics = [self._evaluate_metric(task, m) for m in resolved.metrics]
+        gates = [self._evaluate_gate(task, g) for g in resolved.gates]
+        contract_issues = list(resolved.issues)
+        # A frozen contract with nothing evaluable is *not* assessable:
+        # unknown/legacy fields may not quietly read as a contract with
+        # zero requirements. The report still explains why.
+        assessable = bool(resolved.metrics or resolved.gates)
+        if not assessable:
+            contract_issues.append(
+                "frozen contract carries no evaluable metrics or "
+                "constraints — it cannot support a verdict"
+            )
         unknowns = [
             u for m in metrics for u in (f["text"] for f in m["findings"] if f["kind"] == "unknown")
         ]
+        unknowns += contract_issues
         unknowns += [
             f"hard constraint '{g['id']}' carries no evaluable check — human review required"
             for g in gates
@@ -295,7 +307,14 @@ class TaskEvaluationService:
         eligible = suggested == "supported_success"
         return {
             **base,
-            "assessable": True,
+            "assessable": assessable,
+            "reason": (
+                None
+                if assessable
+                else "contract carries no evaluable metrics or constraints"
+            ),
+            "legacyPayload": resolved.legacy,
+            "contractIssues": contract_issues,
             "contractRevisionId": str(contract.id),
             "contractRevision": contract.revision,
             "metrics": metrics,
@@ -327,6 +346,8 @@ class TaskEvaluationService:
             "unknowns": report["unknowns"],
             "evidenceIds": report["evidenceIds"],
             "evidenceSnapshot": report["metrics"],
+            "legacyPayload": report.get("legacyPayload", False),
+            "contractIssues": report.get("contractIssues", []),
             "suggestedDecision": report["suggestedDecision"],
             "supportedSuccessEligible": report["supportedSuccessEligible"],
             "fixtureOnly": True,

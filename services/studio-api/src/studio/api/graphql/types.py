@@ -481,6 +481,7 @@ class ContractRevision(relay.Node):
     status: str
     content_hash: str
     created_at: datetime
+    payload: JSON
 
     @classmethod
     def from_row(cls, row: ContractRow) -> Self:
@@ -490,6 +491,7 @@ class ContractRevision(relay.Node):
             status=row.status,
             content_hash=row.content_hash,
             created_at=row.created_at,
+            payload=JSON(row.payload),
         )
 
     @overload

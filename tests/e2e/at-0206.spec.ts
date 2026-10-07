@@ -126,13 +126,13 @@ test("API down during save reports unsaved (AT-0206-2)", async ({
   const taskId = await makeTask(token, projectId);
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  const value = page.getByLabel("value", { exact: true }).first();
-  await value.fill("1.5");
+  const editor = page.locator('[aria-label="success contract editor"]');
+  await editor.getByLabel("target value(s)").first().fill("1.5");
   await expect(page.getByText("unsaved changes — not persisted")).toBeVisible();
 
   // kill the API path before saving
   await page.route("**/graphql", (route) => route.abort());
-  await page.getByRole("button", { name: "Save contract draft" }).click();
+  await editor.getByRole("button", { name: "save draft" }).click();
 
   await expect(
     page.getByRole("alert").filter({ hasText: /not persisted|error/i }),
