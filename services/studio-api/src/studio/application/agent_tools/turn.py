@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
@@ -35,7 +36,7 @@ MAX_TOOL_LOOPS = 8
 
 @dataclass
 class TurnOutcome:
-    finished_reason: str  # final | model_unavailable | budget | error
+    finished_reason: str  # final | model_unavailable | budget | cancelled | error
     final_message_id: uuid.UUID | None = None
     tool_messages: list[uuid.UUID] = field(default_factory=list)
     tool_calls: int = 0
@@ -59,13 +60,29 @@ class AgentTurnRunner:
         self.registry = registry or default_registry()
         self.budget = budget or TurnBudget()
 
-    def run_turn(self, session_id: uuid.UUID, user_text: str) -> TurnOutcome:
+    def run_turn(
+        self,
+        session_id: uuid.UUID,
+        user_text: str,
+        *,
+        turn_id: str | None = None,
+        cancel_check: Callable[[], bool] | None = None,
+    ) -> TurnOutcome:
         mem = TaskMemoryService(self.db, self.ctx)
         session = self.db.get(ResearchSession, session_id)
         if session is None or session.workspace_id != self.ctx.workspace_id:
             raise not_found("research session")
         if session.status != "active":
             raise DomainError(ErrorCode.CONFLICT, "session is ended", field_path="sessionId")
+        # The question is durable even when the turn cannot run — an
+        # unavailable model degrades the agent boundary, not the record.
+        mem.post_message(
+            session_id,
+            role="user",
+            kind="message",
+            content=user_text,
+            refs={"turn_id": turn_id} if turn_id else None,
+        )
         if not self.runtime.running():
             # Honest state — the agent boundary degrades, the product
             # doesn't pretend a model is present (AT-0405-3).
@@ -73,7 +90,9 @@ class AgentTurnRunner:
                 finished_reason="model_unavailable",
                 detail="no local model runtime is running",
             )
-        mem.post_message(session_id, role="user", kind="message", content=user_text)
+
+        def cancelled() -> bool:
+            return cancel_check is not None and cancel_check()
         messages = self._prompt(session_id, session.task_id, user_text)
         dispatcher = ToolDispatcher(
             self.db,
@@ -86,6 +105,11 @@ class AgentTurnRunner:
         loops = 0
         seen_calls = []
         while time.monotonic() < deadline and loops <= MAX_TOOL_LOOPS:
+            if cancelled():
+                self._post_cancelled(mem, session_id, turn_id)
+                outcome.finished_reason = "cancelled"
+                outcome.detail = "turn cancelled by operator"
+                break
             loops += 1
             # Once a tool already ran, small models tend to loop the
             # same call — if that stalls, force the answer shape.
@@ -188,11 +212,30 @@ class AgentTurnRunner:
                 }
             )
         else:
-            outcome.finished_reason = "budget"
-            outcome.detail = "tool-loop budget exhausted"
+            if cancelled():
+                self._post_cancelled(mem, session_id, turn_id)
+                outcome.finished_reason = "cancelled"
+                outcome.detail = "turn cancelled by operator"
+            else:
+                outcome.finished_reason = "budget"
+                outcome.detail = "tool-loop budget exhausted"
         if outcome.finished_reason == "error" and not outcome.detail:
             outcome.detail = "turn did not finish within budgets"
         return outcome
+
+    def _post_cancelled(
+        self,
+        mem: TaskMemoryService,
+        session_id: uuid.UUID,
+        turn_id: str | None,
+    ) -> None:
+        mem.post_message(
+            session_id,
+            role="assistant",
+            kind="message",
+            content="turn cancelled by operator",
+            refs={"turn_id": turn_id, "cancelled": True} if turn_id else {"cancelled": True},
+        )
 
     def _force_answer(
         self,
