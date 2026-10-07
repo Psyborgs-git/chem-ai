@@ -193,8 +193,16 @@ processStepDiff 位置语义。
 | 前端单测 | `pnpm --filter studio-web test` | 10 files / **33 passed** |
 | 前端构建 | `pnpm --filter studio-web build` | OK（chunk-size 警告为既有，非新引入） |
 | e2e | `make test-e2e`（playwright 37 specs） | **37 passed**（1.6m，含 par-07.spec.ts 12.5s） |
-| 后端集成 | `make test-integration` | **370 passed / 1 skipped**（4:55） |
-| 新增集成 | `pytest tests/integration/test_par07_registry.py` | **7 passed** |
+| 后端集成 | `make test-integration` | **370 passed / 1 skipped**（4:55；修复后重跑 par07 文件 8/8） |
+| 新增集成 | `pytest tests/integration/test_par07_registry.py` | **8 passed**（含 canonical fraction 正反例） |
+
+## 后续修复（live e2e 走查发现）
+
+- 浏览器实测发现 `_validate_payload` 的 `fraction_out_of_range` 把
+  `mass_percent` 原始值（70）与 [0,1] 比较 → 每个合法配方都误报
+  警告。已修：比较 `q.convert("mass_fraction")` 的 canonical 值，
+  150% 仍会如实 flag（detail 含 canonical 与原始输入）。新增
+  `test_fraction_range_check_uses_canonical_value` 正反例。
 
 ## 已知限制
 
