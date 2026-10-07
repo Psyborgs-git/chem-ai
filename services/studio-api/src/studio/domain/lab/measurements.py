@@ -56,6 +56,8 @@ from studio.persistence.models import (
     MISSING_REASONS,
     REPEAT_TYPES,
     SAMPLE_KINDS,
+    CandidateRevision,
+    EvidenceApplicability,
     ExperimentPlan,
     LabBatch,
     LabExecution,
@@ -63,6 +65,7 @@ from studio.persistence.models import (
     Measurement,
     MeasurementAmendment,
     ResearchTask,
+    SuccessContractRevision,
 )
 
 
@@ -429,6 +432,125 @@ class LabMeasurementService:
             detail={"amendmentId": str(amd.id), "reason": reason.strip()},
         )
         return amd
+
+    def record_applicability(
+        self,
+        measurement_id: uuid.UUID,
+        *,
+        candidate_revision_id: uuid.UUID,
+        contract_revision_id: uuid.UUID | None = None,
+        applicable: bool,
+        rationale: str,
+    ) -> EvidenceApplicability:
+        """Reviewed evidence→candidate applicability mapping (§12.3,
+        PAR-02 §4): the only way evidence without plan/sample lineage
+        — historical imports above all — can substantiate a specific
+        candidate revision. ``applicable=False`` records the reviewed
+        refusal; it never silently participates again. Re-recording a
+        pair updates the same row (the unique pair) so the decision
+        history stays one row, and a withdrawn mapping can be
+        re-reviewed."""
+        m = self._measurement(measurement_id)
+        self.ctx.require(CAP_REVIEW_MEASUREMENT, self._measurement_project(m))
+        if not rationale.strip():
+            raise DomainError(
+                ErrorCode.VALIDATION,
+                "applicability mapping requires a rationale",
+                field_path="rationale",
+            )
+        cand = self.db.execute(
+            select(CandidateRevision).where(
+                CandidateRevision.workspace_id == self.ctx.workspace_id,
+                CandidateRevision.id == candidate_revision_id,
+            )
+        ).scalar_one_or_none()
+        if cand is None:
+            raise DomainError(
+                ErrorCode.NOT_FOUND,
+                "candidate revision not found",
+                field_path="candidateRevisionId",
+            )
+        if contract_revision_id is not None:
+            contract = self.db.execute(
+                select(SuccessContractRevision).where(
+                    SuccessContractRevision.workspace_id == self.ctx.workspace_id,
+                    SuccessContractRevision.id == contract_revision_id,
+                )
+            ).scalar_one_or_none()
+            if contract is None:
+                raise DomainError(
+                    ErrorCode.NOT_FOUND,
+                    "contract revision not found",
+                    field_path="contractRevisionId",
+                )
+        row = self.db.execute(
+            select(EvidenceApplicability).where(
+                EvidenceApplicability.workspace_id == self.ctx.workspace_id,
+                EvidenceApplicability.measurement_id == m.id,
+                EvidenceApplicability.candidate_revision_id == cand.id,
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            row = EvidenceApplicability(
+                workspace_id=self.ctx.workspace_id,
+                measurement_id=m.id,
+                candidate_revision_id=cand.id,
+            )
+            self.db.add(row)
+        row.contract_revision_id = contract_revision_id
+        row.status = "applicable" if applicable else "not_applicable"
+        row.rationale = rationale.strip()
+        row.reviewed_by = self.ctx.principal_id
+        row.revoked_at = None
+        self.db.flush()
+        audit_record(
+            self.db,
+            self.ctx,
+            action="evidence.applicability_recorded",
+            target_type="evidence_applicability",
+            target_id=row.id,
+            detail={
+                "measurementId": str(m.id),
+                "candidateRevisionId": str(cand.id),
+                "contractRevisionId": str(contract_revision_id)
+                if contract_revision_id
+                else None,
+                "status": row.status,
+            },
+        )
+        return row
+
+    def withdraw_applicability(
+        self, measurement_id: uuid.UUID, *, candidate_revision_id: uuid.UUID
+    ) -> EvidenceApplicability:
+        """Withdraw a reviewed mapping (PAR-02 §6): the row is kept as
+        review history; evaluators treat it as absent and the change
+        marks dependent packets for reassessment."""
+        m = self._measurement(measurement_id)
+        self.ctx.require(CAP_REVIEW_MEASUREMENT, self._measurement_project(m))
+        row = self.db.execute(
+            select(EvidenceApplicability).where(
+                EvidenceApplicability.workspace_id == self.ctx.workspace_id,
+                EvidenceApplicability.measurement_id == m.id,
+                EvidenceApplicability.candidate_revision_id == candidate_revision_id,
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            raise not_found("applicability mapping")
+        row.revoked_at = datetime.now(UTC)
+        self.db.flush()
+        audit_record(
+            self.db,
+            self.ctx,
+            action="evidence.applicability_withdrawn",
+            target_type="evidence_applicability",
+            target_id=row.id,
+            detail={
+                "measurementId": str(m.id),
+                "candidateRevisionId": str(candidate_revision_id),
+            },
+        )
+        return row
 
     # ---------------------------------------------------------- assessment
 

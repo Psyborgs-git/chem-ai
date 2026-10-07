@@ -15,6 +15,7 @@ from chem_studio_policy.capabilities import capabilities_for_role
 from sqlalchemy.orm import Session
 
 from studio.auth.context import ServiceContext, load_context
+from studio.domain.lab.plans import LabPlanService
 from studio.domain.tasks.memory import TaskMemoryService
 from studio.domain.tasks.report import TaskReportService
 from studio.persistence.models import (
@@ -134,18 +135,22 @@ class TestTaskReport:
         task = _task(session, ctx, mode="match_reference")
         task.mode_inputs = {"matchScope": "functional", "referenceProductId": "rp-1"}
         session.flush()
-        session.add(
-            CandidateRevision(
-                workspace_id=ctx.workspace_id,
-                task_id=task.id,
-                revision=1,
-                status="accepted_for_research",
-                entity_kind="formulation",
-                payload={"hypothesis": "solvent swap"},
-                content_hash="h1",
-            )
+        cand = CandidateRevision(
+            workspace_id=ctx.workspace_id,
+            task_id=task.id,
+            revision=1,
+            status="accepted_for_research",
+            entity_kind="formulation",
+            payload={"hypothesis": "solvent swap"},
+            content_hash="h1",
+        )
+        session.add(cand)
+        session.flush()
+        plan = LabPlanService(session, ctx).create(
+            task.id, title="m", payload={"candidateRevisionId": str(cand.id)}
         )
         ex = _execution(session, ctx, task)
+        ex.plan_id = plan.id
         sample = _sample(session, ctx, ex)
         session.add(
             Measurement(

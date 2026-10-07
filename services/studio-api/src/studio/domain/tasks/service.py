@@ -65,6 +65,15 @@ MODE_REQUIRED_INPUTS: dict[str, tuple[str, ...]] = {
 MATCH_SCOPES = ("functional", "analytical", "functional_and_analytical")
 TARGET_KINDS = ("formulation", "material", "molecule", "unknown")
 
+# Mode inputs that name authoritative entities — a value that does not
+# resolve to a real workspace-scoped row is invalid, never "a baseline"
+# (PAR-02 §7: strings like ``baseline-rev-1`` must not count).
+_BASELINE_KINDS = (
+    "formulation_revisions",
+    "reference_product_revisions",
+    "candidate_revisions",
+)
+
 
 def unresolved_inputs(task: ResearchTask) -> list[str]:
     """Which mode-required inputs are still unknown (§11)."""
@@ -82,6 +91,67 @@ def unresolved_inputs(task: ResearchTask) -> list[str]:
         if not task.mode_inputs.get(field):
             missing.append(field)
     return sorted(missing)
+
+
+def invalid_inputs(db: Session, task: ResearchTask) -> list[dict[str, str]]:
+    """Mode inputs that are present but do not resolve to an existing
+    authorized entity (PAR-02 §7). Blank values stay ``unresolved``;
+    non-blank garbage like ``baseline-rev-1`` is invalid — it must never
+    silently count as a real baseline/reference in calculations."""
+    out: list[dict[str, str]] = []
+    inputs = task.mode_inputs or {}
+
+    def _resolves(value: Any, tables: tuple[str, ...]) -> bool:
+        from studio.persistence.models import (
+            CandidateRevision,
+            FormulationRevision,
+            ReferenceProduct,
+            ReferenceProductRevision,
+        )
+
+        if not isinstance(value, str):
+            return False
+        try:
+            entity_id = uuid.UUID(value)
+        except ValueError:
+            return False
+        models: dict[str, Any] = {
+            "candidate_revisions": CandidateRevision,
+            "formulation_revisions": FormulationRevision,
+            "reference_products": ReferenceProduct,
+            "reference_product_revisions": ReferenceProductRevision,
+        }
+        for table in tables:
+            model: Any = models[table]
+            found = db.execute(
+                select(model.id).where(
+                    model.workspace_id == task.workspace_id,
+                    model.id == entity_id,
+                ).limit(1)
+            ).scalar_one_or_none()
+            if found is not None:
+                return True
+        return False
+
+    baseline = inputs.get("baselineRevisionId")
+    if baseline is not None and baseline != "":
+        if not _resolves(baseline, _BASELINE_KINDS):
+            out.append(
+                {
+                    "field": "baselineRevisionId",
+                    "reason": "does not resolve to an existing revision entity",
+                }
+            )
+    reference = inputs.get("referenceProductId")
+    if reference is not None and reference != "":
+        if not _resolves(reference, ("reference_products",)):
+            out.append(
+                {
+                    "field": "referenceProductId",
+                    "reason": "does not resolve to an existing reference product",
+                }
+            )
+    return out
 
 
 class TaskService:
@@ -267,12 +337,16 @@ class TaskService:
         task_id: uuid.UUID,
         closure_decision: str,
         packet: dict[str, Any] | None = None,
+        candidate_revision_id: uuid.UUID | None = None,
     ) -> ResearchTask:
         """Close with a recorded closure decision (§7.1).
 
         Human reviewers only: an agent principal is denied even if it
         somehow holds review_science, and supported_success additionally
-        needs the frozen-contract evidence gates.
+        needs the frozen-contract evidence gates. When the task carries
+        more than one research-accepted candidate the reviewer must name
+        the candidate the close binds to — the evaluator never picks one
+        by revision (PAR-02 §5-6).
         """
         task = self._task(task_id)
         if self.ctx.principal_kind != "user":
@@ -290,7 +364,20 @@ class TaskService:
                 f"closureDecision must be one of {', '.join(TASK_CLOSURES)}",
                 field_path="input.closureDecision",
             )
-        bound_packet = self._closeout_packet(task)
+        accepted = self._accepted_candidates(task)
+        if len(accepted) > 1 and candidate_revision_id is None:
+            raise DomainError(
+                ErrorCode.VALIDATION,
+                "multiple accepted candidates — close requires an explicit "
+                "candidateRevisionId binding the report the reviewer saw",
+                field_path="input.candidateRevisionId",
+                safe_details={
+                    "candidateRevisionIds": [str(c.id) for c in accepted]
+                },
+            )
+        bound_packet = self._closeout_packet(
+            task, candidate_revision_id=candidate_revision_id
+        )
         if closure_decision == "supported_success":
             self._success_evidence_gate(bound_packet)
         prior_contract = task.current_contract_revision_id
@@ -304,6 +391,7 @@ class TaskService:
             {
                 "closureDecision": closure_decision,
                 "contractRevisionId": str(prior_contract) if prior_contract else None,
+                "candidateRevisionId": bound_packet.get("candidateRevisionId"),
                 "evaluationCycle": task.evaluation_cycle,
                 "packet": bound_packet,
                 "reviewerPacket": packet or {},
@@ -489,13 +577,32 @@ class TaskService:
 
     # ------------------------------------------------------- internals
 
-    def _closeout_packet(self, task: ResearchTask) -> dict[str, Any]:
+    def _closeout_packet(
+        self, task: ResearchTask, *, candidate_revision_id: uuid.UUID | None = None
+    ) -> dict[str, Any]:
         """The packet stored on close is always derived server-side by
         the evaluator (§12.3) — the reviewer's packet is kept alongside
         as context, never trusted as the bound evidence record."""
         from studio.domain.tasks.evaluation import TaskEvaluationService
 
-        return TaskEvaluationService(self.db, self.ctx).closeout_packet(task.id)
+        return TaskEvaluationService(self.db, self.ctx).closeout_packet(
+            task.id, candidate_revision_id=candidate_revision_id
+        )
+
+    def _accepted_candidates(self, task: ResearchTask) -> list[Any]:
+        from studio.persistence.models import CandidateRevision
+
+        return list(
+            self.db.execute(
+                select(CandidateRevision)
+                .where(
+                    CandidateRevision.workspace_id == self.ctx.workspace_id,
+                    CandidateRevision.task_id == task.id,
+                    CandidateRevision.status == "accepted_for_research",
+                )
+                .order_by(CandidateRevision.revision)
+            ).scalars()
+        )
 
     def _success_evidence_gate(self, packet: dict[str, Any]) -> None:
         """supported_success needs the evaluator to report eligibility

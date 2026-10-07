@@ -397,6 +397,7 @@ class TaskCloseInput:
     task_id: relay.GlobalID
     closure_decision: str
     packet: JSON | None = None
+    candidate_revision_id: relay.GlobalID | None = None
     idempotency_key: str | None = None
     client_mutation_id: str | None = None
 
@@ -1296,16 +1297,44 @@ class Query:
         )
 
     @strawberry.field
-    def task_evaluation(self, info: strawberry.Info, task_id: relay.GlobalID) -> JSON:
+    def task_evaluation(
+        self,
+        info: strawberry.Info,
+        task_id: relay.GlobalID,
+        candidate_revision_id: relay.GlobalID | None = None,
+    ) -> JSON:
         gql = gql_ctx(info)
         t_uuid = _gid_uuid(task_id, "Task", "taskId")
-        return JSON(TaskEvaluationService(gql.db, gql.service_ctx()).evaluate(t_uuid))
+        c_uuid = (
+            _gid_uuid(candidate_revision_id, "CandidateRevision", "candidateRevisionId")
+            if candidate_revision_id is not None
+            else None
+        )
+        return JSON(
+            TaskEvaluationService(gql.db, gql.service_ctx()).evaluate(
+                t_uuid, candidate_revision_id=c_uuid
+            )
+        )
 
     @strawberry.field
-    def task_closeout_packet(self, info: strawberry.Info, task_id: relay.GlobalID) -> JSON:
+    def task_closeout_packet(
+        self,
+        info: strawberry.Info,
+        task_id: relay.GlobalID,
+        candidate_revision_id: relay.GlobalID | None = None,
+    ) -> JSON:
         gql = gql_ctx(info)
         t_uuid = _gid_uuid(task_id, "Task", "taskId")
-        return JSON(TaskEvaluationService(gql.db, gql.service_ctx()).closeout_packet(t_uuid))
+        c_uuid = (
+            _gid_uuid(candidate_revision_id, "CandidateRevision", "candidateRevisionId")
+            if candidate_revision_id is not None
+            else None
+        )
+        return JSON(
+            TaskEvaluationService(gql.db, gql.service_ctx()).closeout_packet(
+                t_uuid, candidate_revision_id=c_uuid
+            )
+        )
 
     @strawberry.field
     def task_reassessment_status(self, info: strawberry.Info, task_id: relay.GlobalID) -> JSON:
@@ -1960,10 +1989,16 @@ class Mutation:
             ctx = gql.service_ctx()
             svc = TaskService(gql.db, ctx)
             t_uuid = _gid_uuid(input.task_id, "Task", "taskId")
+            c_uuid = (
+                _gid_uuid(input.candidate_revision_id, "CandidateRevision", "candidateRevisionId")
+                if input.candidate_revision_id is not None
+                else None
+            )
             payload = {
                 "taskId": str(t_uuid),
                 "closureDecision": input.closure_decision,
                 "packet": input.packet,
+                "candidateRevisionId": str(c_uuid) if c_uuid else None,
             }
 
             def _do() -> dict[str, str]:
@@ -1971,6 +2006,7 @@ class Mutation:
                     task_id=t_uuid,
                     closure_decision=input.closure_decision,
                     packet=cast(dict[str, Any], input.packet) if input.packet is not None else None,
+                    candidate_revision_id=c_uuid,
                 )
                 return {"taskId": str(task.id)}
 
@@ -4911,6 +4947,26 @@ class MeasurementApplicabilityInput:
 
 
 @strawberry.input
+class MeasurementApplicabilityMapInput:
+    """Reviewed evidence→candidate applicability mapping (PAR-02 §4)."""
+
+    measurement_id: relay.GlobalID
+    candidate_revision_id: relay.GlobalID
+    contract_revision_id: relay.GlobalID | None = None
+    applicable: bool = True
+    rationale: str = ""
+    withdraw: bool = False
+    client_mutation_id: str | None = None
+
+
+@strawberry.type
+class ApplicabilityMapResult:
+    mapping_id: str | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.input
 class MeasurementAmendInput:
     measurement_id: relay.GlobalID
     reason: str
@@ -5247,6 +5303,72 @@ class LabMeasurementsMutation:
         except DomainError as exc:
             gql.db.rollback()
             return _measurement_error(exc, input.client_mutation_id)
+
+    @strawberry.mutation
+    def measurement_map_applicability(
+        self, info: strawberry.Info, input: MeasurementApplicabilityMapInput
+    ) -> ApplicabilityMapResult:
+        """Record (or withdraw) a reviewed evidence→candidate
+        applicability mapping — the only path for lineage-less evidence
+        to substantiate a candidate (PAR-02 §4)."""
+        gql = gql_ctx(info)
+        try:
+            m_uuid = _gid_uuid(input.measurement_id, "Measurement", "measurementId")
+            c_uuid = _gid_uuid(
+                input.candidate_revision_id, "CandidateRevision", "candidateRevisionId"
+            )
+            k_uuid = (
+                _gid_uuid(
+                    input.contract_revision_id,
+                    "ContractRevision",
+                    "contractRevisionId",
+                )
+                if input.contract_revision_id is not None
+                else None
+            )
+            svc = LabMeasurementService(gql.db, gql.service_ctx())
+
+            def _do() -> dict[str, str]:
+                if input.withdraw:
+                    row = svc.withdraw_applicability(
+                        m_uuid, candidate_revision_id=c_uuid
+                    )
+                else:
+                    row = svc.record_applicability(
+                        m_uuid,
+                        candidate_revision_id=c_uuid,
+                        contract_revision_id=k_uuid,
+                        applicable=input.applicable,
+                        rationale=input.rationale,
+                    )
+                return {"id": str(row.id)}
+
+            result = _mutate(
+                gql,
+                key=None,
+                operation="lab.measurement_map_applicability",
+                payload={
+                    "measurementId": str(m_uuid),
+                    "candidateRevisionId": str(c_uuid),
+                    "contractRevisionId": str(k_uuid) if k_uuid else None,
+                    "applicable": input.applicable,
+                    "withdraw": input.withdraw,
+                },
+                fn=_do,
+            )
+            gql.db.commit()
+            return ApplicabilityMapResult(
+                mapping_id=result["id"],
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return ApplicabilityMapResult(
+                mapping_id=None,
+                errors=[_err_payload(exc)],
+                client_mutation_id=input.client_mutation_id,
+            )
 
     @strawberry.mutation
     def measurement_amend(

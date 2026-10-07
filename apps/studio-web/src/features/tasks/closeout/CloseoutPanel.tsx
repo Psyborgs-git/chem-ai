@@ -34,6 +34,18 @@ type GateReport = {
   metricVerdict?: string;
   findings?: Finding[];
 };
+type CandidateReport = {
+  candidateRevisionId?: string;
+  candidateRevision?: number;
+  entityKind?: string;
+  entityRevisionId?: string;
+  eligibility?: string;
+  metrics?: MetricReport[];
+  gates?: GateReport[];
+  evidenceIds?: string[];
+  suggestedDecision?: string;
+  supportedSuccessEligible?: boolean;
+};
 
 const VERDICT_TONE: Record<
   string,
@@ -71,67 +83,11 @@ function FindingsList({ findings }: { findings: Finding[] }) {
   );
 }
 
-function EvaluationReport({
-  report,
-  reassessment,
-}: {
-  report: Json;
-  reassessment: Json;
-}) {
+function MetricsGates({ report }: { report: Json }) {
   const metrics = (report.metrics ?? []) as MetricReport[];
   const gates = (report.gates ?? []) as GateReport[];
-  const unknowns = (report.unknowns ?? []) as string[];
-  const findings = (report.findings ?? []) as Finding[];
-  const stale = (reassessment.staleEvidenceIds ?? []) as {
-    id?: string;
-    status?: string;
-  }[];
-
   return (
-    <div data-field="evaluation-report">
-      {reassessment.needsReassessment === true && (
-        <div role="alert" data-field="reassessment-banner">
-          <Badge tone="danger">reassessment required</Badge> evidence bound
-          into the signed closure packet has since been superseded or revoked —
-          the packet is unchanged (it is immutable); a new evaluation cycle is
-          needed.
-          {stale.length > 0 && (
-            <ul>
-              {stale.map((s) => (
-                <li key={s.id}>
-                  evidence {String(s.id).slice(0, 8)}… → {s.status}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      <p>
-        <Badge
-          tone={
-            VERDICT_TONE[String(report.suggestedDecision)] ?? "neutral"
-          }
-        >
-          suggestion: {String(report.suggestedDecision ?? "?")}
-        </Badge>{" "}
-        <Badge tone="info">fixture-only — not scientific validation</Badge>{" "}
-        <Badge tone="neutral">
-          cycle {String(report.evaluationCycle ?? "?")}
-        </Badge>
-      </p>
-      <p className="cs-hint">
-        the evaluator only suggests — closure is always a human reviewer
-        decision; nothing here auto-approves.
-      </p>
-
-      {report.assessable !== true && (
-        <EmptyState
-          title={String(report.reason ?? "task is not assessable yet")}
-        />
-      )}
-      <FindingsList findings={findings} />
-
+    <>
       {metrics.length > 0 && (
         <div
           className="cs-table-wrap"
@@ -214,6 +170,180 @@ function EvaluationReport({
           </table>
         </div>
       )}
+    </>
+  );
+}
+
+function CandidateReports({
+  candidates,
+  selectedId,
+  onSelect,
+}: {
+  candidates: CandidateReport[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  if (candidates.length === 0) return null;
+  const selected = candidates.find(
+    (c) => c.candidateRevisionId === selectedId,
+  );
+  return (
+    <div data-field="candidate-reports">
+      {candidates.length > 1 && (
+        <p className="cs-hint">
+          {candidates.length} accepted candidates — each is reported
+          separately and no pooled verdict exists. Select the candidate whose
+          report you reviewed.
+        </p>
+      )}
+      <div
+        className="cs-table-wrap"
+        role="region"
+        aria-label="candidates"
+        tabIndex={0}
+      >
+        <table className="cs-table cs-table--fit" data-field="candidates-table">
+          <caption>candidates evaluated against this contract</caption>
+          <thead>
+            <tr>
+              <th scope="col" className="cs-table__identity">
+                candidate
+              </th>
+              <th scope="col">kind</th>
+              <th scope="col">eligibility</th>
+              <th scope="col">suggestion</th>
+              <th scope="col">evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {candidates.map((c) => (
+              <tr
+                key={c.candidateRevisionId}
+                data-field="candidate-row"
+                data-selected={c.candidateRevisionId === selectedId}
+              >
+                <td className="cs-table__identity">
+                  <label>
+                    <input
+                      type="radio"
+                      name="evaluation-candidate"
+                      checked={c.candidateRevisionId === selectedId}
+                      onChange={() =>
+                        c.candidateRevisionId &&
+                        onSelect(c.candidateRevisionId)
+                      }
+                    />{" "}
+                    rev {c.candidateRevision ?? "?"} —{" "}
+                    {String(c.candidateRevisionId ?? "").slice(0, 8)}…
+                  </label>
+                </td>
+                <td>{c.entityKind ?? "—"}</td>
+                <td>{c.eligibility ?? "—"}</td>
+                <td data-field="candidate-verdict">
+                  <Badge
+                    tone={
+                      VERDICT_TONE[c.suggestedDecision ?? ""] ?? "neutral"
+                    }
+                  >
+                    {c.suggestedDecision ?? "?"}
+                  </Badge>
+                </td>
+                <td>{(c.evidenceIds ?? []).length} reading(s)</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {selected ? (
+        <div data-field="selected-candidate-report">
+          <h4>
+            report for candidate rev {selected.candidateRevision ?? "?"}
+          </h4>
+          <MetricsGates report={selected as unknown as Json} />
+        </div>
+      ) : (
+        candidates.length > 1 && (
+          <p className="cs-hint" data-field="select-candidate-hint">
+            select a candidate above to view its per-candidate report.
+          </p>
+        )
+      )}
+    </div>
+  );
+}
+
+function EvaluationReport({
+  report,
+  reassessment,
+  candidates,
+  selectedId,
+  onSelectCandidate,
+}: {
+  report: Json;
+  reassessment: Json;
+  candidates: CandidateReport[];
+  selectedId: string | null;
+  onSelectCandidate: (id: string) => void;
+}) {
+  const unknowns = (report.unknowns ?? []) as string[];
+  const findings = (report.findings ?? []) as Finding[];
+  const stale = (reassessment.staleEvidenceIds ?? []) as {
+    id?: string;
+    status?: string;
+  }[];
+
+  return (
+    <div data-field="evaluation-report">
+      {reassessment.needsReassessment === true && (
+        <div role="alert" data-field="reassessment-banner">
+          <Badge tone="danger">reassessment required</Badge> evidence bound
+          into the signed closure packet has since been superseded or revoked —
+          the packet is unchanged (it is immutable); a new evaluation cycle is
+          needed.
+          {stale.length > 0 && (
+            <ul>
+              {stale.map((s) => (
+                <li key={s.id}>
+                  evidence {String(s.id).slice(0, 8)}… → {s.status}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <p>
+        <Badge
+          tone={
+            VERDICT_TONE[String(report.suggestedDecision)] ?? "neutral"
+          }
+        >
+          suggestion: {String(report.suggestedDecision ?? "?")}
+        </Badge>{" "}
+        <Badge tone="info">fixture-only — not scientific validation</Badge>{" "}
+        <Badge tone="neutral">
+          cycle {String(report.evaluationCycle ?? "?")}
+        </Badge>
+      </p>
+      <p className="cs-hint">
+        the evaluator only suggests — closure is always a human reviewer
+        decision; nothing here auto-approves.
+      </p>
+
+      {report.assessable !== true && (
+        <EmptyState
+          title={String(report.reason ?? "task is not assessable yet")}
+        />
+      )}
+      <FindingsList findings={findings} />
+
+      <CandidateReports
+        candidates={candidates}
+        selectedId={selectedId}
+        onSelect={onSelectCandidate}
+      />
+
+      {candidates.length === 0 && <MetricsGates report={report} />}
 
       {unknowns.length > 0 && (
         <div data-field="unknowns">
@@ -232,10 +362,16 @@ function EvaluationReport({
 function CloseForm({
   taskId,
   eligible,
+  candidates,
+  selectedId,
+  onSelectCandidate,
   onClosed,
 }: {
   taskId: string;
   eligible: boolean;
+  candidates: CandidateReport[];
+  selectedId: string | null;
+  onSelectCandidate: (id: string) => void;
   onClosed: () => void;
 }) {
   const [close, closing] =
@@ -244,10 +380,44 @@ function CloseForm({
   const [note, setNote] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const needsCandidate = candidates.length > 1 && selectedId === null;
 
   return (
     <section aria-label="close task" data-field="close-form">
       <h4>human closure decision</h4>
+      {candidates.length > 0 && (
+        <div className="cs-field">
+          <label className="cs-field__label" htmlFor="closure-candidate">
+            candidate this closure binds
+          </label>
+          <select
+            id="closure-candidate"
+            className="cs-input"
+            value={selectedId ?? ""}
+            onChange={(e) => onSelectCandidate(e.target.value)}
+          >
+            <option value="" disabled>
+              select the candidate whose report you reviewed
+            </option>
+            {candidates.map((c) => (
+              <option
+                key={c.candidateRevisionId}
+                value={c.candidateRevisionId}
+              >
+                rev {c.candidateRevision ?? "?"} —{" "}
+                {String(c.candidateRevisionId ?? "").slice(0, 8)}… (
+                {c.entityKind ?? "entity"})
+              </option>
+            ))}
+          </select>
+          {needsCandidate && (
+            <p className="cs-hint" data-field="candidate-required-hint">
+              this task has multiple accepted candidates — the closure packet
+              must bind the exact candidate whose report you reviewed.
+            </p>
+          )}
+        </div>
+      )}
       <div className="cs-field">
         <label className="cs-field__label" htmlFor="closure-decision">
           closure decision
@@ -292,13 +462,16 @@ function CloseForm({
       )}
       <Button
         type="button"
-        disabled={closing || !confirmed}
+        disabled={closing || !confirmed || needsCandidate}
         onClick={() =>
           close({
             variables: {
               input: {
                 taskId,
                 closureDecision: decision,
+                candidateRevisionId: selectedId
+                  ? btoa(`CandidateRevision:${selectedId}`)
+                  : undefined,
                 packet: note.trim() ? { reviewerNote: note } : undefined,
               },
             },
@@ -335,14 +508,30 @@ function CloseoutBody({
   );
   const report = (data.taskEvaluation ?? {}) as Json;
   const reassessment = (data.taskReassessmentStatus ?? {}) as Json;
-  const eligible = report.supportedSuccessEligible === true;
+  const candidates = (report.candidates ?? []) as CandidateReport[];
+  const [selectedCandidateId, setSelectedCandidateId] = useState<
+    string | null
+  >(candidates.length === 1 ? (candidates[0].candidateRevisionId ?? null) : null);
+  const selectedCandidate = candidates.find(
+    (c) => c.candidateRevisionId === selectedCandidateId,
+  );
+  const eligible =
+    candidates.length > 1
+      ? selectedCandidate?.supportedSuccessEligible === true
+      : report.supportedSuccessEligible === true;
   const [transition, transitioning] =
     useMutation<tasksCloseoutTransitionMutation>(TaskTransitionMutation);
   const [error, setError] = useState<string | null>(null);
 
   return (
     <div>
-      <EvaluationReport report={report} reassessment={reassessment} />
+      <EvaluationReport
+        report={report}
+        reassessment={reassessment}
+        candidates={candidates}
+        selectedId={selectedCandidateId}
+        onSelectCandidate={setSelectedCandidateId}
+      />
       {error && (
         <p role="alert" className="cs-field__error">
           {error}
@@ -352,6 +541,9 @@ function CloseoutBody({
         <CloseForm
           taskId={taskId}
           eligible={eligible}
+          candidates={candidates}
+          selectedId={selectedCandidateId}
+          onSelectCandidate={setSelectedCandidateId}
           onClosed={() => setFetchKey((k) => k + 1)}
         />
       )}
