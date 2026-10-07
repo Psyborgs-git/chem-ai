@@ -251,9 +251,7 @@ class TestPacketProvenance:
         assert packet["fixtureOnly"] is True
         assert packet["scientificValidation"] == "not_validated"
         assert packet["provenance"]["evidenceOrigin"]["composition"] == "synthetic_only"
-        manifest_row = {
-            e["measurementId"]: e for e in packet["manifest"]["evidence"]
-        }[str(m.id)]
+        manifest_row = {e["measurementId"]: e for e in packet["manifest"]["evidence"]}[str(m.id)]
         assert manifest_row["origin"] == "synthetic_fixture"
 
     def test_real_record_does_not_relabel_fixtures(
@@ -265,9 +263,7 @@ class TestPacketProvenance:
         res, sr, _own = ctxs
         task = _task(session, res)
         fixture = _measurement(session, res, task)
-        real = _measurement(
-            session, res, task, method="hplc-assay", metric="metric.viscosity"
-        )
+        real = _measurement(session, res, task, method="hplc-assay", metric="metric.viscosity")
 
         report = TaskEvaluationService(session, sr).evaluate(task.id)
         assert report["fixtureOnly"] is False
@@ -285,18 +281,14 @@ class TestPacketProvenance:
         assert by_id[str(real.id)]["origin"] == "historical_report"
         assert packet["provenance"]["evidenceOrigin"]["composition"] == "mixed"
         # real evidence present still says what is missing
-        assert any(
-            "method" in m for m in packet["provenance"]["missingScientificInputs"]
-        )
+        assert any("method" in m for m in packet["provenance"]["missingScientificInputs"])
 
     def test_real_only_packet_keeps_validation_absent(
         self, session: Session, ctxs: tuple[ServiceContext, ServiceContext, ServiceContext]
     ) -> None:
         res, sr, _own = ctxs
         task = _task(session, res)
-        _measurement(
-            session, res, task, method="hplc-assay", metric="metric.viscosity"
-        )
+        _measurement(session, res, task, method="hplc-assay", metric="metric.viscosity")
         report = TaskEvaluationService(session, sr).evaluate(task.id)
         prov = report["provenance"]
         assert report["fixtureOnly"] is False
@@ -317,7 +309,11 @@ class TestPacketProvenance:
         res, sr, _own = ctxs
         task = _task(session, res)
         m = _measurement(
-            session, res, task, method="hplc-assay", metric="metric.viscosity",
+            session,
+            res,
+            task,
+            method="hplc-assay",
+            metric="metric.viscosity",
             historical=False,
         )
         report = TaskEvaluationService(session, sr).evaluate(task.id)
@@ -331,9 +327,7 @@ class TestPacketProvenance:
     ) -> None:
         res, sr, _own = ctxs
         task = _task(session, res)
-        pred = _measurement(
-            session, res, task, method="prediction-qcengine", metric="metric.dft"
-        )
+        pred = _measurement(session, res, task, method="prediction-qcengine", metric="metric.dft")
         unk = _measurement(
             session,
             res,
@@ -370,9 +364,7 @@ class TestCorpusProvenance:
         res, _sr, own = ctxs
         task = _task(session, res)
         fixture = _measurement(session, res, task)
-        real = _measurement(
-            session, res, task, method="hplc-assay", metric="metric.viscosity"
-        )
+        real = _measurement(session, res, task, method="hplc-assay", metric="metric.viscosity")
         claim = _supplier_claim(session, _ws(session, res))
         svc = DatasetService(session, own)
         snap = svc.build("property_prediction", "ds", task_id=task.id)
@@ -380,7 +372,7 @@ class TestCorpusProvenance:
         assert by_id[str(fixture.id)]["evidenceOrigin"] == "synthetic_fixture"
         assert by_id[str(real.id)]["evidenceOrigin"] == "historical_report"
         assert by_id[str(claim.id)]["evidenceOrigin"] == "historical_report"
-        prov = snap.manifest["provenance"]
+        prov = snap.manifest["provenance"]["evidenceOrigin"]
         assert prov["composition"] == "mixed"
         assert snap.manifest["scientificStatus"] == "not_validated"
 
@@ -412,9 +404,7 @@ class TestCorpusProvenance:
         at build, and the freeze gate refuses silent records."""
         res, _sr, own = ctxs
         task = _task(session, res)
-        m = _measurement(
-            session, res, task, method="hplc-assay", metric="metric.viscosity"
-        )
+        m = _measurement(session, res, task, method="hplc-assay", metric="metric.viscosity")
         svc = DatasetService(session, own)
         snap = svc.build("property_prediction", "ds", task_id=task.id)
         for e in snap.manifest["entries"]:
@@ -434,7 +424,7 @@ class TestCorpusProvenance:
         svc = DatasetService(session, own)
         snap = svc.build("property_prediction", "ds", task_id=task.id)
         svc.freeze(snap.id)
-        assert snap.manifest["provenance"]["composition"] == "synthetic_only"
+        assert snap.manifest["provenance"]["evidenceOrigin"]["composition"] == "synthetic_only"
         assert snap.manifest["scientificStatus"] == "not_validated"
 
     def test_readiness_lists_missing_real_evidence(
@@ -467,9 +457,7 @@ class TestCorpusProvenance:
     ) -> None:
         res, _sr, own = ctxs
         task = _task(session, res)
-        _measurement(
-            session, res, task, method="hplc-assay", metric="metric.viscosity"
-        )
+        _measurement(session, res, task, method="hplc-assay", metric="metric.viscosity")
         svc = DatasetService(session, own)
         snap = svc.build("property_prediction", "ds", task_id=task.id)
         svc.freeze(snap.id)
@@ -502,9 +490,7 @@ class TestProvenanceGate:
     ) -> None:
         res, _sr, own = ctxs
         task = _task(session, res)
-        m = _measurement(
-            session, res, task, method="hplc-assay", metric="metric.viscosity"
-        )
+        m = _measurement(session, res, task, method="hplc-assay", metric="metric.viscosity")
         svc = DatasetService(session, own)
         snap = svc.build("property_prediction", "ds", task_id=task.id)
         svc.freeze(snap.id)
@@ -530,9 +516,7 @@ class TestProvenanceGate:
     ) -> None:
         res, _sr, own = ctxs
         task = _task(session, res)
-        m = _measurement(
-            session, res, task, method="hplc-assay", metric="metric.viscosity"
-        )
+        m = _measurement(session, res, task, method="hplc-assay", metric="metric.viscosity")
         svc = DatasetService(session, own)
         snap = svc.build("property_prediction", "ds", task_id=task.id)
         for e in snap.manifest["entries"]:
@@ -559,9 +543,7 @@ class TestExportProvenance:
     ) -> None:
         res, _sr, own = ctxs
         task = _task(session, res)
-        m = _measurement(
-            session, res, task, method="hplc-assay", metric="metric.viscosity"
-        )
+        m = _measurement(session, res, task, method="hplc-assay", metric="metric.viscosity")
         claim = _supplier_claim(session, _ws(session, res))
         svc = DatasetService(session, own)
         snap = svc.build("property_prediction", "ds")

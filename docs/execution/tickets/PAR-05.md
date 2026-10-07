@@ -62,7 +62,8 @@
    重推导（2b 步）；export `_collect` 在 rights plane 之后对
    `unknown` origin 排除 `provenance_unknown`，record envelope
    带 `evidenceOrigin`，export manifest `snapshot.provenance`
-   携带快照 summary。
+   携带快照 summary（manifest provenance 与 packet 同一 wire 形状
+   `{evidenceOrigin: {composition, counts, classesPresent}}`）。
 4. **UI 推导式 summary**（requirement 4）：新增共享
    `features/tasks/provenance.ts`（`provenanceSummary()`/
    `originLabel()`/`originCountsText()`）；CloseoutPanel 的
@@ -108,7 +109,8 @@
   lab_observation；`prediction-qcengine` method → prediction；
   declared `provenance.origin="an-undeclared-source"` → unknown。
 - `TestCorpusProvenance`（5）：manifest entries 带
-  `evidenceOrigin`；`manifest["provenance"]["composition"]=="mixed"`；
+  `evidenceOrigin`；`manifest["provenance"]["evidenceOrigin"]
+  ["composition"]=="mixed"`（与 packet `provenance` 同一形状）；
   `evidenceOrigin:"bogus-class"` → build 时
   `provenance:unknown` 排除；included 记录剥掉
   `evidenceOrigin` → freeze 抛 `PROVENANCE_UNKNOWN` 且
@@ -149,7 +151,7 @@
 
 | 步骤 | 命令 | 结果 |
 |---|---|---|
-| verify-core | `make verify-core` | ruff clean、contracts checksum-verified、schema.graphql in-sync、unit **385 passed** |
+| verify-core | `make verify-core` | `ruff check` clean、contracts checksum-verified、schema.graphql in-sync、unit **385 passed** |
 | typecheck | `make typecheck` | mypy **231 files no issues**；relay 130 docs；tsc **OK** |
 | 全量后端 | `uv run --no-sync pytest services/studio-api/tests tests -m 'not engine' --timeout 300` | **1197 collected（61 deselected）→ 0 failed / 3 skipped**（exit 0） |
 | 安全 | `make test-security` | **221 passed / 1 skipped / 9 deselected**（114.56s） |

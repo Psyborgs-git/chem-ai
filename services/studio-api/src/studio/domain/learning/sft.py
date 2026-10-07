@@ -165,9 +165,7 @@ def _merge_spec(raw: dict[str, Any] | None) -> dict[str, Any]:
     return spec
 
 
-def _capability_labels(
-    *, image_available: bool, composition: str | None = None
-) -> dict[str, Any]:
+def _capability_labels(*, image_available: bool, composition: str | None = None) -> dict[str, Any]:
     """Honesty labels (CS-0801): PAR-05 derives ``dataStatus`` from the
     snapshot's provenance composition — fixture corpora stay
     ``fixture_only``, a real-origin corpus is ``real_unvalidated``
@@ -340,9 +338,10 @@ class TrainingRunService:
             },
             capability=_capability_labels(
                 image_available=sft_runtime.available(),
-                composition=(snap.manifest or {}).get("provenance", {}).get(
-                    "composition"
-                ),
+                composition=(snap.manifest or {})
+                .get("provenance", {})
+                .get("evidenceOrigin", {})
+                .get("composition"),
             ),
             created_by=self.ctx.principal_id,
         )

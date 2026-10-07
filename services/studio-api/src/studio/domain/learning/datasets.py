@@ -150,9 +150,7 @@ def _semantics_measurement(
         semantics["effectiveFromAmendment"] = str(amendment.id)
         semantics["correctionReason"] = amendment.reason
         semantics["correctionSource"] = amendment.source
-        semantics["correctedBy"] = (
-            str(amendment.created_by) if amendment.created_by else None
-        )
+        semantics["correctedBy"] = str(amendment.created_by) if amendment.created_by else None
     return semantics
 
 
@@ -182,9 +180,7 @@ class DatasetService:
         amendments: dict[uuid.UUID, MeasurementAmendment] = {}
         if supersession_ids:
             for amd_row in self.db.execute(
-                select(MeasurementAmendment).where(
-                    MeasurementAmendment.id.in_(supersession_ids)
-                )
+                select(MeasurementAmendment).where(MeasurementAmendment.id.in_(supersession_ids))
             ).scalars():
                 amendments[amd_row.id] = amd_row
         entries: list[dict[str, Any]] = []
@@ -194,9 +190,7 @@ class DatasetService:
             amd = amendments.get(m.superseded_by) if m.superseded_by else None
             # PAR-05: every record's origin is labeled — a record whose
             # origin cannot be established is excluded, never silent
-            prov = measurement_origin(
-                m, sample=sample, batch=batch, execution=execution, plan=plan
-            )
+            prov = measurement_origin(m, sample=sample, batch=batch, execution=execution, plan=plan)
             excluded_reason: str | None = None
             if m.status == "rejected":
                 excluded_reason = "status:rejected"
@@ -254,9 +248,7 @@ class DatasetService:
             training = rights.get("training", "unknown")
             prov = claim_origin(
                 c,
-                source_resolvable=(
-                    artifact is not None or claim_source_resolvable(self.db, c)
-                ),
+                source_resolvable=(artifact is not None or claim_source_resolvable(self.db, c)),
             )
             excluded_reason = None
             if c.status in ("rejected", "superseded"):
@@ -348,8 +340,7 @@ class DatasetService:
         provenance = summarize(included_origins)
         if provenance["composition"] in ("synthetic_only", "none"):
             notes = (
-                "fixture/software evidence only; snapshot is not "
-                "scientific validation of any label"
+                "fixture/software evidence only; snapshot is not scientific validation of any label"
             )
         else:
             notes = (
@@ -362,7 +353,10 @@ class DatasetService:
             "purpose": purpose,
             "taskId": str(task_id) if task_id else None,
             "entries": entries,
-            "provenance": provenance,
+            # same shape as the packet block so every consumer reads
+            # one wire format: provenance.evidenceOrigin.{composition,
+            # counts, classesPresent}
+            "provenance": {"evidenceOrigin": provenance},
             "scientificStatus": "not_validated",
             "notes": notes,
         }
@@ -452,11 +446,7 @@ class DatasetService:
             m = self.db.get(Measurement, rid)
             if m is None:
                 return None
-            amd = (
-                self.db.get(MeasurementAmendment, m.superseded_by)
-                if m.superseded_by
-                else None
-            )
+            amd = self.db.get(MeasurementAmendment, m.superseded_by) if m.superseded_by else None
             return _record_hash(_measurement_fields(m, amd))
         if entry["recordKind"] == "session":
             s = self.db.get(ResearchSession, rid)
@@ -504,9 +494,7 @@ class DatasetService:
             "snapshotImmutable": True,
         }
 
-    def provenance_violations(
-        self, snapshot_id: uuid.UUID
-    ) -> dict[str, dict[str, Any]]:
+    def provenance_violations(self, snapshot_id: uuid.UUID) -> dict[str, dict[str, Any]]:
         """Re-derive every *included* record's evidence origin against
         live source rows (PAR-05 — the same plane as AT-0601-2's
         live-rights re-check). A record is a violation when its current
@@ -537,9 +525,7 @@ class DatasetService:
                 else:
                     sample = self.db.get(LabSample, m.sample_id)
                     batch = self.db.get(LabBatch, sample.batch_id) if sample else None
-                    execution = (
-                        self.db.get(LabExecution, batch.execution_id) if batch else None
-                    )
+                    execution = self.db.get(LabExecution, batch.execution_id) if batch else None
                     plan = (
                         self.db.get(ExperimentPlan, execution.plan_id)
                         if execution is not None and execution.plan_id

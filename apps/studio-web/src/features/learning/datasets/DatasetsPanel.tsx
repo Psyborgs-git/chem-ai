@@ -172,7 +172,9 @@ function SnapshotCard({
         {
           provenanceSummary(
             manifest.provenance,
-            true,
+            // a pre-PAR-05 manifest has no established provenance —
+            // claiming fixture-only there would be an assumption
+            false,
           ).text
         }
       </p>

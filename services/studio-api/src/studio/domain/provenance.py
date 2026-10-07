@@ -75,15 +75,11 @@ EVIDENCE_ORIGINS = (
 # Origins that count as real evidence records (not synthetic
 # fixtures). A prediction is a real record of generated output — real
 # provenance, but never a measured laboratory value.
-REAL_ORIGINS = frozenset(
-    {ORIGIN_HISTORICAL_REPORT, ORIGIN_LAB_OBSERVATION, ORIGIN_PREDICTION}
-)
+REAL_ORIGINS = frozenset({ORIGIN_HISTORICAL_REPORT, ORIGIN_LAB_OBSERVATION, ORIGIN_PREDICTION})
 # Origins that can ground a *scientific* training label / acceptance
 # decision — recorded laboratory evidence only. Predictions are model
 # output, not measured ground truth.
-REAL_EVIDENCE_ORIGINS = frozenset(
-    {ORIGIN_HISTORICAL_REPORT, ORIGIN_LAB_OBSERVATION}
-)
+REAL_EVIDENCE_ORIGINS = frozenset({ORIGIN_HISTORICAL_REPORT, ORIGIN_LAB_OBSERVATION})
 
 _COMPOSITIONS = ("none", "synthetic_only", "real_only", "mixed", "unknown_only")
 
@@ -210,9 +206,7 @@ def measurement_origin(
     declared = _declared_marker(payloads)
     if declared is not None:
         return {"origin": declared, "via": "declared"}
-    named = _name_marker(
-        measurement.method, measurement.metric, measurement.pipeline_version
-    )
+    named = _name_marker(measurement.method, measurement.metric, measurement.pipeline_version)
     if named is not None:
         return {"origin": named, "via": "name_marker"}
     if execution is None:
@@ -224,15 +218,11 @@ def measurement_origin(
     return {"origin": ORIGIN_LAB_OBSERVATION, "via": "plan_recorded"}
 
 
-def claim_origin(
-    claim: EvidenceClaim, *, source_resolvable: bool | None
-) -> dict[str, Any]:
+def claim_origin(claim: EvidenceClaim, *, source_resolvable: bool | None) -> dict[str, Any]:
     """Claims map their kind to an origin class; a document claim whose
     source record/batch can't be resolved reports ``unknown`` — a claim
     without document provenance is unverifiable, not historical."""
-    declared = _declared_marker(
-        [claim.conditions, claim.subject, claim.statement]
-    )
+    declared = _declared_marker([claim.conditions, claim.subject, claim.statement])
     if declared is not None:
         return {"origin": declared, "via": "declared"}
     named = _name_marker(*(v for v in (claim.subject or {}).values()))
@@ -348,8 +338,7 @@ def provenance_block(records: list[dict[str, Any]]) -> dict[str, Any]:
     else:
         origin_status = "mixed"
         origin_missing = (
-            "evidence classes are mixed — fixture/unknown records do not become "
-            "real by association"
+            "evidence classes are mixed — fixture/unknown records do not become real by association"
         )
     missing.append(origin_missing)
     missing.append("reviewed method validation record")
