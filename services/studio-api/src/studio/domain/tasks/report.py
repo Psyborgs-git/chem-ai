@@ -143,6 +143,33 @@ class TaskReportService:
         ]
         unknowns += [str(u) for u in evaluation.get("unknowns", [])]
 
+        # PAR-05: the lead limitation mirrors the derived provenance —
+        # synthetic-only keeps the fixture-only line; real/mixed/unknown
+        # compositions state the origin honestly plus what validation is
+        # still missing, never an engineering success.
+        prov = (evaluation.get("provenance") or {}).get("evidenceOrigin") or {}
+        composition = str(prov.get("composition") or "none")
+        counts = prov.get("counts") or {}
+        if composition in ("synthetic_only", "none"):
+            lead = "fixture-only software output — not scientific validation"
+        elif composition == "real_only":
+            lead = (
+                "real-origin evidence — provenance is real but method "
+                "validation and independent validation are missing "
+                "(not scientific validation)"
+            )
+        elif composition == "unknown_only":
+            lead = (
+                "evidence origin could not be established (unknown) — "
+                "not scientific validation"
+            )
+        else:
+            parts = ", ".join(f"{n} {k.replace('_', ' ')}" for k, n in sorted(counts.items()))
+            lead = (
+                f"mixed evidence origins ({parts}) — each class stays "
+                "distinct; not scientific validation"
+            )
+
         return {
             "task": {
                 "id": str(task.id),
@@ -183,7 +210,7 @@ class TaskReportService:
                 "pendingReviewMeasurements": by_status.get("proposed", 0),
             },
             "limitations": [
-                "fixture-only software output — not scientific validation",
+                lead,
                 *_MODE_LIMITS.get(task.mode, []),
             ],
         }

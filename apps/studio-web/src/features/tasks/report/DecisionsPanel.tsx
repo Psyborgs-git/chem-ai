@@ -7,6 +7,11 @@ import { TaskDecisionsQuery } from "./operations";
 
 import type { tasksDecisionsQuery } from "../../../__generated__/tasksDecisionsQuery.graphql";
 
+import {
+  provenanceSummary,
+  type ProvenanceBlock,
+} from "../provenance";
+
 type Json = Record<string, unknown>;
 
 const KIND_TONE: Record<string, "success" | "danger" | "warning" | "neutral" | "info"> = {
@@ -93,6 +98,19 @@ function DecisionsBody({ taskId }: { taskId: string }) {
                     fixture-only: {String(packet.fixtureOnly)}; scientific
                     validation: {String(packet.scientificValidation)}
                   </dd>
+                  {packet.provenance != null && (
+                    <>
+                      <dt>provenance</dt>
+                      <dd data-field="packet-provenance">
+                        {
+                          provenanceSummary(
+                            packet.provenance as ProvenanceBlock,
+                            packet.fixtureOnly !== false,
+                          ).text
+                        }
+                      </dd>
+                    </>
+                  )}
                 </dl>
               </details>
             )}

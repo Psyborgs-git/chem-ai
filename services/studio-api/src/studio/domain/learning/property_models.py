@@ -24,6 +24,12 @@ from workers.optimization.property_models.readiness import assess_readiness
 from studio.auth.context import ServiceContext
 from studio.domain.learning.datasets import DatasetService
 from studio.domain.learning.splits import SplitRecord
+from studio.domain.provenance import (
+    ORIGIN_UNKNOWN,
+    REAL_EVIDENCE_ORIGINS,
+    measurement_chain,
+    measurement_origin,
+)
 from studio.errors import DomainError, ErrorCode
 from studio.persistence.models import LabBatch, LabSample, Measurement
 
@@ -71,6 +77,24 @@ class PropertyModelService:
             raise
         snap = ds.get(snapshot_id)
         if not prepared["ok"]:
+            if prepared["reason"] == "provenance_unresolved":
+                return self._report(
+                    snap.id,
+                    snap.digest,
+                    target,
+                    {"provenance_unresolved": len(prepared.get("recordIds", []))},
+                    {
+                        "eligible": 0,
+                        "ineligible": 0,
+                        "labeled": 0,
+                        "unlabeled": 0,
+                        "distinctGroups": 0,
+                        "partitionSizes": {},
+                        "minLabeledDeclared": min_labeled_examples,
+                    },
+                    ["provenance_unresolved"],
+                    extra={"provenance": prepared.get("violations", {})},
+                )
             return self._report(
                 snap.id,
                 snap.digest,
@@ -155,6 +179,27 @@ class PropertyModelService:
             m = self.db.get(Measurement, uuid.UUID(str(entry["recordId"])))
             if m is None:
                 exclusions["source_missing"] = exclusions.get("source_missing", 0) + 1
+                continue
+            # PAR-05: provenance is its own exclusion plane — synthetic
+            # fixtures, predictions and unestablishable origins never
+            # silently count as label evidence; the exclusion name makes
+            # the missing scientific input explicit.
+            origin = entry.get("evidenceOrigin")
+            if origin is None:
+                sample, batch, execution, plan = measurement_chain(
+                    self.db, self.ctx.workspace_id, m
+                )
+                origin = measurement_origin(
+                    m, sample=sample, batch=batch, execution=execution, plan=plan
+                )["origin"]
+            if origin == ORIGIN_UNKNOWN:
+                exclusions["evidence_origin:unknown"] = (
+                    exclusions.get("evidence_origin:unknown", 0) + 1
+                )
+                continue
+            if origin not in REAL_EVIDENCE_ORIGINS:
+                key = f"evidence_origin:{origin}"
+                exclusions[key] = exclusions.get(key, 0) + 1
                 continue
             if (
                 m.metric != target.get("name")

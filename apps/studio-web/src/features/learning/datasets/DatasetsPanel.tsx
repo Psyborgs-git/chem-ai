@@ -19,6 +19,12 @@ import type { learningDatasetBuildMutation } from "../../../__generated__/learni
 import type { learningDatasetFreezeMutation } from "../../../__generated__/learningDatasetFreezeMutation.graphql";
 import type { learningDatasetPrepareMutation } from "../../../__generated__/learningDatasetPrepareMutation.graphql";
 
+import {
+  originLabel,
+  provenanceSummary,
+  type ProvenanceBlock,
+} from "../../tasks/provenance";
+
 type Entry = {
   recordId?: string;
   recordKind?: string;
@@ -26,11 +32,15 @@ type Entry = {
   rightsTraining?: string;
   labelKind?: string;
   metric?: string | null;
+  evidenceOrigin?: string | null;
   semantics?: Record<string, unknown>;
   excluded?: boolean;
   exclusionReason?: string | null;
 };
-type Manifest = { entries?: Entry[] };
+type Manifest = {
+  entries?: Entry[];
+  provenance?: ProvenanceBlock;
+};
 type DriftReport = { drift?: boolean; changed?: string[]; missing?: string[] };
 type PrepareReport = {
   ok?: boolean;
@@ -100,7 +110,8 @@ function SnapshotCard({
     DatasetPrepareRunMutation,
   );
   const [message, setMessage] = useState<string | null>(null);
-  const entries = ((snap.manifest as Manifest) ?? {}).entries ?? [];
+  const manifest = (snap.manifest as Manifest) ?? {};
+  const entries = manifest.entries ?? [];
   const excluded = entries.filter((e) => e.excluded);
 
   const doFreeze = () =>
@@ -154,8 +165,16 @@ function SnapshotCard({
         )}
       </header>
       <p>
-        {entries.length} records · {excluded.length} excluded · fixture-only —
-        not scientific validation
+        {entries.length} records · {excluded.length} excluded ·{" "}
+        {/* PAR-05: the corpus line is derived from the manifest
+            provenance, not asserted — a legacy manifest without
+            labels stays honest about it. */}
+        {
+          provenanceSummary(
+            manifest.provenance,
+            true,
+          ).text
+        }
       </p>
       {entries.length > 0 && (
         <div
@@ -172,6 +191,7 @@ function SnapshotCard({
                 </th>
                 <th scope="col">kind</th>
                 <th scope="col">source class</th>
+                <th scope="col">evidence origin</th>
                 <th scope="col">label</th>
                 <th scope="col">training rights</th>
                 <th scope="col">semantics</th>
@@ -187,6 +207,20 @@ function SnapshotCard({
                   <td>{e.recordKind}</td>
                   <td>
                     <Badge tone="info">{e.sourceClass}</Badge>
+                  </td>
+                  <td>
+                    <Badge
+                      tone={
+                        e.evidenceOrigin === "synthetic_fixture"
+                          ? "neutral"
+                          : e.evidenceOrigin === "unknown" ||
+                              e.evidenceOrigin == null
+                            ? "warning"
+                            : "success"
+                      }
+                    >
+                      {originLabel(e.evidenceOrigin)}
+                    </Badge>
                   </td>
                   <td>{e.labelKind}</td>
                   <td>

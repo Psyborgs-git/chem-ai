@@ -34,11 +34,20 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from studio.auth.context import ServiceContext
+from studio.domain.provenance import (
+    ORIGIN_UNKNOWN,
+    claim_origin,
+    claim_source_resolvable,
+    measurement_origin,
+    session_origin,
+    summarize,
+)
 from studio.errors import DomainError, ErrorCode
 from studio.persistence.models import (
     Artifact,
     DatasetSnapshot,
     EvidenceClaim,
+    ExperimentPlan,
     ExtractedRecord,
     ImportBatch,
     LabBatch,
@@ -157,10 +166,11 @@ class DatasetService:
     def _measurement_entries(self, task_id: uuid.UUID | None) -> list[dict[str, Any]]:
         ws = self.ctx.workspace_id
         stmt = (
-            select(Measurement, LabExecution.task_id)
+            select(Measurement, LabSample, LabBatch, LabExecution, ExperimentPlan)
             .join(LabSample, LabSample.id == Measurement.sample_id)
             .join(LabBatch, LabBatch.id == LabSample.batch_id)
             .join(LabExecution, LabExecution.id == LabBatch.execution_id)
+            .outerjoin(ExperimentPlan, ExperimentPlan.id == LabExecution.plan_id)
             .where(Measurement.workspace_id == ws)
         )
         rows = self.db.execute(stmt).all()
@@ -168,7 +178,7 @@ class DatasetService:
         # amendment ``superseded_by`` names — the corrected reading
         # enters exactly once under the measurement's own identity; a
         # supersession with no resolvable amendment stays excluded.
-        supersession_ids = [m.superseded_by for m, _ in rows if m.superseded_by]
+        supersession_ids = [m.superseded_by for m, *_ in rows if m.superseded_by]
         amendments: dict[uuid.UUID, MeasurementAmendment] = {}
         if supersession_ids:
             for amd_row in self.db.execute(
@@ -178,10 +188,15 @@ class DatasetService:
             ).scalars():
                 amendments[amd_row.id] = amd_row
         entries: list[dict[str, Any]] = []
-        for m, exec_task_id in rows:
-            if task_id is not None and exec_task_id != task_id:
+        for m, sample, batch, execution, plan in rows:
+            if task_id is not None and execution.task_id != task_id:
                 continue
             amd = amendments.get(m.superseded_by) if m.superseded_by else None
+            # PAR-05: every record's origin is labeled — a record whose
+            # origin cannot be established is excluded, never silent
+            prov = measurement_origin(
+                m, sample=sample, batch=batch, execution=execution, plan=plan
+            )
             excluded_reason: str | None = None
             if m.status == "rejected":
                 excluded_reason = "status:rejected"
@@ -191,6 +206,8 @@ class DatasetService:
                 excluded_reason = "not_applicable"
             elif m.value_type not in _TRAINABLE_VALUE_TYPES:
                 excluded_reason = f"value_type:{m.value_type}"
+            if excluded_reason is None and prov["origin"] == ORIGIN_UNKNOWN:
+                excluded_reason = "provenance:unknown"
             entries.append(
                 {
                     "recordId": str(m.id),
@@ -200,6 +217,9 @@ class DatasetService:
                     "rightsTraining": "owned",
                     "labelKind": "measured_value",
                     "metric": m.metric,
+                    "evidenceOrigin": prov["origin"],
+                    "originVia": prov["via"],
+                    "reviewState": m.status,
                     "semantics": _semantics_measurement(m, amd),
                     "excluded": excluded_reason is not None,
                     "exclusionReason": excluded_reason,
@@ -232,9 +252,17 @@ class DatasetService:
             artifact = art_by_claim[c.id]
             rights = (artifact.rights or {}) if artifact else {}
             training = rights.get("training", "unknown")
+            prov = claim_origin(
+                c,
+                source_resolvable=(
+                    artifact is not None or claim_source_resolvable(self.db, c)
+                ),
+            )
             excluded_reason = None
             if c.status in ("rejected", "superseded"):
                 excluded_reason = f"status:{c.status}"
+            if excluded_reason is None and prov["origin"] == ORIGIN_UNKNOWN:
+                excluded_reason = "provenance:unknown"
             entries.append(
                 {
                     "recordId": str(c.id),
@@ -245,6 +273,9 @@ class DatasetService:
                     "hash": _record_hash(_claim_fields(c, artifact)),
                     "rightsTraining": training,
                     "labelKind": "claimed_value",
+                    "evidenceOrigin": prov["origin"],
+                    "originVia": prov["via"],
+                    "reviewState": c.status,
                     "semantics": {"status": c.status},
                     "excluded": excluded_reason is not None,
                     "exclusionReason": excluded_reason,
@@ -274,6 +305,7 @@ class DatasetService:
                 .scalars()
                 .all()
             )
+            prov = session_origin(s)
             entries.append(
                 {
                     "recordId": str(s.id),
@@ -282,6 +314,8 @@ class DatasetService:
                     "hash": _record_hash(_session_fields(s, messages)),
                     "rightsTraining": "owned",
                     "labelKind": "reviewed_response",
+                    "evidenceOrigin": prov["origin"],
+                    "originVia": prov["via"],
                     "semantics": {
                         "status": s.status,
                         "messageCount": len(messages),
@@ -307,13 +341,30 @@ class DatasetService:
         if purpose in ("assistant_sft", "preference_pairs"):
             entries += self._session_entries(task_id)
         entries.sort(key=lambda e: (e["recordKind"], str(e["recordId"])))
+        # PAR-05: provenance summary over the included corpus — the
+        # origin labels make composition visible; scientificStatus
+        # never upgrades on provenance alone
+        included_origins = [e["evidenceOrigin"] for e in entries if not e["excluded"]]
+        provenance = summarize(included_origins)
+        if provenance["composition"] in ("synthetic_only", "none"):
+            notes = (
+                "fixture/software evidence only; snapshot is not "
+                "scientific validation of any label"
+            )
+        else:
+            notes = (
+                f"corpus provenance is {provenance['composition'].replace('_', ' ')} "
+                "(per-record evidenceOrigin labels); provenance does not "
+                "imply scientific validation — method validation and "
+                "independent validation are still required"
+            )
         manifest = {
             "purpose": purpose,
             "taskId": str(task_id) if task_id else None,
             "entries": entries,
+            "provenance": provenance,
             "scientificStatus": "not_validated",
-            "notes": "fixture/software evidence only; snapshot is not "
-            "scientific validation of any label",
+            "notes": notes,
         }
         digest = hashlib.sha256(_canon(manifest)).hexdigest()
         snap = DatasetSnapshot(
@@ -345,6 +396,22 @@ class DatasetService:
                 ErrorCode.DATA_RIGHTS_UNKNOWN,
                 "training rights unresolved for included records",
                 safe_details={"recordIds": blocked},
+            )
+        # PAR-05: an included record without established provenance
+        # cannot be frozen into a corpus — manifests built before
+        # provenance existed (no evidenceOrigin field) fail the same
+        # plane and must be rebuilt so every record is labeled.
+        unprovenanced = [
+            e["recordId"]
+            for e in snap.manifest["entries"]
+            if not e["excluded"] and e.get("evidenceOrigin", ORIGIN_UNKNOWN) == ORIGIN_UNKNOWN
+        ]
+        if unprovenanced:
+            raise DomainError(
+                ErrorCode.PROVENANCE_UNKNOWN,
+                "evidence origin unresolved for included records — rebuild "
+                "the snapshot so provenance is derived and labeled",
+                safe_details={"recordIds": unprovenanced},
             )
         snap.state = "frozen"
         snap.frozen_by = self.ctx.principal_id
@@ -437,6 +504,72 @@ class DatasetService:
             "snapshotImmutable": True,
         }
 
+    def provenance_violations(
+        self, snapshot_id: uuid.UUID
+    ) -> dict[str, dict[str, Any]]:
+        """Re-derive every *included* record's evidence origin against
+        live source rows (PAR-05 — the same plane as AT-0601-2's
+        live-rights re-check). A record is a violation when its current
+        origin is ``unknown`` or it no longer matches what the frozen
+        manifest recorded. Entries without a recorded origin (manifests
+        built before provenance existed) are checked against the live
+        derivation only — ``unknown`` still fails."""
+        snap = self._get(snapshot_id)
+        violations: dict[str, dict[str, Any]] = {}
+        for entry in snap.manifest.get("entries", []):
+            if entry.get("excluded"):
+                continue
+            rid_str = str(entry["recordId"])
+            try:
+                rid = uuid.UUID(rid_str)
+            except ValueError:
+                violations[rid_str] = {
+                    "recorded": entry.get("evidenceOrigin"),
+                    "current": "missing",
+                }
+                continue
+            kind = entry.get("recordKind")
+            current: str | None = None
+            if kind == "measurement":
+                m = self.db.get(Measurement, rid)
+                if m is None:
+                    current = "missing"
+                else:
+                    sample = self.db.get(LabSample, m.sample_id)
+                    batch = self.db.get(LabBatch, sample.batch_id) if sample else None
+                    execution = (
+                        self.db.get(LabExecution, batch.execution_id) if batch else None
+                    )
+                    plan = (
+                        self.db.get(ExperimentPlan, execution.plan_id)
+                        if execution is not None and execution.plan_id
+                        else None
+                    )
+                    current = measurement_origin(
+                        m, sample=sample, batch=batch, execution=execution, plan=plan
+                    )["origin"]
+            elif kind == "claim":
+                c = self.db.get(EvidenceClaim, rid)
+                if c is None:
+                    current = "missing"
+                else:
+                    current = claim_origin(
+                        c, source_resolvable=claim_source_resolvable(self.db, c)
+                    )["origin"]
+            elif kind == "session":
+                s = self.db.get(ResearchSession, rid)
+                current = "missing" if s is None else session_origin(s)["origin"]
+            else:
+                current = ORIGIN_UNKNOWN
+            recorded = entry.get("evidenceOrigin")
+            # ``recorded`` missing means the manifest never established
+            # provenance for the record (pre-PAR-05 manifest) — the
+            # label is unverifiable, so it fails the plane alongside a
+            # genuinely unknown or drifted origin.
+            if current != recorded or current in ("missing", ORIGIN_UNKNOWN):
+                violations[rid_str] = {"recorded": recorded, "current": current}
+        return violations
+
     def prepare_run(self, snapshot_id: uuid.UUID) -> dict[str, Any]:
         """AT-0601-3: a run may only prepare against a frozen, un-drifted
         snapshot. Drift is reported; the signed manifest is never
@@ -454,6 +587,16 @@ class DatasetService:
                 "digest": snap.digest,
                 "changed": drift["changed"],
                 "missing": drift["missing"],
+            }
+        violations = self.provenance_violations(snapshot_id)
+        if violations:
+            return {
+                "ok": False,
+                "reason": "provenance_unresolved",
+                "snapshotId": str(snap.id),
+                "digest": snap.digest,
+                "recordIds": sorted(violations),
+                "violations": violations,
             }
         return {
             "ok": True,

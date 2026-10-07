@@ -28,7 +28,11 @@ from studio.persistence.models import (
 
 pytestmark = pytest.mark.integration
 
-TARGET = {"name": "metric.x", "method": "fixture-method", "unit": "dimensionless"}
+# PAR-05: the method name itself is a provenance marker — a
+# "fixture-*" method derives synthetic_fixture and is excluded from
+# readiness as fixture evidence; these records model real measured
+# outcomes (historical_report via the historical execution flag).
+TARGET = {"name": "metric.x", "method": "assay-method", "unit": "dimensionless"}
 
 
 def _principal(session: Session, ws: Workspace, role: str, login: str) -> Principal:
@@ -74,7 +78,7 @@ def _measurement(
     task: ResearchTask,
     *,
     metric: str = "metric.x",
-    method: str = "fixture-method",
+    method: str = "assay-method",
     unit: str = "dimensionless",
     value: str = "5",
     execution: LabExecution | None = None,
