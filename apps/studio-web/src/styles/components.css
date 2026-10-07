@@ -28,6 +28,7 @@
   background: var(--surface-raised);
 }
 .cs-shell__brand { font-weight: 700; color: var(--text); text-decoration: none; }
+.cs-shell__session { margin-left: auto; font-size: 0.85rem; color: var(--text-muted); }
 .cs-shell__header nav {
   display: flex;
   gap: var(--space-2);

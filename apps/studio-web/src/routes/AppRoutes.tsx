@@ -17,6 +17,11 @@ import {
   ForbiddenState,
   LoadingState,
 } from "../components";
+import {
+  FirstRunScreen,
+  SignInScreen,
+} from "../features/auth/AuthScreens";
+import { InlineFinding } from "../components/molecules/InlineFinding";
 import { EvidencePanel } from "../features/evidence/EvidencePanel";
 import { QualityPanel } from "../features/evidence/quality/QualityPanel";
 import { ComputePanel } from "../features/compute/ComputePanel";
@@ -31,25 +36,21 @@ import {
   ProjectListQuery,
   ProjectTasksQuery,
 } from "../features/tasks/operations";
-import { getRelayEnvironment } from "../relay/environment";
-import { fetchSetupNeeded } from "../relay/network";
+import { ProjectCreateForm } from "../features/tasks/ProjectCreateForm";
+import {
+  getRelayEnvironment,
+  resetRelayEnvironment,
+} from "../relay/environment";
+import {
+  authSignOut,
+  fetchSetupNeeded,
+  probeViewer,
+} from "../relay/network";
 import { writeTheme } from "../theme";
 import { DevComponents } from "./DevComponents";
-import { graphql } from "react-relay";
 
 import type { tasksProjectListQuery } from "../__generated__/tasksProjectListQuery.graphql";
 import type { tasksProjectTasksQuery } from "../__generated__/tasksProjectTasksQuery.graphql";
-import type { AppViewerQuery as AppViewerQueryType } from "../__generated__/AppViewerQuery.graphql";
-
-const ViewerQuery = graphql`
-  query AppViewerQuery {
-    viewer {
-      id
-      displayName
-      kind
-    }
-  }
-`;
 
 type QueryFailureKind = "auth" | "forbidden" | "not_found" | "unknown";
 
@@ -116,7 +117,10 @@ class QueryBoundary extends Component<
     if (error == null) return this.props.children;
     const kind = classifyQueryError(error);
     if (kind === "auth") {
-      return <ErrorState title="Not signed in" detail="Sign in to continue." />;
+      // UNAUTHENTICATED mid-session: the sign-in surface replaces the
+      // page. The URL is preserved, so a successful sign-in reload
+      // returns to the intended destination (PAR-06).
+      return <SignInScreen expired />;
     }
     if (kind === "forbidden") return <ForbiddenState />;
     return <ErrorState detail={queryErrorDetail(error)} />;
@@ -139,9 +143,7 @@ class FallbackQueryBoundary extends Component<
     if (error == null) return this.props.children;
     switch (classifyQueryError(error)) {
       case "auth":
-        return (
-          <ErrorState title="Not signed in" detail="Sign in to continue." />
-        );
+        return <SignInScreen expired />;
       case "forbidden":
         return <ForbiddenState />;
       case "not_found":
@@ -188,7 +190,47 @@ function ThemeToggle() {
   );
 }
 
-function AppShell({ children }: { children: ReactNode }) {
+/** Sign-out ends the server session, drops the identity-scoped Relay
+ * store (§8.2 resetRelayEnvironment) and hard-reloads to the signed-out
+ * route — the reload is the authoritative invalidation, the reset
+ * covers the gap before it lands (PAR-06). */
+function SignOutControl() {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <>
+      <button
+        type="button"
+        className="cs-btn cs-btn--ghost"
+        disabled={pending}
+        onClick={() => {
+          setPending(true);
+          setError(null);
+          void authSignOut().then((res) => {
+            if (res.ok) {
+              resetRelayEnvironment();
+              window.location.assign("/");
+              return;
+            }
+            setPending(false);
+            setError(res.message);
+          });
+        }}
+      >
+        {pending ? "signing out…" : "Sign out"}
+      </button>
+      {error && <InlineFinding severity="error" message={error} />}
+    </>
+  );
+}
+
+function AppShell({
+  displayName,
+  children,
+}: {
+  displayName: string;
+  children: ReactNode;
+}) {
   return (
     <div className="cs-shell">
       <a className="cs-skip-link" href="#main">
@@ -205,6 +247,10 @@ function AppShell({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
+        <span className="cs-shell__session">
+          Signed in as {displayName}
+        </span>
+        <SignOutControl />
         <ThemeToggle />
       </header>
       <main id="main" tabIndex={-1}>
@@ -215,13 +261,21 @@ function AppShell({ children }: { children: ReactNode }) {
 }
 
 function ProjectsPage() {
-  const data = useLazyLoadQuery<tasksProjectListQuery>(ProjectListQuery, {});
+  // store-and-network: re-reads the server list on every mount (a
+  // project created moments ago is shown without a manual reload)
+  // while replaying the cache instantly — never re-suspends once data
+  // exists, so no StrictMode refetch loop on vite dev (PAR-06, #27).
+  const data = useLazyLoadQuery<tasksProjectListQuery>(
+    ProjectListQuery,
+    {},
+    { fetchPolicy: "store-and-network" },
+  );
   const projects = data.projects.edges.map((e) => e.node);
   return (
     <div>
       <h1>Projects</h1>
       {projects.length === 0 ? (
-        <EmptyState title="No projects yet." />
+        <EmptyState title="No projects yet — create one below." />
       ) : (
         <ul>
           {projects.map((p) => (
@@ -232,6 +286,8 @@ function ProjectsPage() {
           ))}
         </ul>
       )}
+      <h2>new project</h2>
+      <ProjectCreateForm />
     </div>
   );
 }
@@ -357,16 +413,10 @@ function ShellContent() {
   );
 }
 
-function ViewerStatus() {
-  const data = useLazyLoadQuery<AppViewerQueryType>(ViewerQuery, {});
-  return <p>Signed in as {data.viewer.displayName}.</p>;
-}
-
 function HomePage() {
   return (
     <div>
       <h1>Chemistry Studio</h1>
-      <ViewerStatus />
       <p>
         <Link to="/projects">Open projects</Link>
       </p>
@@ -374,9 +424,14 @@ function HomePage() {
   );
 }
 
+/** Entry gate (PAR-06): setup → first-run owner bootstrap; no session
+ * → sign-in; session → the app. Identity is probed via the GraphQL
+ * viewer query so the shell never mounts for a signed-out user. */
 type SetupState =
   | { kind: "loading" }
-  | { kind: "ready"; setupNeeded: boolean }
+  | { kind: "setup" }
+  | { kind: "signed_out" }
+  | { kind: "signed_in"; displayName: string }
   | { kind: "error"; message: string };
 
 export function AppRoutes() {
@@ -384,8 +439,22 @@ export function AppRoutes() {
   useEffect(() => {
     let cancelled = false;
     fetchSetupNeeded()
-      .then((setupNeeded) => {
-        if (!cancelled) setState({ kind: "ready", setupNeeded });
+      .then(async (setupNeeded) => {
+        if (setupNeeded) return { kind: "setup" } as SetupState;
+        const viewer = await probeViewer();
+        if (viewer.kind === "signed_in") {
+          return {
+            kind: "signed_in",
+            displayName: viewer.displayName,
+          } as SetupState;
+        }
+        if (viewer.kind === "signed_out") {
+          return { kind: "signed_out" } as SetupState;
+        }
+        return { kind: "error", message: viewer.message } as SetupState;
+      })
+      .then((next) => {
+        if (!cancelled) setState(next);
       })
       .catch((err: unknown) => {
         if (!cancelled) {
@@ -415,11 +484,13 @@ export function AppRoutes() {
                 title="Backend unreachable"
                 detail={state.message}
               />
-            ) : state.setupNeeded ? (
-              <EmptyState title="Workspace setup required — an owner account must be created." />
+            ) : state.kind === "setup" ? (
+              <FirstRunScreen />
+            ) : state.kind === "signed_out" ? (
+              <SignInScreen />
             ) : (
               <RelayEnvironmentProvider environment={getRelayEnvironment()}>
-                <AppShell>
+                <AppShell displayName={state.displayName}>
                   <ShellContent />
                 </AppShell>
               </RelayEnvironmentProvider>

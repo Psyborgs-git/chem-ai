@@ -15,6 +15,23 @@ export const ProjectListQuery = graphql`
   }
 `;
 
+export const ProjectCreateMutation = graphql`
+  mutation tasksProjectCreateMutation($input: ProjectCreateInput!) {
+    projectCreate(input: $input) {
+      project {
+        id
+        slug
+        name
+      }
+      errors {
+        code
+        message
+        fieldPath
+      }
+    }
+  }
+`;
+
 export const ProjectTasksQuery = graphql`
   query tasksProjectTasksQuery($projectId: ID!) {
     projectTasks(projectId: $projectId, first: 50) {
