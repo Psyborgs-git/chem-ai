@@ -18,6 +18,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from studio.auth.context import ServiceContext
+from studio.domain.tasks.contract import resolve_metrics
 from studio.domain.tasks.evaluation import TaskEvaluationService
 from studio.domain.tasks.service import unresolved_inputs
 from studio.errors import not_found
@@ -158,12 +159,8 @@ class TaskReportService:
                 "id": str(contract.id),
                 "revision": contract.revision,
                 "status": contract.status,
-                "metricCount": len((contract.payload or {}).get("metrics", [])),
-                "gateCount": len(
-                    (contract.payload or {}).get("hard_constraints", [])
-                    or (contract.payload or {}).get("hardConstraints", [])
-                    or []
-                ),
+                "metricCount": len(resolve_metrics(contract.payload or {}).metrics),
+                "gateCount": len(resolve_metrics(contract.payload or {}).gates),
             }
             if contract is not None
             else None,

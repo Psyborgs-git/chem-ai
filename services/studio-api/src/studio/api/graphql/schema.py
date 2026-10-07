@@ -208,6 +208,18 @@ class DecisionConnection:
 
 
 @strawberry.type
+class ContractEdge:
+    cursor: str
+    node: ContractRevision
+
+
+@strawberry.type
+class ContractConnection:
+    edges: list[ContractEdge]
+    page_info: PageInfo
+
+
+@strawberry.type
 class ResearchSessionEdge:
     cursor: str
     node: ResearchSession
@@ -1013,6 +1025,48 @@ class Query:
             for r, c in zip(rows, cursors, strict=True)
         ]
         return DecisionConnection(edges=edges, page_info=info_page)
+
+    @strawberry.field
+    def task_contract_revisions(
+        self,
+        info: strawberry.Info,
+        task_id: relay.GlobalID,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+    ) -> ContractConnection:
+        """Contract revision history for a task (PAR-01): the editor
+        hydrates drafts/frozen revisions and renders history from this
+        feed; every revision keeps its stored payload + content hash."""
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        ctx.require(CAP_READ_PROJECT)
+        reject_backward(before, last)
+        t_uuid = _gid_uuid(task_id, "Task", "taskId")
+        sig = scope_signature(
+            "task_contract_revisions", ctx.workspace_id, str(t_uuid), "created_at|id"
+        )
+        args = page_args(first, after, kind="task_contract_revisions", sig=sig)
+        stmt = select(ContractRow).where(
+            ContractRow.workspace_id == ctx.workspace_id,
+            ContractRow.task_id == t_uuid,
+        )
+        rows: list[ContractRow]
+        rows, cursors, info_page = keyset_page(
+            gql.db,
+            stmt,
+            ContractRow.created_at,
+            ContractRow.id,
+            args,
+            kind="task_contract_revisions",
+            sig=sig,
+        )
+        edges = [
+            ContractEdge(cursor=c, node=ContractRevision.from_row(r))
+            for r, c in zip(rows, cursors, strict=True)
+        ]
+        return ContractConnection(edges=edges, page_info=info_page)
 
     @strawberry.field
     def task_candidate_revisions(

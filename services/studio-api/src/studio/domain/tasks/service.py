@@ -26,6 +26,10 @@ from sqlalchemy.orm import Session
 from studio.application.idempotency import request_digest
 from studio.audit.log import record as audit_record
 from studio.auth.context import ServiceContext
+from studio.domain.tasks.contract import (
+    validate_draft_payload,
+    validate_freeze_payload,
+)
 from studio.errors import DomainError, ErrorCode, forbidden, not_found, revision_conflict
 from studio.events.outbox import publish
 from studio.persistence.models import (
@@ -384,7 +388,13 @@ class TaskService:
         self, *, task_id: uuid.UUID, payload: dict[str, Any]
     ) -> SuccessContractRevision:
         """New contract draft (rev = max+1). Thresholds live in the
-        payload; unresolved fields stay unresolved."""
+        payload; unresolved fields stay unresolved.
+
+        The canonical contract schema is validated before anything is
+        written (PAR-01): malformed vocabulary is rejected, but a draft
+        may carry explicit unknown top-level fields for review —
+        nothing missing is ever filled with a scientific default."""
+        validate_draft_payload(payload)
         # Lock the task row: concurrent draft/freezes must serialize so
         # revision = max+1 cannot race the (task_id, revision) unique
         # constraint into a bare IntegrityError (CS-1201).
@@ -439,6 +449,12 @@ class TaskService:
                 f"only a draft revision can be frozen (status is '{rev.status}')",
                 field_path="input.revisionId",
             )
+        # Freeze is the action that binds the contract for evaluation:
+        # require the payload to be fully canonical — every resolved
+        # metric identified and bound, no declared unknowns, no unknown
+        # top-level fields. Anything short stays a draft for review
+        # instead of silently freezing (PAR-01).
+        validate_freeze_payload(rev.payload)
         prior = self.db.execute(
             select(SuccessContractRevision).where(
                 SuccessContractRevision.task_id == task.id,

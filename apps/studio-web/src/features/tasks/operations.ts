@@ -71,6 +71,23 @@ export const TaskCreateMutation = graphql`
   }
 `;
 
+export const ContractRevisionsQuery = graphql`
+  query tasksContractRevisionsQuery($taskId: ID!) {
+    taskContractRevisions(taskId: $taskId, first: 50) {
+      edges {
+        node {
+          id
+          revision
+          status
+          contentHash
+          createdAt
+          payload
+        }
+      }
+    }
+  }
+`;
+
 export const ContractDraftMutation = graphql`
   mutation tasksContractDraftMutation($input: ContractDraftCreateInput!) {
     contractDraftCreate(input: $input) {
@@ -78,6 +95,7 @@ export const ContractDraftMutation = graphql`
         id
         revision
         status
+        payload
       }
       errors {
         code
