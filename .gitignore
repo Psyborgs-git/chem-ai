@@ -22,7 +22,9 @@ apps/studio-web/src/__generated__/
 # Pack validation env (isolated, throwaway)
 docs/chemistry-studio/.venv-validation/
 
-# playwright artifacts
+# playwright artifacts (roots pinned in tests/e2e/playwright.config.ts)
+test-results/
+playwright-report/
 tests/e2e/test-results/
 tests/e2e/playwright-report/
 apps/studio-web/test-results/

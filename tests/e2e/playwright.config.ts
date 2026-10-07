@@ -8,6 +8,10 @@ export default defineConfig({
   timeout: 60_000,
   retries: 0,
   workers: 1,
+  // deterministic artifact roots for CI collection (relative to this
+  // config file's dir → repo root)
+  reporter: [["list"], ["html", { outputFolder: "../../playwright-report", open: "never" }]],
+  outputDir: "../../test-results",
   use: {
     baseURL: "http://127.0.0.1:4173",
   },
