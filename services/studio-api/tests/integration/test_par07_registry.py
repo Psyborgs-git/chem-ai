@@ -315,6 +315,67 @@ class TestFormulationsMutation:
         acc = rej["data"]["formulations"]["revisionAccept"]
         assert acc["errors"] and acc["errors"][0]["code"] == "VALIDATION"
 
+    def test_fraction_range_check_uses_canonical_value(
+        self, db_url: str, session: Session
+    ) -> None:
+        """mass_percent amounts are canonically [0,1] fractions — a valid
+        70% recipe must not flag; a genuinely out-of-range 1.5 must."""
+        client = _client(db_url)
+        _setup_owner(client)
+        ok = self._family(client, "valid percent")
+        good = _gql(
+            client,
+            'mutation($f: ID!, $p: JSON!) { formulations { revisionDraft(input: {familyId: $f, '
+            'payload: $p}) { revision { payload } errors { message } } } }',
+            {
+                "f": ok,
+                "p": {
+                    "ingredients": [
+                        {
+                            "name": "water",
+                            "amount": {
+                                "value": "70",
+                                "unit": "mass_percent",
+                                "basis": "as_supplied",
+                            },
+                        }
+                    ]
+                },
+            },
+        )
+        findings = good["data"]["formulations"]["revisionDraft"]["revision"]["payload"][
+            "validationFindings"
+        ]
+        assert not any(f["kind"] == "fraction_out_of_range" for f in findings), findings
+
+        bad = self._family(client, "bad percent")
+        over = _gql(
+            client,
+            'mutation($f: ID!, $p: JSON!) { formulations { revisionDraft(input: {familyId: $f, '
+            'payload: $p}) { revision { payload } errors { message } } } }',
+            {
+                "f": bad,
+                "p": {
+                    "ingredients": [
+                        {
+                            "name": "water",
+                            "amount": {
+                                "value": "150",
+                                "unit": "mass_percent",
+                                "basis": "as_supplied",
+                            },
+                        }
+                    ]
+                },
+            },
+        )
+        findings = over["data"]["formulations"]["revisionDraft"]["revision"]["payload"][
+            "validationFindings"
+        ]
+        flagged = [f for f in findings if f["kind"] == "fraction_out_of_range"]
+        assert len(flagged) == 1
+        assert "1.5" in flagged[0]["detail"]
+
     def test_parent_must_share_family(self, db_url: str, session: Session) -> None:
         client = _client(db_url)
         _setup_owner(client)

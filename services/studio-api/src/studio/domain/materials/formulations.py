@@ -414,13 +414,18 @@ class FormulationService:
                     }
                 )
                 continue
-            if q.dimension == "mass_fraction" and not (0 <= q.value <= 1):
-                findings.append(
-                    {
-                        "kind": "fraction_out_of_range",
-                        "detail": f"ingredient {i} mass fraction {q.value} outside [0,1]",
-                    }
-                )
+            if q.dimension == "mass_fraction":
+                # compare the canonical fraction — mass_percent 70 is
+                # 0.70 canonically, not out-of-range 70
+                frac = q.convert("mass_fraction").value
+                if not (0 <= frac <= 1):
+                    findings.append(
+                        {
+                            "kind": "fraction_out_of_range",
+                            "detail": f"ingredient {i} mass fraction {frac} "
+                            f"(entered {q.value} {q.unit}) outside [0,1]",
+                        }
+                    )
         try:
             amounts = self._amounts(payload)
             if amounts and payload.get("declaredTotal") is not None:
