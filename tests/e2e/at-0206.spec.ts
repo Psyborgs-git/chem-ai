@@ -62,11 +62,64 @@ async function makeTask(token: string, projectId: string): Promise<string> {
   return r.data.taskCreate.task.id;
 }
 
+/** Fixture seeding only (bootstrap): an accepted baseline revision +
+ * a registered reference product the pickers can resolve by name.
+ * The UI actions under test remain the task-create picks themselves. */
+async function makeBaselineRevision(token: string): Promise<void> {
+  const fam = await gql(
+    token,
+    `mutation { formulations { familyCreate(input: {name: "at-0206 base"}) {
+       family { id } errors { message } } } }`,
+  );
+  const famId = fam.data.formulations.familyCreate.family.id;
+  const draft = await gql(
+    token,
+    `mutation ($f: ID!, $p: JSON!) { formulations { revisionDraft(input: {
+       familyId: $f, payload: $p}) { revision { id } errors { message } } } }`,
+    {
+      f: famId,
+      p: {
+        ingredients: [
+          {
+            name: "water",
+            amount: { value: "1", unit: "mass_fraction", basis: "as_supplied" },
+            role: "solvent",
+          },
+        ],
+        amountBasis: "mass_fraction",
+        declaredTotal: "1",
+        tolerance: "0.01",
+        completeness: "complete",
+      },
+    },
+  );
+  const revId = draft.data.formulations.revisionDraft.revision.id;
+  const acc = await gql(
+    token,
+    `mutation ($r: ID!) { formulations { revisionAccept(input: {revisionId: $r}) {
+       revision { status } errors { message } } } }`,
+    { r: revId },
+  );
+  expect(acc.data.formulations.revisionAccept.errors).toEqual([]);
+}
+
+async function makeReferenceProduct(token: string): Promise<void> {
+  const r = await gql(
+    token,
+    `mutation { materials { referenceProductCreate(input: {name: "at-0206 ref",
+       supplier: "fixture supplier", compositionKnowledge: "partial"}) {
+       product { id } errors { message } } } }`,
+  );
+  expect(r.data.materials.referenceProductCreate.errors).toEqual([]);
+}
+
 /** AT-0206-1 — a new user creates one task in each mode; each
  * persists with its mode-appropriate fields. */
 test("create one task per mode (AT-0206-1)", async ({ page, context }) => {
   const token = await signIn(context);
   const projectId = await makeProject(token);
+  await makeBaselineRevision(token);
+  await makeReferenceProduct(token);
 
   await page.goto("/projects");
   await page.getByRole("link", { name: "E2E Project" }).click();
@@ -75,9 +128,15 @@ test("create one task per mode (AT-0206-1)", async ({ page, context }) => {
     {
       mode: "improve",
       fill: async () => {
+        // baseline is picked by name through the searchable picker —
+        // raw uuid inputs are gone (PAR-07)
         await page
-          .getByLabel("baseline formulation revision id")
-          .fill("00000000-0000-0000-0000-000000000001");
+          .getByRole("combobox", { name: "baseline formulation revision" })
+          .fill("at-0206 base");
+        await page
+          .getByRole("listbox")
+          .getByRole("button", { name: /at-0206 base/ })
+          .click();
         await page.getByLabel("variation scope").fill("solvent system");
       },
     },
@@ -86,8 +145,12 @@ test("create one task per mode (AT-0206-1)", async ({ page, context }) => {
       fill: async () => {
         await page.locator("#mode").selectOption("match_reference");
         await page
-          .getByLabel("reference product id")
-          .fill("00000000-0000-0000-0000-0000000000ab");
+          .getByRole("combobox", { name: "reference product" })
+          .fill("at-0206 ref");
+        await page
+          .getByRole("listbox")
+          .getByRole("button", { name: /at-0206 ref/ })
+          .click();
         await page.locator("#match-scope").selectOption("functional_and_analytical");
       },
     },
@@ -190,14 +253,14 @@ test("candidate revision history shows distinct canonical IDs (AT-0206-3)", asyn
     .locator(".cs-candidate__id")
     .allTextContents();
   expect(new Set(ids).size).toBe(2); // distinct canonical IDs
-  await expect(page.getByText("rev 1")).toBeVisible();
-  await expect(page.getByText("rev 2")).toBeVisible();
-  await expect(page.getByText(/child of/)).toBeVisible();
+  await expect(rows.getByText("rev 1", { exact: true })).toBeVisible();
+  await expect(rows.getByText("rev 2", { exact: true })).toBeVisible();
+  await expect(rows.getByText(/child of/)).toBeVisible();
 
   // open the newer revision's content — parent revision is linked
   await rows.nth(1).getByRole("button", { name: "view content" }).click();
-  await expect(page.getByRole("group", { name: "revision comparison" }))
-    .toBeVisible();
-  await expect(page.getByText("replace")).toBeVisible();
-  await expect(page.getByText("reduce")).toBeVisible();
+  const comparison = page.getByRole("group", { name: "revision comparison" });
+  await expect(comparison).toBeVisible();
+  await expect(comparison.getByText("replace")).toBeVisible();
+  await expect(comparison.getByText("reduce")).toBeVisible();
 });

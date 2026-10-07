@@ -551,6 +551,87 @@ type FallbackResult {
   clientMutationId: String
 }
 
+type FormulationFamily implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  name: String!
+  description: String
+  createdAt: DateTime!
+}
+
+type FormulationFamilyConnection {
+  edges: [FormulationFamilyEdge!]!
+  pageInfo: PageInfo!
+}
+
+input FormulationFamilyCreateInput {
+  name: String!
+  description: String = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type FormulationFamilyEdge {
+  cursor: String!
+  node: FormulationFamily!
+}
+
+type FormulationFamilyResult {
+  family: FormulationFamily
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type FormulationRevision implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  familyId: String!
+  revision: Int!
+  status: String!
+  payload: JSON!
+  parentRevisionId: String
+  contentHash: String!
+  createdAt: DateTime!
+  familyName: String
+}
+
+type FormulationRevisionConnection {
+  edges: [FormulationRevisionEdge!]!
+  pageInfo: PageInfo!
+}
+
+input FormulationRevisionDraftInput {
+  familyId: ID!
+  payload: JSON!
+  parentRevisionId: ID = null
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type FormulationRevisionEdge {
+  cursor: String!
+  node: FormulationRevision!
+}
+
+input FormulationRevisionIdInput {
+  revisionId: ID!
+  clientMutationId: String = null
+}
+
+type FormulationRevisionResult {
+  revision: FormulationRevision
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type FormulationsMutation {
+  familyCreate(input: FormulationFamilyCreateInput!): FormulationFamilyResult!
+  revisionDraft(input: FormulationRevisionDraftInput!): FormulationRevisionResult!
+  revisionAccept(input: FormulationRevisionIdInput!): FormulationRevisionResult!
+  processDraft(input: ProcessRevisionDraftInput!): ProcessRevisionResult!
+  processAccept(input: ProcessRevisionIdInput!): ProcessRevisionResult!
+}
+
 type HardwareCapabilities {
   os: String!
   arch: String!
@@ -703,6 +784,11 @@ type MaterialGrade implements Node {
   createdAt: DateTime!
 }
 
+type MaterialGradeConnection {
+  edges: [MaterialGradeEdge!]!
+  pageInfo: PageInfo!
+}
+
 input MaterialGradeCreateInput {
   materialId: ID!
   supplier: String!
@@ -711,6 +797,11 @@ input MaterialGradeCreateInput {
   specifications: JSON = null
   idempotencyKey: String = null
   clientMutationId: String = null
+}
+
+type MaterialGradeEdge {
+  cursor: String!
+  node: MaterialGrade!
 }
 
 input MaterialGradeReconcileInput {
@@ -738,6 +829,11 @@ type MaterialIdentity implements Node {
   createdAt: DateTime!
 }
 
+type MaterialIdentityConnection {
+  edges: [MaterialIdentityEdge!]!
+  pageInfo: PageInfo!
+}
+
 input MaterialIdentityCreateInput {
   kind: String!
   name: String!
@@ -748,6 +844,11 @@ input MaterialIdentityCreateInput {
   confidentiality: String! = "internal"
   idempotencyKey: String = null
   clientMutationId: String = null
+}
+
+type MaterialIdentityEdge {
+  cursor: String!
+  node: MaterialIdentity!
 }
 
 type MaterialIdentityResult {
@@ -940,6 +1041,7 @@ type Mutation {
   contractDraftCreate(input: ContractDraftCreateInput!): ContractRevisionResult!
   contractFreeze(input: ContractFreezeInput!): ContractRevisionResult!
   materials: MaterialsMutation!
+  formulations: FormulationsMutation!
   candidates: CandidatesMutation!
   imports: ImportsMutation!
   evidence: EvidenceMutation!
@@ -1047,6 +1149,45 @@ input PlanUpdateInput {
   clientMutationId: String = null
 }
 
+type ProcessRevision implements Node {
+  """The Globally Unique ID of this object"""
+  id: ID!
+  familyId: String!
+  revision: Int!
+  status: String!
+  payload: JSON!
+  contentHash: String!
+  createdAt: DateTime!
+}
+
+type ProcessRevisionConnection {
+  edges: [ProcessRevisionEdge!]!
+  pageInfo: PageInfo!
+}
+
+input ProcessRevisionDraftInput {
+  familyId: ID!
+  payload: JSON!
+  idempotencyKey: String = null
+  clientMutationId: String = null
+}
+
+type ProcessRevisionEdge {
+  cursor: String!
+  node: ProcessRevision!
+}
+
+input ProcessRevisionIdInput {
+  revisionId: ID!
+  clientMutationId: String = null
+}
+
+type ProcessRevisionResult {
+  revision: ProcessRevision
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
 type ProfileCapabilities {
   core: CapabilityStatus!
   localAi: CapabilityStatus!
@@ -1152,6 +1293,13 @@ type Query {
   taskDecisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): DecisionConnection!
   taskContractRevisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ContractConnection!
   taskCandidateRevisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): CandidateConnection!
+  materialIdentities(search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): MaterialIdentityConnection!
+  materialGrades(materialId: ID = null, search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): MaterialGradeConnection!
+  referenceProducts(search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): ReferenceProductConnection!
+  referenceProductRevisions(productId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ReferenceRevisionConnection!
+  formulationFamilies(search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): FormulationFamilyConnection!
+  formulationRevisions(familyId: ID = null, search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): FormulationRevisionConnection!
+  processRevisions(familyId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ProcessRevisionConnection!
   researchTask(id: ID!): Task
   taskSessions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ResearchSessionConnection!
   taskRuns(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): RunConnection!
@@ -1219,6 +1367,11 @@ type ReferenceProduct implements Node {
   createdAt: DateTime!
 }
 
+type ReferenceProductConnection {
+  edges: [ReferenceProductEdge!]!
+  pageInfo: PageInfo!
+}
+
 input ReferenceProductCreateInput {
   name: String!
   supplier: String = null
@@ -1227,6 +1380,11 @@ input ReferenceProductCreateInput {
   aliases: JSON = null
   idempotencyKey: String = null
   clientMutationId: String = null
+}
+
+type ReferenceProductEdge {
+  cursor: String!
+  node: ReferenceProduct!
 }
 
 type ReferenceProductResult {
@@ -1238,10 +1396,17 @@ type ReferenceProductResult {
 type ReferenceProductRevision implements Node {
   """The Globally Unique ID of this object"""
   id: ID!
+  productId: String!
   revision: Int!
   status: String!
+  payload: JSON!
   contentHash: String!
   createdAt: DateTime!
+}
+
+type ReferenceRevisionConnection {
+  edges: [ReferenceRevisionEdge!]!
+  pageInfo: PageInfo!
 }
 
 input ReferenceRevisionDraftInput {
@@ -1249,6 +1414,11 @@ input ReferenceRevisionDraftInput {
   payload: JSON!
   idempotencyKey: String = null
   clientMutationId: String = null
+}
+
+type ReferenceRevisionEdge {
+  cursor: String!
+  node: ReferenceProductRevision!
 }
 
 input ReferenceRevisionFreezeInput {

@@ -50,6 +50,12 @@ from studio.persistence.models import (
     ExtractedRecord as ExtractedRecordRow,
 )
 from studio.persistence.models import (
+    FormulationFamily as FormulationFamilyRow,
+)
+from studio.persistence.models import (
+    FormulationRevision as FormulationRevisionRow,
+)
+from studio.persistence.models import (
     ImportBatch as ImportBatchRow,
 )
 from studio.persistence.models import (
@@ -78,6 +84,9 @@ from studio.persistence.models import (
 )
 from studio.persistence.models import (
     Principal as PrincipalRow,
+)
+from studio.persistence.models import (
+    ProcessRevision as ProcessRevisionRow,
 )
 from studio.persistence.models import (
     Project as ProjectRow,
@@ -814,8 +823,10 @@ class ReferenceProduct(relay.Node):
 @strawberry.type
 class ReferenceProductRevision(relay.Node):
     id: relay.NodeID[str]
+    product_id: str
     revision: int
     status: str
+    payload: JSON
     content_hash: str
     created_at: datetime
 
@@ -823,8 +834,10 @@ class ReferenceProductRevision(relay.Node):
     def from_row(cls, row: RefRevRow) -> Self:
         return cls(
             id=str(row.id),
+            product_id=str(row.product_id),
             revision=row.revision,
             status=row.status,
+            payload=JSON(row.payload),
             content_hash=row.content_hash,
             created_at=row.created_at,
         )
@@ -938,6 +951,224 @@ class CandidateRevision(relay.Node):
     ) -> list[Self | None]:
         ids = list(node_ids)
         rows = _by_ids(info, CandidateRow, ids)
+        return [cls.from_row(rows[nid]) if nid in rows else None for nid in ids]
+
+
+@strawberry.type
+class FormulationFamily(relay.Node):
+    """Formulation lineage (§5): revisions hang off the family; a
+    family name is how operators *find* a formulation — raw uuids
+    never appear in the UI (CS-1201)."""
+
+    id: relay.NodeID[str]
+    name: str
+    description: str | None
+    created_at: datetime
+
+    @classmethod
+    def from_row(cls, row: FormulationFamilyRow) -> Self:
+        return cls(
+            id=str(row.id),
+            name=row.name,
+            description=row.description,
+            created_at=row.created_at,
+        )
+
+    @overload
+    @classmethod
+    def resolve_nodes(
+        cls,
+        *,
+        info: strawberry.Info,
+        node_ids: Iterable[str],
+        required: Literal[True],
+    ) -> AwaitableOrValue[Iterable[Self]]: ...
+
+    @overload
+    @classmethod
+    def resolve_nodes(
+        cls,
+        *,
+        info: strawberry.Info,
+        node_ids: Iterable[str],
+        required: Literal[False] = ...,
+    ) -> AwaitableOrValue[Iterable[Self | None]]: ...
+
+    @overload
+    @classmethod
+    def resolve_nodes(
+        cls, *, info: strawberry.Info, node_ids: Iterable[str], required: bool
+    ) -> AwaitableOrValue[Iterable[Self]] | AwaitableOrValue[Iterable[Self | None]]: ...
+
+    # impl produces both overload shapes; mypy can't express that
+    @classmethod  # type: ignore[misc]
+    def resolve_nodes(
+        cls,
+        *,
+        info: strawberry.Info,
+        node_ids: Iterable[str],
+        required: bool = False,
+    ) -> list[Self | None]:
+        ids = list(node_ids)
+        rows = _by_ids(info, FormulationFamilyRow, ids)
+        return [cls.from_row(rows[nid]) if nid in rows else None for nid in ids]
+
+
+@strawberry.type
+class FormulationRevision(relay.Node):
+    """Versioned formulation content (§5, §6.2): the payload is the
+    stored revision content verbatim — ingredients, declared total,
+    basis, validation findings — so the UI can render structured
+    diffs between a revision and its parent (AT-0204)."""
+
+    id: relay.NodeID[str]
+    family_id: str
+    revision: int
+    status: str
+    payload: JSON
+    parent_revision_id: str | None
+    content_hash: str
+    created_at: datetime
+    family_name: str | None
+
+    @classmethod
+    def from_row(cls, row: FormulationRevisionRow, *, family_name: str | None = None) -> Self:
+        return cls(
+            id=str(row.id),
+            family_id=str(row.family_id),
+            revision=row.revision,
+            status=row.status,
+            payload=JSON(row.payload),
+            parent_revision_id=(str(row.parent_revision_id) if row.parent_revision_id else None),
+            content_hash=row.content_hash,
+            created_at=row.created_at,
+            family_name=family_name,
+        )
+
+    @overload
+    @classmethod
+    def resolve_nodes(
+        cls,
+        *,
+        info: strawberry.Info,
+        node_ids: Iterable[str],
+        required: Literal[True],
+    ) -> AwaitableOrValue[Iterable[Self]]: ...
+
+    @overload
+    @classmethod
+    def resolve_nodes(
+        cls,
+        *,
+        info: strawberry.Info,
+        node_ids: Iterable[str],
+        required: Literal[False] = ...,
+    ) -> AwaitableOrValue[Iterable[Self | None]]: ...
+
+    @overload
+    @classmethod
+    def resolve_nodes(
+        cls, *, info: strawberry.Info, node_ids: Iterable[str], required: bool
+    ) -> AwaitableOrValue[Iterable[Self]] | AwaitableOrValue[Iterable[Self | None]]: ...
+
+    # impl produces both overload shapes; mypy can't express that
+    @classmethod  # type: ignore[misc]
+    def resolve_nodes(
+        cls,
+        *,
+        info: strawberry.Info,
+        node_ids: Iterable[str],
+        required: bool = False,
+    ) -> list[Self | None]:
+        ids = list(node_ids)
+        rows = _by_ids(info, FormulationRevisionRow, ids)
+        # one batched family-name lookup per page — never per row
+        family_ids = {rows[nid].family_id for nid in ids if nid in rows}
+        names: dict[str, str] = {}
+        if family_ids:
+            gql = gql_ctx(info)
+            ctx = gql.service_ctx()
+            fams = (
+                gql.db.execute(
+                    select(FormulationFamilyRow).where(
+                        FormulationFamilyRow.workspace_id == ctx.workspace_id,
+                        FormulationFamilyRow.id.in_(family_ids),
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            names = {str(f.id): f.name for f in fams}
+        return [
+            cls.from_row(rows[nid], family_name=names.get(str(rows[nid].family_id)))
+            if nid in rows
+            else None
+            for nid in ids
+        ]
+
+
+@strawberry.type
+class ProcessRevision(relay.Node):
+    """Ordered process steps (§5): the payload preserves step order
+    verbatim — steps are never sorted (§6.2, AT-0204-3)."""
+
+    id: relay.NodeID[str]
+    family_id: str
+    revision: int
+    status: str
+    payload: JSON
+    content_hash: str
+    created_at: datetime
+
+    @classmethod
+    def from_row(cls, row: ProcessRevisionRow) -> Self:
+        return cls(
+            id=str(row.id),
+            family_id=str(row.family_id),
+            revision=row.revision,
+            status=row.status,
+            payload=JSON(row.payload),
+            content_hash=row.content_hash,
+            created_at=row.created_at,
+        )
+
+    @overload
+    @classmethod
+    def resolve_nodes(
+        cls,
+        *,
+        info: strawberry.Info,
+        node_ids: Iterable[str],
+        required: Literal[True],
+    ) -> AwaitableOrValue[Iterable[Self]]: ...
+
+    @overload
+    @classmethod
+    def resolve_nodes(
+        cls,
+        *,
+        info: strawberry.Info,
+        node_ids: Iterable[str],
+        required: Literal[False] = ...,
+    ) -> AwaitableOrValue[Iterable[Self | None]]: ...
+
+    @overload
+    @classmethod
+    def resolve_nodes(
+        cls, *, info: strawberry.Info, node_ids: Iterable[str], required: bool
+    ) -> AwaitableOrValue[Iterable[Self]] | AwaitableOrValue[Iterable[Self | None]]: ...
+
+    # impl produces both overload shapes; mypy can't express that
+    @classmethod  # type: ignore[misc]
+    def resolve_nodes(
+        cls,
+        *,
+        info: strawberry.Info,
+        node_ids: Iterable[str],
+        required: bool = False,
+    ) -> list[Self | None]:
+        ids = list(node_ids)
+        rows = _by_ids(info, ProcessRevisionRow, ids)
         return [cls.from_row(rows[nid]) if nid in rows else None for nid in ids]
 
 

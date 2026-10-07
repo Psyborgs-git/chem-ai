@@ -29,6 +29,7 @@ import { FallbackPanel } from "../features/compute/fallback/FallbackPanel";
 import { ImportReview } from "../features/imports/ImportReview";
 import { ExportReviewPanel } from "../features/privacy/export-review/ExportReviewPanel";
 import { LabPage } from "../features/lab/plans/LabPage";
+import { MaterialsPage } from "../features/registry/MaterialsPage";
 import { ModelsPanel } from "../features/learning/models/ModelsPanel";
 import { TaskCreateForm } from "../features/tasks/TaskCreateForm";
 import { TaskWorkspace } from "../features/tasks/TaskWorkspace";
@@ -158,10 +159,11 @@ class FallbackQueryBoundary extends Component<
  * not the app shell. */
 /** Persistent navigation (§22.1): every entry must resolve to a real
  * surface — a nav link that 404s is a defect, not a placeholder
- * (CS-1201). Materials work lives inside task flows and no settings
- * surface exists, so those links were removed rather than stubbed. */
+ * (CS-1201). PAR-07 restored "Materials & Products" now that a real
+ * registry surface exists at /materials. */
 const NAV = [
   { to: "/projects", label: "Projects" },
+  { to: "/materials", label: "Materials & Products" },
   { to: "/imports", label: "Imports" },
   { to: "/evidence", label: "Evidence" },
   { to: "/lab", label: "Lab" },
@@ -386,6 +388,7 @@ function ShellContent() {
             element={<ProjectDetailPage />}
           />
           <Route path="/tasks/:taskId" element={<TaskPage />} />
+          <Route path="/materials" element={<MaterialsPage />} />
           <Route path="/imports" element={<ImportReview />} />
           <Route path="/evidence" element={<EvidencePanel />} />
           <Route

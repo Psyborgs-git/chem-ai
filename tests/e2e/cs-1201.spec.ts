@@ -33,16 +33,29 @@ test.describe("CS-1201 ui gap fixes", () => {
   }) => {
     await signIn(context);
     await page.goto("/models");
-    // Dead nav links are gone: neither materials nor settings are
-    // offered as primary destinations.
+    // Dead nav links stay gone: settings is still not a primary
+    // destination. Materials & Products was restored by PAR-07 — now
+    // backed by a real /materials registry surface, so it must be
+    // present AND land on the registry, not a 404.
     const nav = page.getByRole("navigation", { name: "primary" });
-    await expect(nav.getByRole("link", { name: "Materials & Products" })).toHaveCount(0);
     await expect(nav.getByRole("link", { name: "Settings" })).toHaveCount(0);
+    const materialsLink = nav.getByRole("link", {
+      name: "Materials & Products",
+    });
+    await expect(materialsLink).toHaveCount(1);
     // /models mounts the real CS-0802 registry panel, not a 404.
     await expect(page.getByText("Page not found.")).toHaveCount(0);
     await expect(page.getByRole("article", { name: "serving pointer" })).toBeVisible();
     await expect(page.getByRole("button", { name: "register release" })).toBeVisible();
     await expect(page.getByText("session pins")).toBeVisible();
+
+    // the restored link is live — /materials renders the registry
+    await materialsLink.click();
+    await expect(page).toHaveURL(/\/materials/);
+    await expect(
+      page.getByRole("heading", { name: "Materials & Products" }),
+    ).toBeVisible();
+    await expect(page.getByText("Page not found.")).toHaveCount(0);
   });
 
   test("/compute/fallback/<bad-id> shows not-found, never signed-out", async ({

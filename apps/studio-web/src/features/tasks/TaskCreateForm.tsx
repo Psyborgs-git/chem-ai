@@ -5,6 +5,10 @@ import { useNavigate } from "react-router";
 import { Button } from "../../components/atoms/Button";
 import { TextField } from "../../components/atoms/TextField";
 import { InlineFinding } from "../../components/molecules/InlineFinding";
+import {
+  FormulationRevisionPicker,
+  ReferenceProductPicker,
+} from "../registry/pickers";
 import { TaskCreateMutation } from "./operations";
 
 import type { tasksTaskCreateMutation } from "../../__generated__/tasksTaskCreateMutation.graphql";
@@ -114,12 +118,11 @@ export function TaskCreateForm({ projectId }: { projectId: string }) {
       {mode === "improve" && (
         <fieldset>
           <legend>baseline</legend>
-          <TextField
-            label="baseline formulation revision id"
-            hint="uuid of the accepted formulation revision to improve;
-              blank stays unresolved"
-            value={baselineRevisionId}
-            onChange={(e) => setBaselineRevisionId(e.target.value)}
+          <FormulationRevisionPicker
+            label="baseline formulation revision"
+            hint="search by family name — leaving it blank keeps the input unresolved"
+            statusFilter="accepted"
+            onPick={(p) => setBaselineRevisionId(p.uuid)}
           />
           <TextField
             label="variation scope"
@@ -133,12 +136,10 @@ export function TaskCreateForm({ projectId }: { projectId: string }) {
       {mode === "match_reference" && (
         <fieldset>
           <legend>reference</legend>
-          <TextField
-            label="reference product id"
-            hint="uuid of the registered reference product; blank stays
-              unresolved"
-            value={referenceProductId}
-            onChange={(e) => setReferenceProductId(e.target.value)}
+          <ReferenceProductPicker
+            label="reference product"
+            hint="search by product name or supplier — blank stays unresolved"
+            onPick={(p) => setReferenceProductId(p.uuid)}
           />
           <div className="cs-field">
             <label htmlFor="match-scope" className="cs-field__label">
