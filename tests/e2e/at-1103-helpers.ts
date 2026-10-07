@@ -56,23 +56,27 @@ type FocusedDescriptor = {
   text: string;
   id: string;
   inTaskNav: boolean;
+  inSubNav: boolean;
   inPrimaryNav: boolean;
   pressed: string | null;
+  current: string | null;
 };
 
 export async function focused(page: Page): Promise<FocusedDescriptor> {
   return page.evaluate(() => {
     const el = document.activeElement as HTMLElement | null;
     if (!el || el === document.body) {
-      return { tag: "body", text: "", id: "", inTaskNav: false, inPrimaryNav: false, pressed: null };
+      return { tag: "body", text: "", id: "", inTaskNav: false, inSubNav: false, inPrimaryNav: false, pressed: null, current: null };
     }
     return {
       tag: el.tagName.toLowerCase(),
       text: (el.textContent ?? "").trim(),
       id: el.id ?? "",
       inTaskNav: !!el.closest('nav[aria-label="task sections"]'),
+      inSubNav: !!el.closest('nav[aria-label="section views"]'),
       inPrimaryNav: !!el.closest('nav[aria-label="primary"]'),
       pressed: el.getAttribute("aria-pressed"),
+      current: el.getAttribute("aria-current"),
     };
   });
 }
@@ -93,7 +97,10 @@ export async function tabUntil(
   throw new Error(`focus never reached target within ${maxTabs} Tab presses`);
 }
 
-export async function seedClosedTask(token: string): Promise<string> {
+export async function seedClosedTask(
+  token: string,
+  opts: { close?: boolean } = {},
+): Promise<string> {
   const proj = await gql(
     token,
     `mutation { projectCreate(input: {slug: "e2e-1103", name: "E2E 1103"}) {
@@ -280,13 +287,17 @@ export async function seedClosedTask(token: string): Promise<string> {
     );
     expect(r.data.taskTransition.errors).toEqual([]);
   }
-  const close = await gql(
-    token,
-    `mutation ($i: TaskCloseInput!) { taskClose(input: $i) {
-       task { id workflowState closureDecision } errors { code message } } }`,
-    { i: { taskId, closureDecision: "supported_success" } },
-  );
-  expect(close.data.taskClose.errors).toEqual([]);
-  expect(close.data.taskClose.task.workflowState).toBe("closed");
+  // PAR-09 seeds an awaiting-review task by passing {close:false};
+  // the default keeps every existing caller's fully closed fixture.
+  if (opts.close !== false) {
+    const close = await gql(
+      token,
+      `mutation ($i: TaskCloseInput!) { taskClose(input: $i) {
+         task { id workflowState closureDecision } errors { code message } } }`,
+      { i: { taskId, closureDecision: "supported_success" } },
+    );
+    expect(close.data.taskClose.errors).toEqual([]);
+    expect(close.data.taskClose.task.workflowState).toBe("closed");
+  }
   return taskId;
 }

@@ -28,7 +28,11 @@ FILES = sorted(
 RULES: list[tuple[str, re.Pattern[str], str]] = [
     (
         "graphql-transport",
-        re.compile(r"fetch\(|/graphql|XMLHttpRequest|graphql-request|useSubscription\s*\("),
+        # `refetch(` is the Relay pagination API, not raw transport —
+        # exclude only that identifier, keep catching `fetch(` callers.
+        re.compile(
+            r"(?<!re)fetch\(|/graphql|XMLHttpRequest|graphql-request|useSubscription\s*\("
+        ),
         "GraphQL transport outside relay/network.ts",
     ),
     (

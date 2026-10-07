@@ -35,8 +35,9 @@ test("review journey: keyboard-only navigation on a 360px viewport (AT-1103-2)",
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/#main$/);
 
-  // keyboard reaches the task-section tabs and shows a real focus ring
-  const tab = await tabUntil(page, (f) => f.inTaskNav && f.tag === "button");
+  // keyboard reaches the task-section nav links (PAR-09: real links
+  // with aria-current, not toggle buttons) and shows a real focus ring
+  const tab = await tabUntil(page, (f) => f.inTaskNav && f.tag === "a");
   expect(tab.text.length).toBeGreaterThan(0);
   const ring = await page.evaluate(() => {
     const s = getComputedStyle(document.activeElement!);
@@ -45,11 +46,20 @@ test("review journey: keyboard-only navigation on a 360px viewport (AT-1103-2)",
   expect(ring.style).not.toBe("none");
   expect(parseFloat(ring.width)).toBeGreaterThanOrEqual(2);
 
-  // the report tab is one keyboard journey away and keyboard-activated
-  await tabUntil(page, (f) => f.inTaskNav && f.text === "report");
+  // the decisions group is one keyboard journey away — its default
+  // view shows the decision log + closure record
+  await tabUntil(page, (f) => f.inTaskNav && f.text === "decisions");
+  await page.keyboard.press("Enter");
+  await expect(page.locator('[data-field="decision-log"]')).toBeVisible();
+  await expect(page.locator('[data-field="decision-closure"]')).toContainText(
+    "supported_success",
+  );
+
+  // the report lives as a subview of decisions — keyboard-activated link
+  await tabUntil(page, (f) => f.inSubNav && f.text === "report");
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-field="task-report"]')).toBeVisible();
-  expect((await focused(page)).pressed).toBe("true");
+  expect((await focused(page)).current).toBe("page");
 
   // the metrics table overflows horizontally inside its scroll wrap —
   // the identity column stays pinned instead of shrinking to nothing
@@ -69,16 +79,9 @@ test("review journey: keyboard-only navigation on a 360px viewport (AT-1103-2)",
   expect(Math.abs(idBox.x - wrapBox.x)).toBeLessThan(4);
   await expect(page.locator('[data-field="report-metrics"] tbody td').first()).not.toBeEmpty();
 
-  // decisions tab: the closure record is reachable and readable
-  await tabUntil(page, (f) => f.inTaskNav && f.text === "decisions");
-  await page.keyboard.press("Enter");
-  await expect(page.locator('[data-field="decision-log"]')).toBeVisible();
-  await expect(page.locator('[data-field="decision-closure"]')).toContainText(
-    "supported_success",
-  );
-
-  // closeout tab: the hard-gate table keeps required conditions visible
-  await tabUntil(page, (f) => f.inTaskNav && f.text === "closeout");
+  // closeout is a subview of decisions: the hard-gate table keeps
+  // required conditions visible
+  await tabUntil(page, (f) => f.inSubNav && f.text === "closeout");
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-field="gates-table"]')).toBeVisible();
   await expect(

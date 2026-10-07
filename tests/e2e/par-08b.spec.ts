@@ -33,7 +33,7 @@ async function seedSession(token: string, taskId: string): Promise<string> {
 
 async function openResearch(page: import("@playwright/test").Page, taskId: string) {
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.getByRole("button", { name: "research" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "research" }).click();
   await page.locator("details summary").first().click();
 }
 

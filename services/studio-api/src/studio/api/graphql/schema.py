@@ -1159,6 +1159,45 @@ class Query:
         return TaskConnection(edges=edges, page_info=info_page)
 
     @strawberry.field
+    def tasks(
+        self,
+        info: strawberry.Info,
+        workflow_state: str | None = None,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+    ) -> TaskConnection:
+        """Workspace-wide task feed (PAR-09): the home surface renders
+        recent tasks and pending-decision (awaiting_review) lanes from
+        this connection — same keyset contract as project_tasks."""
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        ctx.require(CAP_READ_PROJECT)
+        reject_backward(before, last)
+        sig = scope_signature(
+            "tasks", ctx.workspace_id, workflow_state or "*", "created_at|id"
+        )
+        args = page_args(first, after, kind="tasks", sig=sig)
+        stmt = select(TaskRow).where(TaskRow.workspace_id == ctx.workspace_id)
+        if workflow_state is not None:
+            stmt = stmt.where(TaskRow.workflow_state == workflow_state)
+        rows: list[TaskRow]
+        rows, cursors, info_page = keyset_page(
+            gql.db,
+            stmt,
+            TaskRow.created_at,
+            TaskRow.id,
+            args,
+            kind="tasks",
+            sig=sig,
+        )
+        edges = [
+            TaskEdge(cursor=c, node=Task.from_row(r)) for r, c in zip(rows, cursors, strict=True)
+        ]
+        return TaskConnection(edges=edges, page_info=info_page)
+
+    @strawberry.field
     def task_decisions(
         self,
         info: strawberry.Info,

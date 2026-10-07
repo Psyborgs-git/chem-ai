@@ -53,8 +53,8 @@
  * the first-load default (see main.tsx). */
 .cs-theme-toggle { margin-inline-start: auto; }
 
-/* Section tabs (TaskWorkspace): real buttons with aria-pressed —
- * the active tab is marked by text weight + border, not color only. */
+/* Section tabs (TaskWorkspace): real links with aria-current (PAR-09)
+ * — the active tab is marked by text weight + border, not color only. */
 .cs-tab {
   padding: var(--space-1) var(--space-3);
   border: var(--border-width) solid var(--border);
@@ -64,6 +64,7 @@
   font: inherit;
   cursor: pointer;
 }
+a.cs-tab { text-decoration: none; display: inline-block; }
 .cs-tab--active {
   font-weight: 700;
   border-color: var(--accent);
@@ -76,6 +77,26 @@ nav[aria-label="task sections"] {
   overflow-x: auto;
   padding-block-end: var(--space-1);
 }
+nav[aria-label="section views"] {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  overflow-x: auto;
+  padding-block-end: var(--space-2);
+  margin-inline-start: var(--space-3);
+}
+nav[aria-label="section views"] .cs-tab { font-size: 0.9em; }
+
+/* Task context header (PAR-09): persistent objective / contract /
+ * gaps / next-action strip above the group body. */
+.cs-task-context {
+  margin-block: var(--space-2) var(--space-3);
+  padding-block-end: var(--space-2);
+  border-block-end: var(--border-width) solid var(--border);
+}
+.cs-task-context h2 { margin-block: 0 var(--space-1); }
+.cs-task-context p { margin-block: var(--space-1); }
+.cs-pagination { margin-block-start: var(--space-3); }
 
 /* FocusRing atom: wrapper must not disturb layout — the outline
  * lands on the wrapped control via :focus-visible above. */

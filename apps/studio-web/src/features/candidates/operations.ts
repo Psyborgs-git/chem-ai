@@ -2,7 +2,24 @@ import { graphql } from "react-relay";
 
 export const TaskCandidatesQuery = graphql`
   query candidatesTaskCandidatesQuery($taskId: ID!) {
-    taskCandidateRevisions(taskId: $taskId, first: 50) {
+    ...CandidatePanel_list @arguments(taskId: $taskId)
+  }
+`;
+
+/** pageInfo-driven candidate list (PAR-09): the connection paginates
+ * via loadNext; mutations update rows in the normalized store, and
+ * creates refresh the first page with a real network refetch
+ * (CS-1201 semantics preserved — never a cache replay). */
+export const CandidatesListFragment = graphql`
+  fragment CandidatePanel_list on Query
+  @argumentDefinitions(
+    taskId: { type: "ID!" }
+    count: { type: "Int", defaultValue: 20 }
+    cursor: { type: "String" }
+  )
+  @refetchable(queryName: "candidatesPaginationQuery") {
+    taskCandidateRevisions(taskId: $taskId, first: $count, after: $cursor)
+      @connection(key: "CandidatePanel_list_taskCandidateRevisions") {
       edges {
         node {
           id
@@ -15,6 +32,24 @@ export const TaskCandidatesQuery = graphql`
           payload
           parentRevisionId
           createdAt
+        }
+      }
+    }
+  }
+`;
+
+/** Bounded lookup for the CandidateRevisionPicker (not a paginated
+ * list — the picker needs the full accepted set in one shot). */
+export const CandidateRevisionPickerQuery = graphql`
+  query candidatesRevisionPickerQuery($taskId: ID!) {
+    taskCandidateRevisions(taskId: $taskId, first: 50) {
+      edges {
+        node {
+          id
+          revision
+          status
+          entityKind
+          hypothesis
         }
       }
     }
@@ -48,6 +83,7 @@ export const CandidateSubmitMutation = graphql`
         candidate {
           id
           status
+          eligibility
         }
         errors {
           code
@@ -65,6 +101,7 @@ export const CandidateReviewMutation = graphql`
         candidate {
           id
           status
+          eligibility
         }
         errors {
           code

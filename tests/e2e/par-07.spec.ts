@@ -200,7 +200,7 @@ test.describe("PAR-07 materials/formulation/candidate real workflows", () => {
 
     // --- 5. propose a candidate bound to the successor revision ---
     await page.goto(taskUrl);
-    await page.getByRole("button", { name: "candidates" }).click();
+    await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "candidates" }).click();
     const propose = page.locator('form[aria-label="propose candidate"]');
     await propose
       .getByLabel("hypothesis")

@@ -152,7 +152,7 @@ test("new session manifest carries prior rejection + constraints + evidence (AT-
   const taskId = await seedPriorSession(token);
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.getByRole("button", { name: "research" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "research" }).click();
   // the prior session is visible as ended with its own snapshot
   await expect(page.locator("li", { hasText: "ended" }).first()).toBeVisible();
 
@@ -236,7 +236,7 @@ test("stale summary is marked after contract change (AT-0304-2)", async ({
   );
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.getByRole("button", { name: "research" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "research" }).click();
   const summary = page.locator("li", { hasText: "v1 summary" });
   await expect(summary).toContainText("stale");
   await expect(summary).toContainText("derived");
