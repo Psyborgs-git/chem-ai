@@ -23,6 +23,7 @@ from studio.persistence.models import (
     LabBatch,
     LabExecution,
     LabSample,
+    MaterialIdentity,
     Measurement,
     Principal,
     PrincipalCapability,
@@ -155,11 +156,13 @@ def _candidate_with_banned(
         workspace_id=res.workspace_id,
         family_id=fam.id,
         revision=1,
-        status="draft",
+        status="accepted",
         payload={
             "ingredients": [
                 {"materialId": EXCLUDED_MATERIAL, "amount": {"value": "5", "unit": "%"}}
-            ]
+            ],
+            "completeness": "complete",
+            "declaredTotal": "100",
         },
         content_hash="y",
     )
@@ -223,11 +226,63 @@ class TestHardGateNoCompensation:
     ) -> None:
         """Closure is human-only even where the evidence qualifies."""
         res, sr = ctxs
-        agent = _principal(session, session.get(Workspace, res.workspace_id), "agent", "agent", "a")
-        a_ctx = _ctx(session, session.get(Workspace, res.workspace_id), agent)
+        ws = session.get(Workspace, res.workspace_id)
+        agent = _principal(session, ws, "agent", "agent", "a")
+        a_ctx = _ctx(session, ws, agent)
         task = _frozen_task(session, res)
-        _accepted_measurement(session, res, task)
-        # no banned ingredient → gate passes, metrics met
+        m = _accepted_measurement(session, res, task)
+        # a clean, fully-resolved composition: registered water, no
+        # banned solvent → the gate passes; metrics met (PAR-03: an
+        # absence claim needs an applicable candidate representation)
+        water = MaterialIdentity(
+            workspace_id=ws.id,
+            kind="defined_molecule",
+            name="water",
+            identifiers=[],
+            aliases=[],
+            structure_status="none",
+            evidence_status="reviewed",
+        )
+        session.add(water)
+        session.flush()
+        fam = FormulationFamily(workspace_id=res.workspace_id, name="f")
+        session.add(fam)
+        session.flush()
+        frev = FormulationRevision(
+            workspace_id=res.workspace_id,
+            family_id=fam.id,
+            revision=1,
+            status="accepted",
+            payload={
+                "ingredients": [
+                    {"materialId": str(water.id), "amount": {"value": "95", "unit": "%"}}
+                ],
+                "completeness": "complete",
+                "declaredTotal": "100",
+            },
+            content_hash="y",
+        )
+        session.add(frev)
+        session.flush()
+        cand = CandidateRevision(
+            workspace_id=res.workspace_id,
+            task_id=task.id,
+            revision=1,
+            status="accepted_for_research",
+            entity_kind="formulation",
+            entity_revision_id=frev.id,
+            hypothesis="clean candidate",
+            payload={},
+            content_hash="z",
+        )
+        session.add(cand)
+        session.flush()
+        LabMeasurementService(session, sr).record_applicability(
+            m.id,
+            candidate_revision_id=cand.id,
+            applicable=True,
+            rationale="fixture binds the reading to this candidate",
+        )
         report = TaskEvaluationService(session, sr).evaluate(task.id)
         assert report["suggestedDecision"] == "supported_success"
 
