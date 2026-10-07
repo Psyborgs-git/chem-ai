@@ -116,33 +116,41 @@ function ContractEditorInner({
   // editable, a frozen contract opens read-only, and nothing starts
   // blank-fabricated. Re-renders that carry the same head revision
   // (e.g. the mutation's own node write) must not clobber edits.
+  // NOTE: hydration must adjust state DURING render, not in an
+  // effect — a post-commit setState after a `network-only`
+  // useLazyLoadQuery re-suspends the component under StrictMode dev
+  // and Relay's remount forceUpdate re-fetches forever (~300ms loop).
   const headId = latestDraft?.id ?? latest?.id ?? null;
-  useEffect(() => {
+  const [hydratedFor, setHydratedFor] = useState<{
+    task: string;
+    head: string | null;
+  } | null>(null);
+  if (hydratedFor?.task !== taskId || hydratedFor.head !== headId) {
+    setHydratedFor({ task: taskId, head: headId });
     const pendingState = pendingForm.get(taskId);
     if (pendingState) {
       setForm(pendingState);
       setHydratedFrom("unsaved");
       touched.current = true;
       save.markDirty();
-      return;
-    }
-    touched.current = false;
-    if (latestDraft) {
-      setForm(formFromPayload(latestDraft.payload));
-      setHydratedFrom(latestDraft.id);
-      // the stored draft IS persisted — 'saved' is the honest state
-      // (and the freeze gate works on the stored revision)
-      save.markSaved();
-    } else if (latest) {
-      setForm(formFromPayload(latest.payload));
-      setHydratedFrom(latest.id);
-      save.markSaved();
     } else {
-      setForm(emptyForm());
-      setHydratedFrom(null);
+      touched.current = false;
+      if (latestDraft) {
+        setForm(formFromPayload(latestDraft.payload));
+        setHydratedFrom(latestDraft.id);
+        // the stored draft IS persisted — 'saved' is the honest state
+        // (and the freeze gate works on the stored revision)
+        save.markSaved();
+      } else if (latest) {
+        setForm(formFromPayload(latest.payload));
+        setHydratedFrom(latest.id);
+        save.markSaved();
+      } else {
+        setForm(emptyForm());
+        setHydratedFrom(null);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskId, headId]);
+  }
 
   // keep the unsaved store in step while dirty so unmounts (section
   // switches, route changes) never drop input silently (§22.4)
