@@ -81,7 +81,7 @@ typecheck: ## mypy strict + tsc
 contracts-check: ## Validate handoff pack + fixture/schema conformance
 	cd $(PACK) && ../../.venv/bin/python scripts/validate_pack.py \
 	  --report planning/pack-validation-report.json
-	$(PYTEST) tests/unit/test_contracts.py tests/unit/test_design_map.py tests/unit/test_relay_boundaries.py -q
+	$(PYTEST) tests/unit/test_contracts.py tests/unit/test_design_map.py tests/unit/test_relay_boundaries.py tests/unit/test_e2e_server.py -q
 	$(UV) run python infra/ci/export_schema.py --check
 	$(UV) run python infra/ci/check_relay_boundaries.py
 	$(UV) run python packages/contracts/sync_contracts.py --check

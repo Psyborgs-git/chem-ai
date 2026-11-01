@@ -65,6 +65,8 @@ Never use real provider credentials, private notebook content or production scie
 
 `tests/e2e/playwright.config.ts` starts the isolated API on port 8790 and a production preview on 4173. It retains traces/screenshots for failures. `STUDIO_BROWSER_EXECUTABLE_PATH` can select an installed browser executable; otherwise provision Playwright's required browser through the normal toolchain.
 
+The test-only API entry keeps synthetic provider keys in process memory on every platform. It accepts only the loopback `studio_e2e` database and is excluded from application packages. Provider browser journeys verify the real HTTP and consent workflow; they do not establish that a user's macOS Keychain is unlocked or available. Production keeps its existing Keychain requirement.
+
 Exercise direct links, refresh/back, keyboard/focus behavior, loading, forbidden/unavailable state and the meaningful failed mutation. Check mobile width, light/dark theme and reduced motion when layout/animation changes.
 
 For native work, run focused Rust/backend/frontend checks, rebuild, quit any app using the dedicated desktop port, then run `pnpm smoke:desktop`. The smoke intentionally checks owned-process cleanup and separately owned backend reuse. It does not create user research records or qualify public signing/notarization.

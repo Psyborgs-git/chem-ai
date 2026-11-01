@@ -364,7 +364,7 @@ PostgreSQL connection URL shared by API and Alembic.
 
 **Type and constraints:** PostgreSQL URL; treat configured credentials as secrets. Alembic environment overrides the ini URL.
 
-Source: `services/studio-api/migrations/env.py`, `services/studio-api/src/studio/config/settings.py`, `services/studio-api/tests/conftest.py`, `services/studio-api/tests/integration/test_inference_style_migration.py`, `tests/e2e/serve.sh`, `tests/integration/migrations/conftest.py`, `tests/integration/recovery/backup_restore_check.py`, `tests/integration/recovery/no_egress_check.py`, `tests/performance/conftest.py`, `tests/performance/test_cs1103_benchmark.py`.
+Source: `services/studio-api/migrations/env.py`, `services/studio-api/src/studio/config/settings.py`, `services/studio-api/tests/conftest.py`, `services/studio-api/tests/integration/test_inference_style_migration.py`, `tests/e2e/serve.sh`, `tests/e2e/serve_api.py`, `tests/integration/migrations/conftest.py`, `tests/integration/recovery/backup_restore_check.py`, `tests/integration/recovery/no_egress_check.py`, `tests/performance/conftest.py`, `tests/performance/test_cs1103_benchmark.py`, `tests/unit/test_e2e_server.py`.
 
 ### STUDIO_EVENT_MAX_SECONDS
 
