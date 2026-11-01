@@ -5,7 +5,7 @@
       "method": "DELETE",
       "path": "/api/library/folders/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 70,
+      "line": 71,
       "handler": "folder_delete",
       "parameters": [
         {
@@ -35,7 +35,7 @@
       "method": "DELETE",
       "path": "/api/library/memory/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 180,
+      "line": 181,
       "handler": "memory_forget",
       "parameters": [
         {
@@ -57,7 +57,7 @@
       "method": "DELETE",
       "path": "/api/library/notebooks/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 103,
+      "line": 104,
       "handler": "notebook_delete",
       "parameters": [
         {
@@ -87,7 +87,7 @@
       "method": "DELETE",
       "path": "/api/library/pages/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 138,
+      "line": 139,
       "handler": "page_delete",
       "parameters": [
         {
@@ -117,7 +117,7 @@
       "method": "DELETE",
       "path": "/api/library/sources/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 275,
+      "line": 276,
       "handler": "source_delete",
       "parameters": [
         {
@@ -681,7 +681,7 @@
       "method": "GET",
       "path": "/api/library",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 47,
+      "line": 48,
       "handler": "library",
       "parameters": [],
       "status": 200,
@@ -694,7 +694,7 @@
       "method": "GET",
       "path": "/api/library/pages/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 124,
+      "line": 125,
       "handler": "page_get",
       "parameters": [
         {
@@ -716,7 +716,7 @@
       "method": "GET",
       "path": "/api/library/research/search",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 187,
+      "line": 188,
       "handler": "research_search",
       "parameters": [
         {
@@ -754,7 +754,7 @@
       "method": "GET",
       "path": "/api/library/search",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 151,
+      "line": 152,
       "handler": "search",
       "parameters": [
         {
@@ -784,7 +784,7 @@
       "method": "GET",
       "path": "/api/library/sources/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 204,
+      "line": 205,
       "handler": "source_get",
       "parameters": [
         {
@@ -806,7 +806,7 @@
       "method": "GET",
       "path": "/api/library/sources/{ident}/content",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 254,
+      "line": 255,
       "handler": "source_content",
       "parameters": [
         {
@@ -836,7 +836,7 @@
       "method": "GET",
       "path": "/api/library/structures/preview",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 288,
+      "line": 289,
       "handler": "structure_preview",
       "parameters": [
         {
@@ -1006,7 +1006,7 @@
       "method": "PATCH",
       "path": "/api/library/folders/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 61,
+      "line": 62,
       "handler": "folder_update",
       "parameters": [
         {
@@ -1036,7 +1036,7 @@
       "method": "PATCH",
       "path": "/api/library/notebooks/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 92,
+      "line": 93,
       "handler": "notebook_update",
       "parameters": [
         {
@@ -1066,7 +1066,7 @@
       "method": "PATCH",
       "path": "/api/library/pages/{ident}",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 129,
+      "line": 130,
       "handler": "page_update",
       "parameters": [
         {
@@ -1805,7 +1805,7 @@
       "method": "POST",
       "path": "/api/library/downloads/reveal",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 310,
+      "line": 312,
       "handler": "downloads_reveal",
       "parameters": [],
       "status": 200,
@@ -1818,7 +1818,7 @@
       "method": "POST",
       "path": "/api/library/folders",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 54,
+      "line": 55,
       "handler": "folder_create",
       "parameters": [
         {
@@ -1840,7 +1840,7 @@
       "method": "POST",
       "path": "/api/library/memory",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 173,
+      "line": 174,
       "handler": "memory_create",
       "parameters": [
         {
@@ -1862,7 +1862,7 @@
       "method": "POST",
       "path": "/api/library/notebooks",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 83,
+      "line": 84,
       "handler": "notebook_create",
       "parameters": [
         {
@@ -1884,7 +1884,7 @@
       "method": "POST",
       "path": "/api/library/pages",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 116,
+      "line": 117,
       "handler": "page_create",
       "parameters": [
         {
@@ -1906,7 +1906,7 @@
       "method": "POST",
       "path": "/api/library/pages/{ident}/restore",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 164,
+      "line": 165,
       "handler": "page_restore",
       "parameters": [
         {
@@ -1936,7 +1936,7 @@
       "method": "POST",
       "path": "/api/library/sources/artifact",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 243,
+      "line": 244,
       "handler": "source_artifact",
       "parameters": [
         {
@@ -1958,7 +1958,7 @@
       "method": "POST",
       "path": "/api/library/sources/fetch",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 197,
+      "line": 198,
       "handler": "source_fetch",
       "parameters": [
         {
@@ -1980,7 +1980,7 @@
       "method": "POST",
       "path": "/api/library/sources/upload",
       "source": "services/studio-api/src/studio/api/library.py",
-      "line": 209,
+      "line": 210,
       "handler": "source_upload",
       "parameters": [
         {

@@ -120,6 +120,8 @@ changing the installed profile. `make dev` itself uses the installed `.venv`.
 ## Verify the installation
 
 ```sh
+uv sync --python 3.12 --group dev --extra engines --frozen
+export UV_NO_SYNC=1
 make verify-core
 make typecheck
 pnpm --filter studio-web test

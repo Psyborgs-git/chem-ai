@@ -17,6 +17,8 @@ permissions:
 
 env:
   UV_FROZEN: "1"
+  # Each job selects its profile with uv sync; later uv run must retain it.
+  UV_NO_SYNC: "1"
 
 jobs:
   lint-typecheck:
@@ -63,7 +65,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: uv sync --python 3.12 --group dev --frozen
+      # Structure validators are real RDKit calls, including dataset/polymer cases.
+      - run: uv sync --python 3.12 --group dev --extra engines --frozen
       - run: make test-unit
 
   integration:
@@ -89,7 +92,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.12"
-      - run: uv sync --python 3.12 --group dev --frozen
+      - run: uv sync --python 3.12 --group dev --extra engines --frozen
       - run: make test-integration
       - run: make test-security
 
@@ -159,7 +162,7 @@ jobs:
         with:
           node-version: "24"
           cache: pnpm
-      - run: uv sync --python 3.12 --group dev --frozen
+      - run: uv sync --python 3.12 --group dev --extra engines --frozen
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter studio-web exec playwright install --with-deps chromium
       - run: make test-e2e

@@ -9,6 +9,7 @@ import io
 import json
 import math
 from collections import Counter
+from collections.abc import Callable
 from typing import Any
 
 MAX_DATASET_BYTES = 20 * 1024 * 1024
@@ -91,7 +92,8 @@ def canonical_structure(smiles: str) -> dict[str, str]:
     canonical = Chem.MolToSmiles(mol, canonical=True, isomericSmiles=True)
     # Stereo variants must not enter independent partitions.
     identity = Chem.MolToSmiles(mol, canonical=True, isomericSmiles=False)
-    scaffold = MurckoScaffold.MurckoScaffoldSmiles(mol=mol, includeChirality=False)  # type: ignore[no-untyped-call]
+    scaffold_smiles: Callable[..., str] = MurckoScaffold.MurckoScaffoldSmiles
+    scaffold = scaffold_smiles(mol=mol, includeChirality=False)
     return {"smiles": canonical, "identity": identity, "scaffold": scaffold or identity}
 
 

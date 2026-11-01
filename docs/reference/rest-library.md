@@ -61,7 +61,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [folder_delete](contracts-library.md#folder_delete), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.delete_folder](contracts-library.md#libraryservicedelete_folder).
 
-Source: `services/studio-api/src/studio/api/library.py:70` (`folder_delete`).
+Source: `services/studio-api/src/studio/api/library.py:71` (`folder_delete`).
 
 ## DELETE /api/library/memory/{ident}
 
@@ -119,7 +119,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [memory_forget](contracts-library.md#memory_forget), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.forget_memory](contracts-library.md#libraryserviceforget_memory).
 
-Source: `services/studio-api/src/studio/api/library.py:180` (`memory_forget`).
+Source: `services/studio-api/src/studio/api/library.py:181` (`memory_forget`).
 
 ## DELETE /api/library/notebooks/{ident}
 
@@ -178,7 +178,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [notebook_delete](contracts-library.md#notebook_delete), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.delete_notebook](contracts-library.md#libraryservicedelete_notebook).
 
-Source: `services/studio-api/src/studio/api/library.py:103` (`notebook_delete`).
+Source: `services/studio-api/src/studio/api/library.py:104` (`notebook_delete`).
 
 ## DELETE /api/library/pages/{ident}
 
@@ -237,7 +237,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [page_delete](contracts-library.md#page_delete), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.delete_page](contracts-library.md#libraryservicedelete_page).
 
-Source: `services/studio-api/src/studio/api/library.py:138` (`page_delete`).
+Source: `services/studio-api/src/studio/api/library.py:139` (`page_delete`).
 
 ## DELETE /api/library/sources/{ident}
 
@@ -296,7 +296,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [source_delete](contracts-library.md#source_delete), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.delete_source](contracts-library.md#libraryservicedelete_source).
 
-Source: `services/studio-api/src/studio/api/library.py:275` (`source_delete`).
+Source: `services/studio-api/src/studio/api/library.py:276` (`source_delete`).
 
 ## GET /api/library
 
@@ -357,7 +357,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [library](contracts-library.md#library), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.list_all](contracts-library.md#libraryservicelist_all).
 
-Source: `services/studio-api/src/studio/api/library.py:47` (`library`).
+Source: `services/studio-api/src/studio/api/library.py:48` (`library`).
 
 ## GET /api/library/pages/{ident}
 
@@ -448,7 +448,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [page_get](contracts-library.md#page_get), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.get_page](contracts-library.md#libraryserviceget_page).
 
-Source: `services/studio-api/src/studio/api/library.py:124` (`page_get`).
+Source: `services/studio-api/src/studio/api/library.py:125` (`page_get`).
 
 ## GET /api/library/research/search
 
@@ -508,7 +508,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [research_search](contracts-library.md#research_search).
 
-Source: `services/studio-api/src/studio/api/library.py:187` (`research_search`).
+Source: `services/studio-api/src/studio/api/library.py:188` (`research_search`).
 
 ## GET /api/library/search
 
@@ -567,7 +567,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [search](contracts-library.md#search), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.search](contracts-library.md#libraryservicesearch).
 
-Source: `services/studio-api/src/studio/api/library.py:151` (`search`).
+Source: `services/studio-api/src/studio/api/library.py:152` (`search`).
 
 ## GET /api/library/sources/{ident}
 
@@ -652,7 +652,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [source_get](contracts-library.md#source_get), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.get_source](contracts-library.md#libraryserviceget_source).
 
-Source: `services/studio-api/src/studio/api/library.py:204` (`source_get`).
+Source: `services/studio-api/src/studio/api/library.py:205` (`source_get`).
 
 ## GET /api/library/sources/{ident}/content
 
@@ -712,7 +712,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [source_content](contracts-library.md#source_content), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [LibraryService.source_file](contracts-library.md#libraryservicesource_file).
 
-Source: `services/studio-api/src/studio/api/library.py:254` (`source_content`).
+Source: `services/studio-api/src/studio/api/library.py:255` (`source_content`).
 
 ## GET /api/library/structures/preview
 
@@ -766,7 +766,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [structure_preview](contracts-library.md#structure_preview).
 
-Source: `services/studio-api/src/studio/api/library.py:288` (`structure_preview`).
+Source: `services/studio-api/src/studio/api/library.py:289` (`structure_preview`).
 
 ## PATCH /api/library/folders/{ident}
 
@@ -836,7 +836,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [folder_update](contracts-library.md#folder_update), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [UpdateFolder](contracts-library.md#updatefolder), [LibraryService.update_folder](contracts-library.md#libraryserviceupdate_folder).
 
-Source: `services/studio-api/src/studio/api/library.py:61` (`folder_update`).
+Source: `services/studio-api/src/studio/api/library.py:62` (`folder_update`).
 
 ## PATCH /api/library/notebooks/{ident}
 
@@ -910,7 +910,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [notebook_update](contracts-library.md#notebook_update), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [UpdateNotebook](contracts-library.md#updatenotebook), [LibraryService.update_notebook](contracts-library.md#libraryserviceupdate_notebook).
 
-Source: `services/studio-api/src/studio/api/library.py:92` (`notebook_update`).
+Source: `services/studio-api/src/studio/api/library.py:93` (`notebook_update`).
 
 ## PATCH /api/library/pages/{ident}
 
@@ -994,7 +994,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [page_update](contracts-library.md#page_update), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [UpdatePage](contracts-library.md#updatepage), [PageContent](contracts-library.md#pagecontent), [Ingredient](contracts-library.md#ingredient), [Citation](contracts-library.md#citation), [LibraryService.update_page](contracts-library.md#libraryserviceupdate_page).
 
-Source: `services/studio-api/src/studio/api/library.py:129` (`page_update`).
+Source: `services/studio-api/src/studio/api/library.py:130` (`page_update`).
 
 ## POST /api/library/downloads/reveal
 
@@ -1049,7 +1049,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [downloads_reveal](contracts-library.md#downloads_reveal).
 
-Source: `services/studio-api/src/studio/api/library.py:310` (`downloads_reveal`).
+Source: `services/studio-api/src/studio/api/library.py:312` (`downloads_reveal`).
 
 ## POST /api/library/folders
 
@@ -1118,7 +1118,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [folder_create](contracts-library.md#folder_create), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [CreateFolder](contracts-library.md#createfolder), [LibraryService.create_folder](contracts-library.md#libraryservicecreate_folder).
 
-Source: `services/studio-api/src/studio/api/library.py:54` (`folder_create`).
+Source: `services/studio-api/src/studio/api/library.py:55` (`folder_create`).
 
 ## POST /api/library/memory
 
@@ -1203,7 +1203,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [memory_create](contracts-library.md#memory_create), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [CreateMemory](contracts-library.md#creatememory), [SourceRef](contracts-library.md#sourceref), [LibraryService.save_memory](contracts-library.md#libraryservicesave_memory).
 
-Source: `services/studio-api/src/studio/api/library.py:173` (`memory_create`).
+Source: `services/studio-api/src/studio/api/library.py:174` (`memory_create`).
 
 ## POST /api/library/notebooks
 
@@ -1273,7 +1273,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [notebook_create](contracts-library.md#notebook_create), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [CreateNotebook](contracts-library.md#createnotebook), [LibraryService.create_notebook](contracts-library.md#libraryservicecreate_notebook).
 
-Source: `services/studio-api/src/studio/api/library.py:83` (`notebook_create`).
+Source: `services/studio-api/src/studio/api/library.py:84` (`notebook_create`).
 
 ## POST /api/library/pages
 
@@ -1358,7 +1358,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [page_create](contracts-library.md#page_create), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [CreatePage](contracts-library.md#createpage), [PageContent](contracts-library.md#pagecontent), [Ingredient](contracts-library.md#ingredient), [Citation](contracts-library.md#citation), [LibraryService.create_page](contracts-library.md#libraryservicecreate_page).
 
-Source: `services/studio-api/src/studio/api/library.py:116` (`page_create`).
+Source: `services/studio-api/src/studio/api/library.py:117` (`page_create`).
 
 ## POST /api/library/pages/{ident}/restore
 
@@ -1438,7 +1438,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [page_restore](contracts-library.md#page_restore), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [RestorePage](contracts-library.md#restorepage), [LibraryService.restore_page](contracts-library.md#libraryservicerestore_page).
 
-Source: `services/studio-api/src/studio/api/library.py:164` (`page_restore`).
+Source: `services/studio-api/src/studio/api/library.py:165` (`page_restore`).
 
 ## POST /api/library/sources/artifact
 
@@ -1535,7 +1535,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [ArchiveArtifact](contracts-library.md#archiveartifact), [source_artifact](contracts-library.md#source_artifact), [LibraryService.archive_download](contracts-library.md#libraryservicearchive_download).
 
-Source: `services/studio-api/src/studio/api/library.py:243` (`source_artifact`).
+Source: `services/studio-api/src/studio/api/library.py:244` (`source_artifact`).
 
 ## POST /api/library/sources/fetch
 
@@ -1635,7 +1635,7 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [source_fetch](contracts-library.md#source_fetch), [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [FetchSource](contracts-library.md#fetchsource), [LibraryService.fetch_source](contracts-library.md#libraryservicefetch_source).
 
-Source: `services/studio-api/src/studio/api/library.py:197` (`source_fetch`).
+Source: `services/studio-api/src/studio/api/library.py:198` (`source_fetch`).
 
 ## POST /api/library/sources/upload
 
@@ -1736,4 +1736,4 @@ Content-Type: application/json
 
 **Exact JSON rules and response serialization:** [Contract](contracts-library.md#contract), [LibraryService._record](contracts-library.md#libraryservice_record), [source_upload](contracts-library.md#source_upload), [LibraryService.archive_download](contracts-library.md#libraryservicearchive_download).
 
-Source: `services/studio-api/src/studio/api/library.py:209` (`source_upload`).
+Source: `services/studio-api/src/studio/api/library.py:210` (`source_upload`).

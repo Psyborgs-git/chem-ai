@@ -2,6 +2,17 @@
 
 Verify the behavior changed, then run the appropriate repository gates. Keep optional runtime, real-provider, physical-laboratory and native-launch evidence separate from deterministic unit/fixture results. A skipped prerequisite is not a passing execution test.
 
+## Prepare the test profile
+
+The full unit, integration and browser suites exercise actual RDKit structure validators, dataset imports and calculation workflows. Install the locked engine extra, including its NumPy dependency, then retain that explicit profile for subsequent `uv run` commands:
+
+```sh
+uv sync --python 3.12 --group dev --extra engines --frozen
+export UV_NO_SYNC=1
+```
+
+CI selects this profile for those three suites. Its type and contract jobs also check the core environment. A core app installation can still run without RDKit and reports unavailable calculations; installing the test profile does not install model weights or qualify a scientific result.
+
 ## Choose the verification layer
 
 | Check | Command | What it establishes |

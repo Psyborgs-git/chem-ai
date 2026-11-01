@@ -43,7 +43,7 @@ optional RDKit, and the combined `make dev` launcher.
 - [Reference](docs/reference/README.md): endpoint, GraphQL operation, and environment inventories.
 
 `make help` lists the command contract. `make verify-core` runs lint, contracts,
-and unit tests. `make docs-generate` refreshes the reference; `make docs-check`
+and unit tests; prepare the [engine test profile](docs/development/testing-and-docs.md#prepare-the-test-profile) first. `make docs-generate` refreshes the reference; `make docs-check`
 checks documentation and source coverage; `pnpm docs:check` runs the frontend
 content checks.
 

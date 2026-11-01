@@ -19,6 +19,8 @@ For native RDKit where a compatible wheel exists:
 uv sync --python 3.12 --group dev --extra engines --frozen
 ```
 
+The full unit/integration/browser suites require this engine profile. Set `UV_NO_SYNC=1` after selecting it so later `uv run` commands retain the installed extras; an implicit sync without `--extra engines` can remove them. See [Testing and documentation](testing-and-docs.md#prepare-the-test-profile).
+
 The core must remain importable without optional engines. See [Workers and engines](workers-and-engines.md) before adding MLX, torch, quantum or simulation dependencies.
 
 ## Start the local app
