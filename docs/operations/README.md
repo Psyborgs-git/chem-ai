@@ -13,6 +13,8 @@ not a claim of current capability.
 | `scientific.md` | experiment plans/approvals, executions, measurements + corrections, closeout evaluator, optimization + science adapters |
 | `admin.md` | owner/access management, jobs/cancellation, incident response, dependency updates, observability |
 | `model-ops.md` | engine image install/benchmark, model registry, SFT/RL training, evaluation + promotion gate |
+| [`agentic-research.md`](agentic-research.md) | private agent sidebar, notebooks, research memory, retained Downloads, provider models, recurring work and background service |
+| [`learning-workspace.md`](learning-workspace.md) | custom datasets, native MLX, property models, molecular learning, self-hosted workers and independent evaluation |
 | `privacy.md` | export review + egress broker, source revocation cascade, retention posture |
 | `backup-restore.md` | backup, verify, restore, automated checks (CS-0505) |
 | `recovery.md` | upgrades, interrupted migrations/backfills, fresh-machine restore, retention inventory (CS-1102) |

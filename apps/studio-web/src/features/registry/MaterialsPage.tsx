@@ -8,6 +8,8 @@ import { TextField } from "../../components/atoms/TextField";
 import { UnitSelect } from "../../components/atoms/UnitSelect";
 import { InlineFinding } from "../../components/molecules/InlineFinding";
 import { EmptyState, LoadingState } from "../../components/states/states";
+import { PageHeader } from "../../components/layout/StudioLayout";
+import { useSearchParams } from "react-router";
 import {
   GradeCreateMutation,
   IdentityCreateMutation,
@@ -248,7 +250,7 @@ function IdentityCreateForm({ onCreated }: { onCreated: () => void }) {
       </fieldset>
       <TextField
         label="structure (optional)"
-        hint="SMILES/InChI — structure lands unreviewed until a scientist reviews it"
+        hint="SMILES representation — structure lands unreviewed until a scientist reviews it"
         value={structure}
         onChange={(e) => setStructure(e.target.value)}
       />
@@ -287,6 +289,7 @@ function IdentitiesSection() {
         value={search}
         onChange={setSearch}
       />
+      <details className="cs-create-disclosure"><summary>Add a material</summary><IdentityCreateForm onCreated={() => setFetchKey((k) => k + 1)} /></details>
       <Suspense fallback={<LoadingState label="loading identities…" />}>
         <IdentityList
           search={search}
@@ -294,7 +297,6 @@ function IdentitiesSection() {
           onReviewed={() => setFetchKey((k) => k + 1)}
         />
       </Suspense>
-      <IdentityCreateForm onCreated={() => setFetchKey((k) => k + 1)} />
     </section>
   );
 }
@@ -382,6 +384,8 @@ function GradeCreateForm({ onCreated }: { onCreated: () => void }) {
       <h3>register material grade</h3>
       <MaterialIdentityPicker
         label="material"
+        selectedId={material?.globalId ?? null}
+        onClear={() => setMaterial(null)}
         hint="search the registry by name or identifier"
         onPick={(p) => setMaterial({ globalId: p.globalId, label: p.label })}
       />
@@ -482,10 +486,10 @@ function GradesSection() {
         value={search}
         onChange={setSearch}
       />
+      <details className="cs-create-disclosure"><summary>Add a supplier grade</summary><GradeCreateForm onCreated={() => setFetchKey((k) => k + 1)} /></details>
       <Suspense fallback={<LoadingState label="loading grades…" />}>
         <GradeList search={search} fetchKey={fetchKey} />
       </Suspense>
-      <GradeCreateForm onCreated={() => setFetchKey((k) => k + 1)} />
     </section>
   );
 }
@@ -807,10 +811,10 @@ function ProductsSection() {
         value={search}
         onChange={setSearch}
       />
+      <details className="cs-create-disclosure"><summary>Add a reference product</summary><ProductCreateForm onCreated={() => setFetchKey((k) => k + 1)} /></details>
       <Suspense fallback={<LoadingState label="loading products…" />}>
         <ProductList search={search} fetchKey={fetchKey} />
       </Suspense>
-      <ProductCreateForm onCreated={() => setFetchKey((k) => k + 1)} />
     </section>
   );
 }
@@ -819,14 +823,13 @@ function ProductsSection() {
  * nav link was removed for lacking — identities, grades, reference
  * products and formulation families, all backed by live queries. */
 export function MaterialsPage() {
-  const [section, setSection] = useState<SectionKey>("identities");
+  const [params, setParams] = useSearchParams();
+  const rawSection = params.get("section");
+  const section: SectionKey = SECTIONS.some((s) => s.key === rawSection) ? rawSection as SectionKey : "identities";
+  const setSection = (key: SectionKey) => setParams({ section: key });
   return (
     <div>
-      <h1>Materials &amp; Products</h1>
-      <p>
-        The canonical registry. Identities resolve by name or identifier —
-        raw ids are never the working path.
-      </p>
+      <PageHeader eyebrow="Canonical registry" title="Materials & Products" description="A shared source of identities, grades, reference products and formulation revisions. Preserve what is known and keep uncertainty visible." />
       <nav aria-label="registry sections">
         {SECTIONS.map((s) => (
           <button
@@ -842,10 +845,12 @@ export function MaterialsPage() {
           </button>
         ))}
       </nav>
+      <div className="cs-registry-surface">
       {section === "identities" && <IdentitiesSection />}
       {section === "grades" && <GradesSection />}
       {section === "products" && <ProductsSection />}
       {section === "formulations" && <FormulationFamiliesSection />}
+      </div>
     </div>
   );
 }

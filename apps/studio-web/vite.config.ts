@@ -22,11 +22,23 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
+    maxWorkers: 4,
   },
   server: {
     host: "127.0.0.1",
     port: 5173,
     proxy,
+    // Native compiler output lives under this app but is not web source.
+    watch: { ignored: ["**/src-tauri/**"] },
+    fs: {
+      // pnpm's workspace root is broader than this app. Keep private
+      // runtime inputs, owner credentials and vault blobs off /@fs/.
+      deny: [
+        ".env", ".env.*", "*.{crt,pem,key,p12,pfx,cer,der}",
+        ".npmrc", ".yarnrc.yml", "**/.git/**",
+        "**/.runtime/**", "**/.local/**", "**/.venv/**",
+      ],
+    },
   },
   // vite preview serves the production build — the proxy must be
   // declared here too, it does not inherit server.proxy.

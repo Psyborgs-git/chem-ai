@@ -316,7 +316,8 @@ test("improve journey: close binds contract; new revision cannot rewrite it (AT-
 
   // report + decisions tabs render the bound packet in the browser
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "decisions" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "Review" }).click();
+  await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "Decision history", exact: true }).click();
   await expect(page.locator('[data-field="decision-log"]')).toBeVisible();
   await expect(
     page.locator('[data-field="decision-closure"]'),
@@ -329,7 +330,7 @@ test("improve journey: close binds contract; new revision cannot rewrite it (AT-
     page.locator("text=scientific validation: not_validated"),
   ).toBeVisible();
 
-  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "decisions" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "Review" }).click();
   await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "report" }).click();
   await expect(page.locator('[data-field="task-report"]')).toBeVisible();
   await expect(
@@ -389,7 +390,7 @@ test("match journey: functional scope only, composition not established (AT-0504
   await closeTask(token, taskId, "supported_success");
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "decisions" }).click();
+  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "Review" }).click();
   await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "report" }).click();
   const report = page.locator('[data-field="task-report"]');
   await expect(report).toBeVisible();

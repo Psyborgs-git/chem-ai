@@ -30,11 +30,13 @@ from studio.auth.context import ServiceContext
 from studio.errors import DomainError, ErrorCode, not_found
 from studio.events.outbox import publish
 from studio.persistence.models import (
+    Artifact,
     CandidatePatch,
     CandidateRevision,
     ContextManifest,
     EvidenceClaim,
     ExperimentPlan,
+    ImportBatch,
     LabExecution,
     ResearchSession,
     ResearchTask,
@@ -128,6 +130,57 @@ class TaskMemoryService:
             raise not_found("research session")
         return row
 
+    def _visible_task_claims(self, task: ResearchTask) -> list[EvidenceClaim]:
+        """Context is task-linked and rechecks current source visibility.
+
+        Workspace membership alone must never attach unrelated scientific
+        records to a task's resumable context manifest.
+        """
+        self.ctx.require(CAP_READ_PROJECT, task.project_id)
+        linked = set()
+        for candidate in self.db.scalars(
+            select(CandidateRevision).where(
+                CandidateRevision.workspace_id == self.ctx.workspace_id,
+                CandidateRevision.task_id == task.id,
+            )
+        ):
+            linked.update(str(value) for value in (candidate.payload or {}).get("evidenceIds", []))
+        result = []
+        for claim in self.db.scalars(
+            select(EvidenceClaim).where(
+                EvidenceClaim.workspace_id == self.ctx.workspace_id,
+            )
+        ):
+            subject = claim.subject or {}
+            if (
+                str(subject.get("task_id") or subject.get("taskId")) != str(task.id)
+                and str(claim.id) not in linked
+            ):
+                continue
+            if claim.source_batch_id:
+                artifact = self.db.scalar(
+                    select(Artifact)
+                    .join(
+                        ImportBatch,
+                        (ImportBatch.artifact_id == Artifact.id)
+                        & (ImportBatch.workspace_id == Artifact.workspace_id),
+                    )
+                    .where(
+                        ImportBatch.id == claim.source_batch_id,
+                        Artifact.workspace_id == self.ctx.workspace_id,
+                        Artifact.upload_state == "committed",
+                        Artifact.review_state.not_in(["revoked", "rejected", "superseded"]),
+                    )
+                )
+                if (
+                    artifact is None
+                    or (artifact.rights or {}).get("retrieval") == "denied"
+                    or not self.ctx.has(CAP_READ_PROJECT, artifact.access_scope)
+                ):
+                    continue
+            result.append(claim)
+        return result
+
     # --------------------------------------------------- session flow
 
     def collect_items(self, task: ResearchTask) -> tuple[list[ManifestItem], list[ManifestItem]]:
@@ -171,12 +224,12 @@ class TaskMemoryService:
             for q in blocking
         )
 
-        warn_claims = self.db.execute(
-            select(EvidenceClaim).where(
-                EvidenceClaim.workspace_id == ws,
-                EvidenceClaim.conditions["warning"].astext == "true",
-            )
-        ).scalars()
+        visible_claims = self._visible_task_claims(task)
+        warn_claims = [
+            claim
+            for claim in visible_claims
+            if (claim.conditions or {}).get("warning") in (True, "true")
+        ]
         warnings.extend(
             ManifestItem("warning", str(c.id), f"safety/identity warning on claim {c.id}", True)
             for c in warn_claims
@@ -275,12 +328,7 @@ class TaskMemoryService:
             for q in open_questions
         )
 
-        claims = self.db.execute(
-            select(EvidenceClaim).where(
-                EvidenceClaim.workspace_id == ws,
-                EvidenceClaim.status == "accepted",
-            )
-        ).scalars()
+        claims = [claim for claim in visible_claims if claim.status == "accepted"]
         items.extend(
             ManifestItem(
                 "evidence",

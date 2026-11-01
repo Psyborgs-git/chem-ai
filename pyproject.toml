@@ -60,6 +60,9 @@ training = [
     "peft>=0.21,<0.22",
     "trl>=1.14,<1.15",
 ]
+training_mlx = [
+    "mlx-lm[train]>=0.32.2,<0.33; sys_platform == 'darwin' and platform_machine == 'arm64'",
+]
 
 [dependency-groups]
 dev = [
@@ -140,6 +143,8 @@ module = [
     "pytorch_lightning.*",
     "numpy",
     "numpy.*",
+    "sklearn",
+    "sklearn.*",
 ]
 ignore_missing_imports = true
 
@@ -154,7 +159,7 @@ ignore_missing_imports = true
 # RL trainer runtime deps — only present inside the pinned trainer
 # image, imported lazily inside train() like the SFT adapter's.
 [[tool.mypy.overrides]]
-module = ["trl", "trl.*", "datasets", "datasets.*", "transformers", "transformers.*"]
+module = ["trl", "trl.*", "datasets", "datasets.*", "transformers", "transformers.*", "mlx", "mlx.*", "mlx_lm", "mlx_lm.*", "huggingface_hub", "huggingface_hub.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

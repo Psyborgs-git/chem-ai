@@ -1,3 +1,4 @@
+import { openResearchStream, openTaskTool } from "./ux-helpers";
 import { expect, request, test, type BrowserContext } from "@playwright/test";
 
 const API = "http://127.0.0.1:8790";
@@ -97,7 +98,7 @@ test("AT-0406-1: reconnect after disconnect shows no duplicates and correct run 
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
   await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "research" }).click();
-  await page.locator("details summary").first().click();
+  await openResearchStream(page);
 
   await expect(page.getByText("first message")).toBeVisible();
   await expect(page.getByText("second message")).toBeVisible();
@@ -124,8 +125,7 @@ test("AT-0406-1: reconnect after disconnect shows no duplicates and correct run 
     .count();
   expect(items).toBe(3); // no duplicates after resume
 
-  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "advanced" }).click();
-  await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "runs" }).click();
+  await openTaskTool(page, "runs");
   await expect(
     page.locator('ul[aria-label="task runs"] li').first(),
   ).toContainText("requested");
@@ -157,7 +157,7 @@ test("AT-0406-2: failed tool action is rendered failed even when text claims suc
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
   await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "research" }).click();
-  await page.locator("details summary").first().click();
+  await openResearchStream(page);
 
   await expect(page.getByText("action failed")).toBeVisible();
   await expect(page.getByText("action completed")).toHaveCount(0);
@@ -179,8 +179,7 @@ test("AT-0406-3: cancel shows 'cancel requested…' until terminal confirmation"
   const runId = run.data.runs.request.run.id as string;
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-  await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "advanced" }).click();
-  await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "runs" }).click();
+  await openTaskTool(page, "runs");
   await expect(page.locator("ul[aria-label='task runs'] li").first()).toContainText(
     "requested",
   );

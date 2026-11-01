@@ -1702,6 +1702,7 @@ class RunAttemptNode(relay.Node):
 @strawberry.type(name="Run")
 class RunNode(relay.Node):
     id: relay.NodeID[str]
+    task_id: relay.GlobalID | None
     kind: str
     status: str
     attempt_count: int
@@ -1718,6 +1719,7 @@ class RunNode(relay.Node):
     def from_row(cls, row: RunRow) -> Self:
         return cls(
             id=str(row.id),
+            task_id=relay.GlobalID("Task", str(row.task_id)) if row.task_id else None,
             kind=row.kind,
             status=row.status,
             attempt_count=row.attempt_count,
@@ -1730,6 +1732,23 @@ class RunNode(relay.Node):
             error=JSON(row.error) if row.error is not None else None,
             result_summary=JSON(row.result_summary) if row.result_summary is not None else None,
         )
+
+    @strawberry.field
+    def input_summary(self, info: strawberry.Info) -> JSON | None:
+        from studio.domain.evidence.vault import Vault
+        from studio.domain.runs.structures import input_summary
+
+        gql = gql_ctx(info)
+        ctx = gql.service_ctx()
+        row = gql.db.execute(
+            select(RunRow).where(
+                RunRow.id == uuid.UUID(self.id), RunRow.workspace_id == ctx.workspace_id
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            return None
+        summary = input_summary(gql.db, Vault(gql.settings.vault_root), ctx, row)
+        return JSON(summary) if summary is not None else None
 
     @strawberry.field
     def attempts(self, info: strawberry.Info) -> list[RunAttemptNode]:

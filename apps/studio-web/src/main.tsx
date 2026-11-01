@@ -2,17 +2,18 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { App } from "./App";
+import { isNativeDesktop } from "./features/desktop/runtime";
 import { readTheme } from "./theme";
 import "./styles/tokens.css";
 import "./styles/components.css";
+import "./styles/product.css";
+import "./styles/motion.css";
 
-// Light/dark share the same semantic tokens (§22.5). The stored
-// choice wins; otherwise follow the OS preference on first load.
+// The research studio starts light; an explicit saved choice wins.
 document.documentElement.dataset.theme =
-  readTheme() ??
-  (globalThis.matchMedia?.("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light");
+  readTheme() ?? "light";
+
+document.documentElement.classList.toggle("cs-desktop", isNativeDesktop());
 
 const container = document.getElementById("root");
 if (!container) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation } from "react-relay";
 import { useNavigate } from "react-router";
 
@@ -10,25 +10,27 @@ import {
   ReferenceProductPicker,
 } from "../registry/pickers";
 import { TaskCreateMutation } from "./operations";
+import { ChemistryArt } from "../../components/layout/ChemistryArt";
 
 import type { tasksTaskCreateMutation } from "../../__generated__/tasksTaskCreateMutation.graphql";
 
 const MODES = [
-  { value: "improve", label: "improve an existing formulation" },
-  { value: "match_reference", label: "match a reference product" },
-  { value: "discover", label: "discover something new" },
+  { value: "discover", label: "Explore", description: "Investigate a new molecule, material or formulation.", art: "molecule" },
+  { value: "improve", label: "Improve", description: "Build on a formulation you already know.", art: "improve" },
+  { value: "match_reference", label: "Match", description: "Compare against a reference product.", art: "match" },
 ] as const;
 
 /** Task creation (§11.1). Mode-required fields are collected
  * honestly: leaving them blank creates a *draft* with the missing
  * inputs recorded as unresolved — never fabricated. */
-export function TaskCreateForm({ projectId }: { projectId: string }) {
+export function TaskCreateForm({ projectId }: { projectId?: string }) {
   const navigate = useNavigate();
-  const [commit] = useMutation<tasksTaskCreateMutation>(TaskCreateMutation);
+  const [commit, pending] = useMutation<tasksTaskCreateMutation>(TaskCreateMutation);
+  const submitting = useRef(false);
   const [title, setTitle] = useState("");
-  const [mode, setMode] = useState<(typeof MODES)[number]["value"]>("improve");
+  const [mode, setMode] = useState<(typeof MODES)[number]["value"]>("discover");
   const [objective, setObjective] = useState("");
-  const [targetKind, setTargetKind] = useState("unknown");
+  const [targetKind, setTargetKind] = useState("molecule");
   // mode inputs
   const [baselineRevisionId, setBaselineRevisionId] = useState("");
   const [variationScope, setVariationScope] = useState("");
@@ -55,6 +57,8 @@ export function TaskCreateForm({ projectId }: { projectId: string }) {
   })();
 
   const submit = () => {
+    if (submitting.current || pending || !title.trim()) return;
+    submitting.current = true;
     setErrors([]);
     commit({
       variables: {
@@ -62,12 +66,13 @@ export function TaskCreateForm({ projectId }: { projectId: string }) {
           projectId,
           title,
           mode,
-          objective: objective || undefined,
+          objective: objective.trim() ? objective : title.trim(),
           targetKind: mode === "discover" ? targetKind : undefined,
           modeInputs,
         },
       },
       onCompleted: (resp) => {
+        submitting.current = false;
         const errs = resp.taskCreate.errors;
         if (errs.length > 0) {
           setErrors(errs);
@@ -77,133 +82,39 @@ export function TaskCreateForm({ projectId }: { projectId: string }) {
           navigate(`/tasks/${encodeURIComponent(resp.taskCreate.task.id)}`);
         }
       },
-      onError: (e) =>
-        setErrors([{ code: "NETWORK", message: `not saved: ${e.message}` }]),
+      onError: (e) => {
+        submitting.current = false;
+        setErrors([{ code: "NETWORK", message: `not saved: ${e.message}` }]);
+      },
     });
   };
 
   return (
-    <form
-      aria-label="create task"
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-    >
-      <TextField
-        label="task title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-      />
-
-      <div className="cs-field">
-        <label htmlFor="mode" className="cs-field__label">
-          research mode
-        </label>
-        <select
-          id="mode"
-          className="cs-select"
-          value={mode}
-          onChange={(e) => setMode(e.target.value as typeof mode)}
-        >
-          {MODES.map((m) => (
-            <option key={m.value} value={m.value}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {mode === "improve" && (
-        <fieldset>
-          <legend>baseline</legend>
-          <FormulationRevisionPicker
-            label="baseline formulation revision"
-            hint="search by family name — leaving it blank keeps the input unresolved"
-            statusFilter="accepted"
-            onPick={(p) => setBaselineRevisionId(p.uuid)}
-          />
-          <TextField
-            label="variation scope"
-            hint="what may change (e.g. solvent system, pigment loading)"
-            value={variationScope}
-            onChange={(e) => setVariationScope(e.target.value)}
-          />
-        </fieldset>
-      )}
-
-      {mode === "match_reference" && (
-        <fieldset>
-          <legend>reference</legend>
-          <ReferenceProductPicker
-            label="reference product"
-            hint="search by product name or supplier — blank stays unresolved"
-            onPick={(p) => setReferenceProductId(p.uuid)}
-          />
-          <div className="cs-field">
-            <label htmlFor="match-scope" className="cs-field__label">
-              match scope
-            </label>
-            <select
-              id="match-scope"
-              className="cs-select"
-              value={matchScope}
-              onChange={(e) => setMatchScope(e.target.value)}
-            >
-              <option value="functional">functional</option>
-              <option value="analytical">analytical</option>
-              <option value="functional_and_analytical">
-                functional and analytical
-              </option>
-            </select>
-          </div>
-        </fieldset>
-      )}
-
-      {mode === "discover" && (
-        <fieldset>
-          <legend>target</legend>
-          <div className="cs-field">
-            <label htmlFor="target-kind" className="cs-field__label">
-              target kind
-            </label>
-            <select
-              id="target-kind"
-              className="cs-select"
-              value={targetKind}
-              onChange={(e) => setTargetKind(e.target.value)}
-            >
-              <option value="unknown">unknown</option>
-              <option value="formulation">formulation</option>
-              <option value="material">material</option>
-              <option value="molecule">molecule</option>
-            </select>
-          </div>
-          <TextField
-            label="objective"
-            hint="what the search should achieve; blank stays unresolved"
-            value={objective}
-            onChange={(e) => setObjective(e.target.value)}
-          />
-        </fieldset>
-      )}
-
-      {mode !== "discover" && (
-        <TextField
-          label="objective (optional)"
-          value={objective}
-          onChange={(e) => setObjective(e.target.value)}
-        />
-      )}
-
-      {errors.map((e) => (
-        <InlineFinding key={`${e.code}:${e.message}`} severity="error" message={e.message} />
-      ))}
-
-      <Button variant="primary" type="submit">
-        Create task (saves a draft)
-      </Button>
+    <form aria-label="create task" aria-busy={pending} className="cs-task-create cs-intent-form" onSubmit={(event) => { event.preventDefault(); submit(); }}>
+      <TextField label="task title" hint="What would you like to investigate? This becomes your starting research goal." value={title} onChange={(event) => setTitle(event.target.value)} required autoFocus disabled={pending} />
+      <fieldset className="cs-intent-picker" disabled={pending}><legend>How would you like to begin?</legend><div className="cs-intent-options">
+        {MODES.map((item) => <label key={item.value} className={`cs-intent-choice${mode === item.value ? " is-selected" : ""}`}>
+          <input type="radio" name="research-mode" aria-label={item.label} value={item.value} checked={mode === item.value} onChange={() => setMode(item.value)} />
+          <ChemistryArt kind={item.art} className="cs-intent-art" /><strong>{item.label}</strong><span>{item.description}</span>
+        </label>)}
+      </div></fieldset>
+      {mode === "discover" && <label className="cs-field"><span className="cs-field__label">What are you exploring?</span><select className="cs-select" value={targetKind} onChange={(event) => setTargetKind(event.target.value)} disabled={pending}>
+        <option value="molecule">A molecule</option><option value="material">A material</option><option value="formulation">A formulation</option><option value="unknown">Not sure yet</option>
+      </select></label>}
+      {mode === "improve" && <fieldset className="cs-create-context"><legend>Start from an existing formulation</legend>
+        <FormulationRevisionPicker label="baseline formulation revision" hint="Choose a reviewed baseline, or leave this unresolved in your draft." statusFilter="accepted" selectedId={baselineRevisionId} onClear={() => setBaselineRevisionId("")} onPick={(picked) => setBaselineRevisionId(picked.uuid)} />
+        <TextField label="variation scope" hint="What may change, such as the solvent system or ingredient loading?" value={variationScope} onChange={(event) => setVariationScope(event.target.value)} disabled={pending} />
+      </fieldset>}
+      {mode === "match_reference" && <fieldset className="cs-create-context"><legend>Choose the reference</legend>
+        <ReferenceProductPicker label="reference product" hint="Search by product or supplier. Missing information stays unresolved." selectedId={referenceProductId} onClear={() => setReferenceProductId("")} onPick={(picked) => setReferenceProductId(picked.uuid)} />
+        <p className="cs-field__hint">Starts with a performance comparison. Change the comparison scope in Details.</p>
+      </fieldset>}
+      <details className="cs-create-details"><summary>Details <span>Optional</span></summary>
+        <TextField label="Research goal (optional)" hint="Use a more detailed goal, or keep the task title as your starting point." value={objective} onChange={(event) => setObjective(event.target.value)} disabled={pending} />
+        {mode === "match_reference" && <label className="cs-field"><span className="cs-field__label">What should match?</span><select className="cs-select" value={matchScope} onChange={(event) => setMatchScope(event.target.value)} disabled={pending}><option value="functional">Performance</option><option value="analytical">Analytical profile</option><option value="functional_and_analytical">Performance and analytical profile</option></select></label>}
+      </details>
+      {errors.map((error) => <InlineFinding key={`${error.code}:${error.message}`} severity="error" message={error.message} />)}
+      <div className="cs-create-footer"><p>Your task starts as a draft. Success criteria and review decisions stay in your control.</p><Button variant="primary" type="submit" disabled={pending || !title.trim()}>{pending ? "Creating task…" : "Create task"}</Button></div>
     </form>
   );
 }

@@ -1,3 +1,4 @@
+import { FeatureSurface, StructuredData } from "../../../components/layout/StudioLayout";
 import { Suspense, useState } from "react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
@@ -231,7 +232,7 @@ function SnapshotCard({
                     </Badge>
                   </td>
                   <td>
-                    <code>{JSON.stringify(e.semantics ?? {})}</code>
+                    <StructuredData value={e.semantics} />
                   </td>
                   <td>
                     {e.excluded ? (
@@ -314,7 +315,7 @@ export function DatasetsPanel({ taskId }: { taskId: string | null }) {
     });
 
   return (
-    <div>
+    <FeatureSurface title="Dataset snapshots" description="Build a traceable snapshot, inspect its source rights and exclusions, and review the split before freezing.">
       <p>
         dataset snapshots are immutable manifests: record ids, hashes, source
         classes, rights and exclusion semantics. Freezing is a governance
@@ -326,6 +327,7 @@ export function DatasetsPanel({ taskId }: { taskId: string | null }) {
           doBuild();
         }}
       >
+        <h3>New dataset snapshot</h3>
         <TextField
           label="snapshot name"
           value={name}
@@ -358,6 +360,6 @@ export function DatasetsPanel({ taskId }: { taskId: string | null }) {
           onChanged={() => setRefreshKey((k) => k + 1)}
         />
       </Suspense>
-    </div>
+    </FeatureSurface>
   );
 }

@@ -568,17 +568,18 @@ function CloseoutBody({
           onClosed={() => setFetchKey((k) => k + 1)}
         />
       )}
-      {workflowState !== "awaiting_review" && workflowState !== "closed" && (
+      {["draft", "paused", "active"].includes(workflowState) && (
         <p data-field="close-hint">
-          the task must be in <code>awaiting_review</code> before a reviewer
-          can close it.{" "}
+          {workflowState === "draft" ? "Start the task when its required inputs are ready. "
+            : workflowState === "paused" ? "Resume the task to continue research. "
+              : "Send the active task to a reviewer when its evidence is ready. "}
           <Button
             type="button"
             disabled={transitioning}
             onClick={() =>
               transition({
                 variables: {
-                  input: { taskId, toState: "awaiting_review" },
+                  input: { taskId, toState: workflowState === "active" ? "awaiting_review" : "active" },
                 },
                 onCompleted: (r) => {
                   const errs = r.taskTransition.errors;
@@ -592,7 +593,7 @@ function CloseoutBody({
               })
             }
           >
-            send to review
+            {workflowState === "draft" ? "Start task" : workflowState === "paused" ? "Resume task" : "send to review"}
           </Button>
         </p>
       )}

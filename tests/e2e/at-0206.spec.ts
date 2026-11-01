@@ -1,3 +1,4 @@
+import { openCreationDetails, openCriteriaEditor, openTaskCreator } from "./ux-helpers";
 import { expect, request, test, type BrowserContext } from "@playwright/test";
 
 const API = "http://127.0.0.1:8790";
@@ -128,6 +129,7 @@ test("create one task per mode (AT-0206-1)", async ({ page, context }) => {
     {
       mode: "improve",
       fill: async () => {
+        await page.getByRole("radio", { name: "Improve", exact: true }).check();
         // baseline is picked by name through the searchable picker —
         // raw uuid inputs are gone (PAR-07)
         await page
@@ -143,7 +145,7 @@ test("create one task per mode (AT-0206-1)", async ({ page, context }) => {
     {
       mode: "match_reference",
       fill: async () => {
-        await page.locator("#mode").selectOption("match_reference");
+        await page.getByRole("radio", { name: "Match", exact: true }).check();
         await page
           .getByRole("combobox", { name: "reference product" })
           .fill("at-0206 ref");
@@ -151,21 +153,24 @@ test("create one task per mode (AT-0206-1)", async ({ page, context }) => {
           .getByRole("listbox")
           .getByRole("button", { name: /at-0206 ref/ })
           .click();
-        await page.locator("#match-scope").selectOption("functional_and_analytical");
+        await openCreationDetails(page, "create task");
+        await page.getByLabel("What should match?").selectOption("functional_and_analytical");
       },
     },
     {
       mode: "discover",
       fill: async () => {
-        await page.locator("#mode").selectOption("discover");
-        await page.locator("#target-kind").selectOption("formulation");
-        await page.getByLabel("objective", { exact: true }).fill("low-VOC binder");
+        await page.getByRole("radio", { name: "Explore", exact: true }).check();
+        await page.getByLabel("What are you exploring?").selectOption("formulation");
+        await openCreationDetails(page, "create task");
+        await page.getByLabel("Research goal (optional)").fill("low-VOC binder");
       },
     },
   ];
 
   for (const m of modes) {
     await page.goto(`/projects/${encodeURIComponent(projectId)}`);
+    await openTaskCreator(page);
     await page.getByLabel("task title").fill(`task-${m.mode}`);
     await m.fill();
     await page.getByRole("button", { name: /create task/i }).click();
@@ -189,6 +194,7 @@ test("API down during save reports unsaved (AT-0206-2)", async ({
   const taskId = await makeTask(token, projectId);
 
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
+  await openCriteriaEditor(page);
   const editor = page.locator('[aria-label="success contract editor"]');
   await editor.getByLabel("target value(s)").first().fill("1.5");
   await expect(page.getByText("unsaved changes — not persisted")).toBeVisible();

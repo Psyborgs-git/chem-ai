@@ -130,6 +130,45 @@ class AuthSession(Base, UUIDPrimaryKey, WorkspaceScoped):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class InferenceCredential(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
+    """Opaque Keychain references and durable cross-resource cleanup intents.
+
+    No credential bytes, hashes, or fragments belong in the database.
+    """
+
+    __tablename__ = "inference_credentials"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "id", name="uq_inference_credentials_scope_id"),
+        CheckConstraint("state IN ('pending','active','retired')", name="state"),
+    )
+    state: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+
+
+class InferenceProvider(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped, OptimisticLock):
+    __tablename__ = "inference_providers"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "id", name="uq_inference_providers_scope_id"),
+        ForeignKeyConstraint(
+            ["workspace_id", "credential_ref"],
+            ["inference_credentials.workspace_id", "inference_credentials.id"],
+            name="fk_inference_provider_credential_scope",
+        ),
+        CheckConstraint("kind IN ('openai','openai_compatible')", name="kind"),
+        CheckConstraint("api_style IN ('chat_completions','responses')", name="api_style"),
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    base_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    model: Mapped[str] = mapped_column(String(160), nullable=False)
+    api_style: Mapped[str] = mapped_column(String(32), nullable=False, default="chat_completions")
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    supports_tools: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    credential_ref: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    last_test_status: Mapped[str] = mapped_column(String(24), nullable=False, default="untested")
+    last_test_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_test_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class Project(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped, OptimisticLock):
     __tablename__ = "projects"
     __table_args__ = (
@@ -2173,9 +2212,7 @@ class EvidenceApplicability(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
             "candidate_revision_id",
             name="uq_evapp_pair",
         ),
-        CheckConstraint(
-            f"status IN {EVIDENCE_APPLICABILITY_STATUSES!r}", name="status"
-        ),
+        CheckConstraint(f"status IN {EVIDENCE_APPLICABILITY_STATUSES!r}", name="status"),
         Index(
             "ix_evapp_candidate",
             "workspace_id",
@@ -2192,9 +2229,7 @@ class EvidenceApplicability(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="applicable")
     rationale: Mapped[str] = mapped_column(Text, nullable=False)
     reviewed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    revoked_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class MeasurementAmendment(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):

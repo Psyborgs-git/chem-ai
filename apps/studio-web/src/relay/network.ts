@@ -20,6 +20,28 @@ export function createNetwork() {
   return Network.create(fetchGraphQL);
 }
 
+/** Authenticated application job/library transport. Destinations are app-local. */
+export async function workspaceRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  if (!/^\/api\/(library|agent-workspace|learning-workspace)(\/|\?|$)/.test(path)) {
+    throw new Error("Unsupported workspace endpoint");
+  }
+  const response = await fetch(path, {
+    ...init,
+    credentials: "same-origin",
+    headers: init.body instanceof FormData ? init.headers : {
+      ...(init.body ? { "content-type": "application/json" } : {}),
+      ...init.headers,
+    },
+  });
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = authFailure(response.status, body);
+    const detail = (body as { detail?: unknown } | null)?.detail;
+    throw new Error(error.ok ? "Request failed" : typeof detail === "string" ? detail : error.message);
+  }
+  return body as T;
+}
+
 /** Relay GlobalIDs are `base64(Type:uuid)` — the REST channels use
  * the raw uuid. */
 export function rawUuid(globalId: string): string {
@@ -122,7 +144,9 @@ export function authSignIn(input: {
 /** Server revokes the session row and clears the cookie; safe to
  * call even when the session is already gone. */
 export async function authSignOut(): Promise<AuthResult> {
-  return postAuth("/api/auth/logout", null);
+  const result = await postAuth("/api/auth/logout", null);
+  if (result.ok) window.dispatchEvent(new Event("studio-auth-cleared"));
+  return result;
 }
 
 export type ViewerProbe =

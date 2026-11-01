@@ -46,12 +46,15 @@ class StructuralResult:
     canonical_smiles: str | None = None
     inchi_key: str | None = None
     formula: str | None = None
+    depiction_svg: str | None = None
+    depiction_error: str | None = None
     descriptors: dict[str, Any] = field(default_factory=dict)
     engine_id: str = "rdkit"
     engine_version: str | None = None
     adapter_version: str = ADAPTER_VERSION
     method: str = "rdkit-descriptors/v1"
     evidence_type: str = "descriptor"
+    execution: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -61,6 +64,7 @@ class EngineError:
     stage: str
     engine_id: str = "rdkit"
     adapter_version: str = ADAPTER_VERSION
+    execution: dict[str, Any] = field(default_factory=dict)
 
 
 class RDKitAdapter:
@@ -143,12 +147,31 @@ class RDKitAdapter:
             limits=ExecLimits(wall_seconds=60, cpu_seconds=30),
             cancel=cancel,
         )
+        execution = {
+            "profile": res.profile.backend,
+            "enforced": res.profile.enforced,
+            "wall_seconds": round(res.wall_seconds, 3),
+            "tree_exited": res.tree_exited,
+        }
+        if res.cancelled:
+            return EngineError(
+                "CANCELLED", "calculation cancelled", "execution", execution=execution
+            )
+        if res.timed_out:
+            return EngineError(
+                "TIMED_OUT", "calculation exceeded 60 seconds", "execution", execution=execution
+            )
+        if res.exit_code != 0:
+            return EngineError(
+                "INTERNAL", "worker process failed", "execution", execution=execution
+            )
         out = res.json_stdout()
         if out is None:
             return EngineError(
                 code="INTERNAL",
-                message=f"worker produced no typed result: {res.stderr[-300:]}",
+                message="worker produced no typed result",
                 stage="describe",
+                execution=execution,
             )
         if not out.get("ok"):
             err = out.get("error") or {}
@@ -156,6 +179,7 @@ class RDKitAdapter:
                 code=err.get("code", "INTERNAL"),
                 message=err.get("message", "unknown engine failure"),
                 stage=err.get("stage", "describe"),
+                execution=execution,
             )
         structure = out["structure"]
         return StructuralResult(
@@ -163,9 +187,12 @@ class RDKitAdapter:
             canonical_smiles=structure["canonical_smiles"],
             inchi_key=structure.get("inchi_key"),
             formula=structure.get("formula"),
+            depiction_svg=structure.get("depiction_svg"),
+            depiction_error=structure.get("depiction_error"),
             descriptors=out["descriptors"],
             engine_version=out["engine"]["version"],
             method=out.get("method", "rdkit-descriptors/v1"),
+            execution=execution,
         )
 
     def _version_probe(self) -> str | None:

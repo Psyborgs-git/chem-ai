@@ -56,7 +56,7 @@ _ALLOWED: dict[str, frozenset[str]] = {
             "interrupted",
         }
     ),
-    "cancel_requested": frozenset({"cancelled", "succeeded", "failed", "timed_out"}),
+    "cancel_requested": frozenset({"cancelled", "succeeded", "failed", "timed_out", "interrupted"}),
     "interrupted": frozenset({"queued", "cancelled", "failed"}),
     "blocked": frozenset({"requested", "cancelled"}),
 }
@@ -359,24 +359,30 @@ class RunService:
 
     # -- reconciliation -------------------------------------------------
 
-    def reconcile(self, *, stale_before: datetime, retry_transient: bool = True) -> list[Run]:
+    def reconcile(
+        self,
+        *,
+        stale_before: datetime,
+        retry_transient: bool = True,
+        kind: str | None = None,
+        include_cancel_requested: bool = False,
+    ) -> list[Run]:
         """Runs whose live attempt has gone silent past ``stale_before``
         become ``interrupted`` — never falsely ``succeeded`` (AT-0401-2).
         Under policy an interrupted run is requeued as a NEW attempt;
-        the interrupted attempt row is preserved for audit."""
-        stale = (
-            self.db.execute(
-                select(Run)
-                .where(
-                    Run.workspace_id == self.ctx.workspace_id,
-                    Run.status.in_(["queued", "running"]),
-                )
-                .with_for_update()
-                .order_by(Run.id)
-            )
-            .scalars()
-            .all()
+        the interrupted attempt row is preserved for audit. ``kind``
+        narrows the recovery lane; lost cancellation requests can be
+        included explicitly and are never automatically retried."""
+        statuses = ["queued", "running"]
+        if include_cancel_requested:
+            statuses.append("cancel_requested")
+        stmt = select(Run).where(
+            Run.workspace_id == self.ctx.workspace_id,
+            Run.status.in_(statuses),
         )
+        if kind is not None:
+            stmt = stmt.where(Run.kind == kind)
+        stale = self.db.execute(stmt.with_for_update().order_by(Run.id)).scalars().all()
         reconciled: list[Run] = []
         now = datetime.now(UTC)
         for run in stale:
@@ -389,7 +395,9 @@ class RunService:
             attempt.status = "interrupted"
             attempt.finished_at = now
             attempt.error = {"code": "worker_lost", "message": "worker heartbeat expired"}
+            was_cancel_requested = run.status == "cancel_requested"
             self._transition(run, "interrupted")
+            run.error = dict(attempt.error)
             audit_record(
                 self.db,
                 self.ctx,
@@ -398,7 +406,11 @@ class RunService:
                 target_id=run.id,
                 detail={"attemptId": str(attempt.id), "kind": run.kind},
             )
-            if retry_transient and run.attempt_count < run.max_attempts:
+            if (
+                retry_transient
+                and not was_cancel_requested
+                and run.attempt_count < run.max_attempts
+            ):
                 self._transition(run, "queued")
                 nxt = RunAttempt(
                     workspace_id=self.ctx.workspace_id,
@@ -424,6 +436,8 @@ class RunService:
                         "reconciled": True,
                     },
                 )
+            if run.status == "interrupted":
+                run.finished_at = now
             reconciled.append(run)
         self.db.flush()
         return reconciled

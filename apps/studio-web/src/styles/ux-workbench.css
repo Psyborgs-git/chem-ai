@@ -1,0 +1,116 @@
+/* A task is a working surface: orient, act, then inspect details when needed. */
+.cs-workbench-header.cs-task-context { background: transparent; border: 0; border-radius: 0; padding: 0; margin: 0 0 1.35rem; }
+.cs-workbench-breadcrumb { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 1rem; font-size: 0.75rem; color: var(--text-muted); }
+.cs-workbench-breadcrumb a { color: var(--text-muted); text-decoration: none; }
+.cs-workbench-breadcrumb a:hover { color: var(--accent); text-decoration: underline; }
+.cs-workbench-title-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.cs-workbench-title-row > div { min-width: 0; }
+h1.cs-workbench-title { font-size: clamp(1.55rem, 2.6vw, 2rem); margin: 0; line-height: 1.18; letter-spacing: -0.04em; }
+.cs-workbench-goal { max-width: 65ch; font-size: 0.85rem; color: var(--text-muted); margin: 0.6rem 0 0; }
+.cs-workbench-header .cs-workbench-next[data-field="next-action"] { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; padding: 1rem 1.15rem; margin-top: 1.15rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.cs-workbench-next > div:first-child { display: grid; gap: 0.3rem; }
+.cs-workbench-next .cs-eyebrow { font-size: 0.6rem; margin: 0; }
+.cs-workbench-next > div:first-child > a { display: inline-flex; align-items: center; gap: 0.75rem; color: var(--text); font-size: 0.9rem; font-weight: 650; text-decoration: none; }
+.cs-workbench-next > div:first-child > a:hover { color: var(--accent); }
+.cs-workbench-next > div:first-child > a .cs-icon { width: 16px; height: 16px; color: var(--accent); }
+.cs-workbench-details { margin-top: 0.35rem; font-size: 0.75rem; }
+.cs-workbench-details > summary { display: flex; align-items: center; gap: 0.6rem; color: var(--text-muted); min-height: 36px; font-weight: 500; }
+.cs-workbench-details > summary::before { content: "+"; font-size: 1rem; }
+.cs-workbench-details[open] > summary::before { content: "−"; }
+.cs-workbench-metadata { padding: 0.75rem 1rem; border: 1px solid var(--border); background: var(--surface); border-radius: 8px; }
+.cs-workbench-header .cs-workbench-metadata p { margin: 0.3rem 0; }
+.cs-workbench-header .cs-workbench-metadata [data-field="gaps"] { padding: 0.65rem; margin-top: 0.65rem; }
+.cs-workflow-path { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); list-style: none; padding: 0; margin: 0 0 1.5rem; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.cs-workflow-path li { min-width: 0; position: relative; }
+.cs-workflow-path li + li { border-left: 1px solid var(--border); }
+.cs-workflow-path li[aria-current="step"] { background: var(--accent-subtle); }
+.cs-workflow-path li[aria-current="step"]::after { content: ""; height: 3px; position: absolute; bottom: 0; left: 0; right: 0; background: var(--accent); }
+.cs-workflow-path a { display: flex; align-items: center; gap: 0.75rem; min-height: 82px; padding: 0.85rem 1rem; text-decoration: none; color: var(--text); }
+.cs-workflow-path a:hover { background: var(--surface-raised); }
+.cs-workflow-path strong { display: block; font-size: 0.78rem; }
+.cs-workflow-path small { display: block; font-size: 0.68rem; margin-top: 0.2rem; line-height: 1.4; }
+.cs-workflow-path .cs-workflow-art { width: 45px; height: 48px; flex: 0 0 45px; }
+.cs-workflow-check { margin-left: auto; color: var(--status-success); font-size: 0.8rem; }
+.cs-workbench-navigation { position: relative; display: flex; align-items: start; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.35rem; border-bottom: 1px solid var(--border); }
+.cs-task-workbench .cs-workbench-navigation nav[aria-label="task sections"] { display: flex; flex: 1; flex-wrap: wrap; gap: 0.25rem; border: 0; padding: 0; margin: 0; border-radius: 0; background: transparent; }
+.cs-workbench-navigation nav[aria-label="task sections"] .cs-tab { gap: 0.4rem; padding: 0.7rem 0.8rem; border-radius: 8px 8px 0 0; min-height: 44px; font-size: 0.77rem; }
+.cs-workbench-navigation .cs-tab .cs-icon { width: 16px; height: 16px; }
+.cs-workbench-navigation nav[aria-label="task sections"] .cs-tab--active { box-shadow: inset 0 -2px 0 var(--accent); }
+.cs-workbench-tools { flex: 0 0 auto; position: relative; }
+.cs-workbench-tools > summary { display: flex; align-items: center; gap: 0.4rem; padding: 0.7rem 0.8rem; min-height: 44px; font-size: 0.77rem; font-weight: 550; color: var(--text-muted); }
+.cs-workbench-tools > summary::-webkit-details-marker { display: none; }
+.cs-workbench-tools > summary .cs-icon { width: 16px; height: 16px; }
+.cs-workbench-tools.is-current > summary { color: var(--accent); background: var(--accent-subtle); border-radius: 8px 8px 0 0; }
+.cs-workbench-tools nav { position: absolute; right: 0; top: calc(100% + 0.25rem); z-index: 15; min-width: 13rem; padding: 0.4rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: 0 12px 30px rgb(15 30 50 / 12%); }
+.cs-workbench-tools nav a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 42px; padding: 0.6rem 0.8rem; color: var(--text); border-radius: 6px; text-decoration: none; font-size: 0.8rem; }
+.cs-workbench-tools nav a:hover, .cs-workbench-tools nav a[aria-current="page"] { color: var(--accent); background: var(--accent-subtle); }
+.cs-workbench-tools nav a span { font-size: 0.8rem; color: var(--text-muted); }
+.cs-task-workbench .cs-workbench-navigation nav[aria-label="section views"] { flex-basis: 100%; padding: 0.4rem 0; margin: 0; border-bottom: 0; }
+
+/* Creation starts with intent. Technical identifiers and secondary fields are optional. */
+.cs-intent-form, .cs-project-create { gap: 1.25rem; }
+.cs-intent-form .cs-intent-picker { border: 0; padding: 0; margin: 0; }
+.cs-intent-picker > legend { padding: 0 0 0.65rem; color: var(--text); font-size: 0.8rem; }
+.cs-intent-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.65rem; }
+.cs-intent-choice { position: relative; display: grid; align-content: start; gap: 0.35rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); cursor: pointer; min-width: 0; }
+.cs-intent-choice:hover { border-color: var(--border-strong); background: var(--surface-raised); }
+.cs-intent-choice.is-selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--accent-subtle); }
+.cs-intent-choice:focus-within { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+.cs-intent-choice > input[type="radio"] { position: absolute; right: 0.7rem; top: 0.7rem; margin: 0; }
+.cs-intent-choice strong { font-size: 0.85rem; font-weight: 650; }
+.cs-intent-choice > span { font-size: 0.71rem; line-height: 1.45; color: var(--text-muted); }
+.cs-intent-choice .cs-intent-art { width: 100%; height: 64px; max-width: 100px; margin: 0 0 0.2rem; }
+.cs-intent-form .cs-create-context { background: var(--surface-raised); }
+.cs-create-details { padding: 0.25rem 0; border-block: 1px solid var(--border); }
+.cs-create-details > summary { display: flex; gap: 0.5rem; align-items: center; font-size: 0.8rem; color: var(--text); }
+.cs-create-details > summary::before { content: "+"; font-size: 1rem; font-weight: 400; }
+.cs-create-details[open] > summary::before { content: "−"; }
+.cs-create-details > summary span { color: var(--text-muted); font-size: 0.7rem; font-weight: 400; }
+.cs-create-details > .cs-field { margin-block-bottom: 1rem; }
+.cs-create-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: 0.25rem; }
+.cs-create-footer > p { color: var(--text-muted); font-size: 0.72rem; line-height: 1.5; margin: 0; max-width: 32ch; }
+.cs-create-footer > button { flex-shrink: 0; }
+.cs-create-disclosure { grid-column: 1 / -1; justify-self: start; width: 100%; max-width: 56rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.cs-create-disclosure > summary { display: flex; align-items: center; gap: 0.6rem; padding: 0.9rem 1.2rem; font-size: 0.82rem; color: var(--accent); }
+.cs-create-disclosure > summary::before { content: "+"; font-size: 1.1rem; line-height: 1; }
+.cs-create-disclosure[open] > summary::before { content: "−"; }
+.cs-create-disclosure > form { margin: 0; padding: 0.5rem 1.25rem 1.25rem; border: 0; }
+.cs-registry-surface > section:has(> .cs-create-disclosure) { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) { .cs-workflow-path a { gap: 0.45rem; padding: 0.75rem; } .cs-workflow-path .cs-workflow-art { width: 34px; flex-basis: 34px; } .cs-workbench-navigation nav[aria-label="task sections"] .cs-tab { padding-inline: 0.65rem; } }
+@media (max-width: 767px) {
+  .cs-workbench-title-row { flex-wrap: wrap; align-items: start; gap: 0.65rem; }
+  .cs-workbench-title-row .cs-status { font-size: 0.68rem; }
+  .cs-workbench-header .cs-workbench-next[data-field="next-action"] { gap: 0.85rem; padding: 0.9rem; }
+  .cs-workbench-next .cs-actions { width: 100%; }
+  .cs-workbench-next .cs-actions > * { flex: 1; }
+  .cs-workflow-path { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cs-workflow-path li:nth-child(3) { border-left: 0; border-top: 1px solid var(--border); }
+  .cs-workflow-path li:nth-child(4) { border-top: 1px solid var(--border); }
+  .cs-workflow-path a { min-height: 76px; }
+  .cs-task-workbench .cs-workbench-navigation nav[aria-label="task sections"] { flex-basis: calc(100% - 4.5rem); }
+  .cs-workbench-navigation nav[aria-label="task sections"] .cs-tab { flex: 1 0 calc(33.33% - 0.5rem); justify-content: center; font-size: 0.72rem; padding-inline: 0.35rem; border-radius: 7px; }
+  .cs-workbench-navigation .cs-tab .cs-icon { display: none; }
+  .cs-workbench-tools > summary { padding-inline: 0.5rem; }
+  .cs-workbench-tools > summary .cs-icon { display: none; }
+  .cs-intent-options { gap: 0.5rem; }
+  .cs-intent-choice { padding: 0.7rem 0.5rem; }
+  .cs-intent-choice .cs-intent-art { height: 54px; }
+  .cs-intent-choice > span { font-size: 0.65rem; }
+  .cs-create-footer { align-items: start; flex-direction: column; }
+  .cs-create-footer > button { width: 100%; }
+}
+.cs-overview-prompt { display: grid; grid-template-columns: minmax(100px, 180px) minmax(0, 1fr); align-items: center; gap: 2rem; padding: 2rem; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.cs-overview-prompt .cs-overview-art { width: 100%; height: 160px; }
+.cs-overview-prompt h2 { font-size: 1.3rem; letter-spacing: -0.025em; margin: 0 0 0.7rem; }
+.cs-overview-prompt p:not(.cs-eyebrow) { max-width: 58ch; color: var(--text-muted); font-size: 0.85rem; }
+.cs-overview-criteria { padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.cs-overview-criteria > header, .cs-overview-editor > header { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.cs-overview-criteria header h2 { display: flex; align-items: center; flex-wrap: wrap; gap: 0.65rem; }
+.cs-overview-criteria header p:not(.cs-eyebrow) { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
+.cs-criteria-preview { list-style: none; padding: 0; margin: 0; }
+.cs-criteria-preview > li { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: 1rem; padding: 1rem 0; border-top: 1px solid var(--border); }
+.cs-criteria-preview strong { font-size: 0.85rem; }
+.cs-criteria-preview small { display: block; font-size: 0.7rem; margin-top: 0.2rem; }
+.cs-criteria-target { font-family: var(--font-mono); font-size: 0.85rem; }
+.cs-criteria-conditions { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; }
+@media (max-width: 767px) { .cs-overview-prompt { grid-template-columns: minmax(0, 1fr); gap: 0.75rem; padding: 1.25rem; } .cs-overview-prompt .cs-overview-art { width: 90px; height: 80px; } .cs-overview-criteria { padding: 1rem; } .cs-overview-criteria > header { flex-wrap: wrap; } .cs-criteria-preview > li { grid-template-columns: minmax(0, 1fr); gap: 0.5rem; } }

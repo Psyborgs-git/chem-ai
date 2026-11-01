@@ -1,4 +1,8 @@
+import { useState } from 'react';
+import { Link } from 'react-router';
 import { useLazyLoadQuery } from 'react-relay';
+import { PageHeader, Panel, TechnicalDetails } from '../../components/layout/StudioLayout';
+import { Button } from '../../components/atoms/Button';
 import { ComputeResourcesQuery } from './operations';
 import type { operationsComputeResourcesQuery } from '../../__generated__/operationsComputeResourcesQuery.graphql';
 
@@ -46,38 +50,39 @@ function gib(v?: number | null): string {
 function dimRow(name: string, cap: number | null | undefined, res: number | undefined, used: number | undefined) {
   const effective =
     cap === null || cap === undefined ? null : cap - (res ?? 0) - (used ?? 0);
+  const labels: Record<string, string> = { cpu_cores: 'CPU cores', memory_bytes: 'Memory', gpu_devices: 'GPU devices', storage_bytes: 'Storage', concurrency: 'Concurrent runs' };
+  const format = (value: number) => name.endsWith('_bytes') ? gib(value) : String(value);
   return (
     <tr key={name}>
-      <td className="cs-table__identity">{name}</td>
-      <td>{cap === null || cap === undefined ? 'unobserved' : String(cap)}</td>
-      <td>{res ?? 0}</td>
-      <td>{used ?? 0}</td>
-      <td>{effective === null ? 'not schedulable' : String(effective)}</td>
+      <td className="cs-table__identity">{labels[name] ?? name}</td>
+      <td>{cap === null || cap === undefined ? 'unobserved' : format(cap)}</td>
+      <td>{format(res ?? 0)}</td>
+      <td>{format(used ?? 0)}</td>
+      <td>{effective === null ? 'not schedulable' : format(effective)}</td>
     </tr>
   );
 }
 
 export function ComputePanel() {
+  const [fetchKey, setFetchKey] = useState(0);
   const data = useLazyLoadQuery<operationsComputeResourcesQuery>(
     ComputeResourcesQuery,
     {},
+    { fetchKey, fetchPolicy: 'store-and-network' },
   );
   const view = data.computeResources as ComputeResources;
   const hw = view.hardware;
 
   return (
-    <section className="panel">
-      <header>
-        <h2>Compute capability</h2>
-        <p className="muted">
-          Observed at {hw.observed_at}. Fields that cannot be observed are
-          reported unknown — nothing is estimated or fabricated. Admission
-          reserves the configured headroom so the UI and API stay responsive
-          while heavy work runs.
-        </p>
-      </header>
-
-      <h3>Hardware</h3>
+    <section className="cs-family-page">
+      <PageHeader eyebrow="Local resources" title="Compute capability" description="Know what this device can run. Capacity is observed, and configured reserves keep the studio responsive during calculations." actions={<Button onClick={() => setFetchKey((k) => k + 1)}>Refresh report</Button>} />
+      <dl className="cs-compute-summary">
+        <div><dt>Available memory</dt><dd>{gib(hw.ram_available_bytes)}</dd></div>
+        <div><dt>Logical CPU cores</dt><dd>{hw.cpu_count_logical ?? 'Unknown'}</dd></div>
+        <div><dt>Free storage</dt><dd>{gib(hw.disk_free_bytes)}</dd></div>
+      </dl>
+      <div className="cs-callout"><strong>Run a calculation from a research task</strong><p>Select a project and open its task to calculate molecular descriptors. Results remain linked to the research context. <Link to="/projects">Open projects →</Link></p></div>
+      <Panel title="Device & hardware" description={<>Observed at {new Date(hw.observed_at).toLocaleString()}. Unobservable fields remain unknown.</>}>
       <div
         className="cs-table-wrap"
         role="region"
@@ -109,10 +114,11 @@ export function ComputePanel() {
           </tbody>
         </table>
       </div>
+      <TechnicalDetails value={{ runtimes: hw.runtimes, isolation: hw.isolation, python_version: hw.python_version }} label="Inspect runtime & isolation report" />
+      </Panel>
 
       {view.groups.map((g) => (
-        <section key={g.name}>
-          <h3>Resource group: {g.name}</h3>
+        <Panel key={g.name} title={`Resource group: ${g.name}`} description="Available capacity accounts for the configured reserve and current reservations.">
           <div
             className="cs-table-wrap"
             role="region"
@@ -138,7 +144,7 @@ export function ComputePanel() {
               </tbody>
             </table>
           </div>
-        </section>
+        </Panel>
       ))}
       {view.groups.length === 0 && (
         <p className="muted">

@@ -1,3 +1,4 @@
+import { openResearchStream, openTaskTool } from "./ux-helpers";
 import { expect, request, test } from "@playwright/test";
 
 import { gql, signIn } from "./at-1103-helpers";
@@ -53,7 +54,7 @@ async function postMessage(
 async function openSessionStream(page: import("@playwright/test").Page, taskId: string) {
   await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
   await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "research" }).click();
-  await page.locator("details summary").first().click();
+  await openResearchStream(page);
 }
 
 test.describe("PAR-08a stream recovery", () => {
@@ -120,8 +121,7 @@ test.describe("PAR-08a stream recovery", () => {
     expect(run.data.runs.request.errors).toEqual([]);
 
     await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
-    await page.locator('nav[aria-label="task sections"]').getByRole("link", { name: "advanced" }).click();
-    await page.locator('nav[aria-label="section views"]').getByRole("link", { name: "runs" }).click();
+    await openTaskTool(page, "runs");
     await expect(
       page.locator('ul[aria-label="task runs"] li').first(),
     ).toContainText("requested");

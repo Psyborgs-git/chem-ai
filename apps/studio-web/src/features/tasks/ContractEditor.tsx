@@ -57,13 +57,15 @@ const metricCount = (p: unknown): number => {
 export function ContractEditor({
   taskId,
   workflowState,
+  onSaved,
 }: {
   taskId: string;
   workflowState: string;
+  onSaved?: () => void;
 }) {
   return (
     <Suspense fallback={<LoadingState label="loading contract…" />}>
-      <ContractEditorInner taskId={taskId} workflowState={workflowState} />
+      <ContractEditorInner taskId={taskId} workflowState={workflowState} onSaved={onSaved} />
     </Suspense>
   );
 }
@@ -71,9 +73,11 @@ export function ContractEditor({
 function ContractEditorInner({
   taskId,
   workflowState,
+  onSaved,
 }: {
   taskId: string;
   workflowState: string;
+  onSaved?: () => void;
 }) {
   const [fetchKey, setFetchKey] = useState(0);
   // fetchKey + network-only forces a real refetch after save/freeze —
@@ -205,6 +209,7 @@ function ContractEditorInner({
                 setHydratedFrom(resp.contractDraftCreate.contractRevision?.id ?? null);
                 setFetchKey((k) => k + 1);
                 resolve(true);
+                onSaved?.();
               } else if (
                 errs.some((e) => e.code.includes("CONFLICT"))
               ) {
@@ -233,6 +238,7 @@ function ContractEditorInner({
           pendingForm.clear(taskId);
           save.markSaved();
           setFetchKey((k) => k + 1);
+          onSaved?.();
         } else if (errs.some((e) => e.code.includes("CONFLICT"))) {
           save.markConflict(describeErrors(errs));
         } else {

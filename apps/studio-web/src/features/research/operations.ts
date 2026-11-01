@@ -2,6 +2,7 @@ import { graphql } from "react-relay";
 
 export const TaskSessionsQuery = graphql`
   query researchTaskSessionsQuery($taskId: ID!) {
+    inferenceProviders { id revision name model baseUrl enabled }
     taskSessions(taskId: $taskId, first: 50) {
       edges {
         node {
@@ -72,6 +73,7 @@ export const SessionEndMutation = graphql`
         errors {
           code
           message
+          fieldPath
         }
       }
     }
@@ -106,6 +108,7 @@ export const TurnRequestMutation = graphql`
         errors {
           code
           message
+          fieldPath
         }
       }
     }

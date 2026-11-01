@@ -6,7 +6,7 @@ export type Theme = "light" | "dark";
 const COOKIE = "studio_theme";
 
 export function readTheme(): Theme | null {
-  const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE}=(light|dark)\\b`));
+  const match = document.cookie.match(/(?:^|;\s*)studio_theme=(light|dark)(?:;|$)/);
   return match ? (match[1] as Theme) : null;
 }
 

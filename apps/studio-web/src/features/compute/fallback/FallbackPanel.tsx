@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "../../../components/layout/StudioLayout";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 import { Link } from "react-router";
 
@@ -337,8 +338,8 @@ export function FallbackPanel({ runId }: { runId: string }) {
 
   const report = view.report;
   return (
-    <div data-run-id={view.run.id}>
-      <h1>fallback review</h1>
+    <div className="cs-review-layout" data-run-id={view.run.id}>
+      <PageHeader eyebrow="Compute review" title="Fallback review" description="Review measured local feasibility before considering any export. An export proposal carries no permission to send data." />
       <p>
         <Badge tone="neutral">{view.run.kind}</Badge>{" "}
         <Badge tone={view.run.status === "blocked" ? "warning" : "info"}>{view.run.status}</Badge>

@@ -1,3 +1,5 @@
+import { StructuredRows } from "../../../components/molecules/StructuredRows";
+import { FeatureSurface } from "../../../components/layout/StudioLayout";
 import { Suspense, useState } from "react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
@@ -504,15 +506,15 @@ function SuiteCard({
       )}
       {suite.state === "draft" && (
         <div role="group" aria-label="draft suite actions">
-          <label>
-            hidden labels (JSON array of targets){" "}
-            <textarea
-              rows={3}
-              value={labelsJson}
-              onChange={(e) => setLabelsJson(e.target.value)}
-              placeholder='[{"example_id":"ex1","expect":"exact","value":"42"}]'
-            />
-          </label>
+          <StructuredRows label="Hidden labels" value={labelsJson} onChange={setLabelsJson}
+            newRow={{ example_id: "", expect: "exact", value: "", required_terms: [], forbidden_terms: [] }}
+            fields={[
+              { key: "example_id", label: "Example identifier" },
+              { key: "expect", label: "Expected behavior", options: ["exact", "contains", "abstain", "json_object", "refusal"] },
+              { key: "value", label: "Expected value", kind: "text" },
+              { key: "required_terms", label: "Required terms", kind: "list", hint: "Comma-separated; required for contains targets" },
+              { key: "forbidden_terms", label: "Forbidden terms", kind: "list", hint: "Comma-separated; hidden labels stay behind the evaluation service" },
+            ]} />
           <Button variant="secondary" disabled={busy || !labelsJson} onClick={submitLabels}>
             attach labels
           </Button>
@@ -698,7 +700,7 @@ export function EvaluationsPanel({ taskId }: { taskId: string | null }) {
   };
 
   return (
-    <div>
+    <FeatureSurface title="Evaluation & promotion" description="Version the evaluation tasks and thresholds, compare releases and review the evidence for promotion.">
       <p>
         evaluation is independent of the optimizer's reward: versioned
         suites pin tasks, allowed context, tool versions, budgets and
@@ -713,6 +715,7 @@ export function EvaluationsPanel({ taskId }: { taskId: string | null }) {
           doCreate();
         }}
       >
+        <h3>New evaluation suite</h3>
         <TextField
           label="suite name"
           value={name}
@@ -726,24 +729,23 @@ export function EvaluationsPanel({ taskId }: { taskId: string | null }) {
             <option value="final">final (untouched held-out)</option>
           </select>
         </label>
-        <label>
-          tasks (JSON array — public part only){" "}
-          <textarea
-            rows={4}
-            value={tasksJson}
-            onChange={(e) => setTasksJson(e.target.value)}
-            placeholder='[{"example_id":"ex1","messages":[{"role":"user","content":"…"}],"subgroup":"g1","answerable":true,"group_keys":["g1"]}]'
-          />
-        </label>
-        <label>
-          thresholds (JSON array, optional){" "}
-          <textarea
-            rows={2}
-            value={thresholdsJson}
-            onChange={(e) => setThresholdsJson(e.target.value)}
-            placeholder='[{"metric":"correctness","direction":"min","value":null}]'
-          />
-        </label>
+        <StructuredRows label="Evaluation tasks" value={tasksJson} onChange={setTasksJson}
+          newRow={{ example_id: "", kind: "task", messages: [{ role: "user", content: "" }], subgroup: "default", answerable: true, group_keys: [] }}
+          fields={[
+            { key: "example_id", label: "Example identifier" },
+            { key: "kind", label: "Task type", options: ["task", "safety", "privacy"] },
+            { key: "messages", label: "Public messages", kind: "messages" },
+            { key: "subgroup", label: "Subgroup" },
+            { key: "group_keys", label: "Group keys", kind: "list", hint: "Comma-separated lineage groups; at least one required" },
+            { key: "answerable", label: "Answerable from the permitted context", kind: "boolean" },
+          ]} />
+        <StructuredRows label="Acceptance thresholds" value={thresholdsJson} onChange={setThresholdsJson}
+          newRow={{ metric: "", direction: "min", value: null }}
+          fields={[
+            { key: "metric", label: "Metric" },
+            { key: "direction", label: "Direction", options: ["min", "max"] },
+            { key: "value", label: "Threshold", kind: "number", hint: "Leave blank when unknown; a missing threshold is never zero" },
+          ]} />
         <Button
           variant="primary"
           type="submit"
@@ -775,6 +777,6 @@ export function EvaluationsPanel({ taskId }: { taskId: string | null }) {
         <RunList key={`r${refreshKey}`} taskId={taskId} />
       </Suspense>
       <PromotionSurface key={`d${refreshKey}`} taskId={taskId} />
-    </div>
+    </FeatureSurface>
   );
 }

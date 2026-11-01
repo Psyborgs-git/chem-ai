@@ -1,0 +1,32 @@
+.cs-lab-step-heading { display:flex; align-items:center; justify-content:space-between; gap:1.5rem; margin-bottom:1.25rem; }
+.cs-lab-step-heading h2,.cs-lab-step-heading h3 { margin:.25rem 0 .6rem; font-size:1.6rem; letter-spacing:-.035em; }
+.cs-lab-step-heading p:not(.cs-eyebrow) { color:var(--text-muted); max-width:42rem; line-height:1.6; }
+.cs-lab-step-heading .cs-chemistry-art { width:9rem; height:6rem; flex:none; }
+.cs-plan-bindings { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.cs-plan-bindings [hidden] { display:none; }
+.cs-lab-binding { min-width:0; border:1px solid var(--border); border-radius:var(--radius-md); padding:1rem; background:var(--surface-raised); }
+.cs-lab-binding__summary { display:grid; align-content:start; gap:.5rem; }
+.cs-lab-binding__summary > span { font-size:.76rem; color:var(--text-muted); }
+.cs-lab-binding__summary > strong { font-size:.88rem; overflow-wrap:anywhere; }
+.cs-lab-binding__summary .cs-btn { justify-self:start; min-height:34px; padding:.2rem 0; }
+.cs-lab-plan-options { border-block:1px solid var(--border); padding:.85rem 0; }
+.cs-lab-plan-options > .cs-field { margin-top:1rem; }
+.cs-lab-plan-options > summary,.cs-lab-secondary > summary { cursor:pointer; color:var(--text-muted); font-size:.82rem; }
+.cs-lab-plan-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr))!important; gap:1rem!important; }
+.cs-lab-plan-summary > div { min-width:0; }
+.cs-lab-plan-summary dt { color:var(--text-muted); font-size:.75rem; }
+.cs-lab-plan-summary dd { margin:.4rem 0 0; font-size:.85rem; }
+.cs-lab-breadcrumb { font-size:.7rem; color:var(--text-muted); margin-top:0; }
+.cs-lab-batch,.cs-lab-sample { min-width:0; }
+.cs-lab-reading-fields { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:1rem; }
+.cs-lab-method-summary { display:flex; flex-wrap:wrap; gap:.5rem 1.5rem; background:var(--surface-raised); padding:.75rem 1rem; border-radius:var(--radius-sm); color:var(--text-muted); font-size:.78rem; }
+.cs-lab-secondary { margin:.5rem 0; }
+.cs-lab-secondary > .cs-field { margin-top:1rem; }
+.cs-lab-measurement-form[open] { display:grid; gap:1rem; padding-top:.5rem; }
+.cs-lab-measurement-form > .cs-btn { justify-self:start; }
+@media(max-width:767px) {
+  .cs-lab-step-heading { align-items:flex-start; gap:.75rem; }
+  .cs-lab-step-heading .cs-chemistry-art { width:5rem; height:4rem; }
+  .cs-lab-step-heading h2,.cs-lab-step-heading h3 { font-size:1.3rem; }
+  .cs-plan-bindings,.cs-lab-reading-fields,.cs-lab-plan-summary { grid-template-columns:minmax(0,1fr)!important; }
+}

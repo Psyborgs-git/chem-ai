@@ -1,3 +1,4 @@
+import { FeatureSurface } from "../../../components/layout/StudioLayout";
 import { Suspense } from "react";
 import { useLazyLoadQuery } from "react-relay";
 
@@ -6,6 +7,7 @@ import { EmptyState, LoadingState } from "../../../components/states/states";
 import { TaskReportQuery } from "./operations";
 
 import type { tasksReportQuery } from "../../../__generated__/tasksReportQuery.graphql";
+import "./report.css";
 
 type Json = Record<string, unknown>;
 type Finding = { kind?: string; text?: string; action?: string };
@@ -52,7 +54,7 @@ function ReportBody({ taskId }: { taskId: string }) {
   const gates = (evaluation.gates ?? []) as Json[];
 
   return (
-    <div data-field="task-report">
+    <div className="cs-report-layout" data-field="task-report">
       <p>
         <Badge tone="info">mode: {String(task.mode ?? "?")}</Badge>{" "}
         <Badge tone="neutral">{String(task.workflowState ?? "?")}</Badge>{" "}
@@ -287,8 +289,10 @@ function ReportBody({ taskId }: { taskId: string }) {
  * review aid, never a scientific-validation claim. */
 export function TaskReportPanel({ taskId }: { taskId: string }) {
   return (
+    <FeatureSurface title="Research report" description="Review hypotheses, measurements, contradictions and limitations against the agreed success contract.">
     <Suspense fallback={<LoadingState label="compiling report…" />}>
       <ReportBody taskId={taskId} />
     </Suspense>
+    </FeatureSurface>
   );
 }

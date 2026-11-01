@@ -321,16 +321,19 @@ class TestRunnerCancellation:
                 '{"final": "should not be emitted"}',
             ]
         )
-        calls = {"n": 0}
 
         def cancel_check() -> bool:
-            calls["n"] += 1
-            return calls["n"] > 1  # first iteration proceeds, second sees cancel
+            # Cancellation follows an observed tool result, independently of
+            # how often the runner checks around a blocking model request.
+            return (
+                session.query(SessionMessage.id)
+                .filter_by(session_id=sess.id, kind="tool_result")
+                .first()
+                is not None
+            )
 
         runner = AgentTurnRunner(session, agent_ctx, runtime=runtime)
-        outcome = runner.run_turn(
-            sess.id, "q", turn_id=turn_id, cancel_check=cancel_check
-        )
+        outcome = runner.run_turn(sess.id, "q", turn_id=turn_id, cancel_check=cancel_check)
         assert outcome.finished_reason == "cancelled"
         assert outcome.tool_calls == 1
         kinds = [m.kind for m in _messages(session, sess.id)]

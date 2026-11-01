@@ -13,10 +13,12 @@ from __future__ import annotations
 import json
 import time
 import uuid
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any
 
 import jsonschema
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from studio.auth.context import ServiceContext
@@ -25,9 +27,18 @@ from studio.domain.candidates.verification import VerificationService
 from studio.domain.evidence.claims import ClaimService
 from studio.domain.evidence.retrieval import RetrievalService
 from studio.domain.runs.queue import RunService
-from studio.errors import DomainError, ErrorCode
+from studio.errors import DomainError, ErrorCode, not_found
+from studio.persistence.models import Artifact, ResearchTask, RetrievalManifest, SourceChunk
 
 MAX_RESULT_BYTES = 32_000
+
+
+class _ToolResultTooLarge(Exception):
+    pass
+
+
+MAX_SUMMARY_CANDIDATES = 10
+MAX_SUMMARY_HYPOTHESIS_CHARS = 100
 
 
 @dataclass(frozen=True)
@@ -59,6 +70,22 @@ class ToolRegistry:
     def names(self) -> list[str]:
         return sorted(self._tools)
 
+    def for_task(self, task_id: uuid.UUID | None) -> ToolRegistry:
+        """Advertise the session's required calculation attribution without
+        changing the unbound catalog used by legacy direct dispatchers."""
+        if task_id is None:
+            return self
+        tools = []
+        for tool in self._tools.values():
+            if tool.name == "request_calculation":
+                schema = deepcopy(tool.input_schema)
+                schema["required"] = list(dict.fromkeys([*schema.get("required", []), "task_id"]))
+                tool = AgentTool(
+                    tool.name, tool.description, schema, tool.handler, tool.untrusted_output
+                )
+            tools.append(tool)
+        return ToolRegistry(tools)
+
 
 @dataclass
 class ToolUsage:
@@ -78,37 +105,83 @@ class ToolDispatcher:
         *,
         max_calls: int = 8,
         max_wall_seconds: int = 300,
+        registry: ToolRegistry | None = None,
+        task_id: uuid.UUID | None = None,
+        provider_bound: bool = False,
     ) -> None:
         self.db = db
         self.ctx = ctx
         self.max_calls = max_calls
         self.max_wall_seconds = max_wall_seconds
+        self.registry = (registry if registry is not None else default_registry()).for_task(task_id)
+        self.task_id = task_id
+        self.provider_bound = provider_bound
         self.usage = ToolUsage()
 
-    def call(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    def call(self, name: str, arguments: Any) -> dict[str, Any]:
         if self.usage.calls >= self.max_calls:
             return self._err("BUDGET_EXHAUSTED", "tool-call budget exhausted")
         if time.monotonic() - self.usage.wall_started > self.max_wall_seconds:
             return self._err("BUDGET_EXHAUSTED", "turn wall-time budget exhausted")
-        tool = default_registry().get(name)
+        tool = self.registry.get(name)
         if tool is None:
             # an unregistered name (incl. any export/approve/promote
             # verb) is refused outright — the catalog is closed
             return self._err("UNKNOWN_TOOL", f"no registered tool '{name}'")
+        if not isinstance(arguments, dict):
+            return self._err("INVALID_INPUT", "arguments must be a JSON object")
         try:
-            jsonschema.validate(arguments, tool.input_schema)
+            jsonschema.validate(
+                arguments, tool.input_schema, format_checker=jsonschema.FormatChecker()
+            )
         except jsonschema.ValidationError as exc:
             return self._err("INVALID_INPUT", f"arguments: {exc.message}")
         self.usage.calls += 1
         self.usage.names.append(name)
         try:
-            result = tool.handler(self.db, self.ctx, arguments)
+            if self.task_id is not None:
+                if name == "request_calculation" and not arguments.get("task_id"):
+                    return self._err(
+                        "INVALID_INPUT", "task_id is required for this research session"
+                    )
+                if (
+                    "task_id" in arguments
+                    and _uuid_arg(arguments["task_id"], "task_id") != self.task_id
+                ):
+                    raise not_found("task")
+                candidate_field = {
+                    "read_candidate_revision": "candidate_revision_id",
+                    "propose_candidate_patch": "candidate_id",
+                }.get(name)
+                if candidate_field:
+                    candidate = CandidateService(self.db, self.ctx).get(
+                        _uuid_arg(arguments[candidate_field], candidate_field)
+                    )
+                    if candidate.task_id != self.task_id:
+                        raise not_found("candidate revision")
+            # Each invocation is atomic within the turn. A refusal, malformed
+            # result, or unexpected implementation failure cannot retain a
+            # partially written candidate/run and then report failure.
+            with self.db.begin_nested():
+                result = tool.handler(self.db, self.ctx, arguments)
+                if not isinstance(result, dict):
+                    raise TypeError("tool returned an invalid result")
+                if self.provider_bound and name == "search_evidence":
+                    result = _provider_safe_search_result(self.db, self.ctx, result)
+                encoded = json.dumps(result, default=str, allow_nan=False)
+                if len(encoded.encode("utf-8")) > MAX_RESULT_BYTES:
+                    raise _ToolResultTooLarge
         except DomainError as exc:
             return self._err(exc.code.value, exc.message)
-        encoded = json.dumps(result, default=str)
-        if len(encoded) > MAX_RESULT_BYTES:
+        except _ToolResultTooLarge:
             return self._err("RESULT_TOO_LARGE", f"result exceeds {MAX_RESULT_BYTES} bytes")
-        self.usage.total_result_bytes += len(encoded)
+        except Exception:
+            # Domain implementations are trusted code but can still fail.
+            # Never expose a DB/provider exception containing private values.
+            return self._err(
+                "TOOL_EXECUTION_FAILED", "tool execution failed; no partial changes were applied"
+            )
+        self.usage.total_result_bytes += len(encoded.encode("utf-8"))
         return {"ok": True, "untrusted": tool.untrusted_output, "data": result}
 
     @staticmethod
@@ -117,6 +190,69 @@ class ToolDispatcher:
 
 
 # ----------------------------------------------------------- handlers
+
+
+def _provider_safe_search_result(
+    db: Session, ctx: ServiceContext, result: dict[str, Any]
+) -> dict[str, Any]:
+    """Retrieval permission does not grant permission to send data to a provider.
+
+    Recheck both current records after retrieval, including cache hits. A
+    stale chunk cannot override an artifact's revoked export permission.
+    Only a count/reason for omissions leaves this boundary, never withheld
+    source IDs, locators, or snippets.
+    """
+    hits = result.get("results") or []
+    ids = []
+    for hit in hits:
+        try:
+            ids.append(uuid.UUID(str(hit["chunk_id"])))
+        except (KeyError, TypeError, ValueError):
+            continue
+    permitted = {
+        str(chunk_id)
+        for chunk_id in db.scalars(
+            select(SourceChunk.id)
+            .join(
+                Artifact,
+                (Artifact.id == SourceChunk.artifact_id)
+                & (Artifact.workspace_id == SourceChunk.workspace_id),
+            )
+            .where(
+                SourceChunk.workspace_id == ctx.workspace_id,
+                SourceChunk.id.in_(ids),
+                SourceChunk.status == "active",
+                SourceChunk.rights["export"].astext == "allowed",
+                Artifact.rights["export"].astext == "allowed",
+                Artifact.upload_state == "committed",
+                Artifact.review_state.not_in(["revoked", "rejected", "superseded"]),
+            )
+        )
+    }
+    visible = [hit for hit in hits if isinstance(hit, dict) and hit.get("chunk_id") in permitted]
+    withheld = len(hits) - len(visible)
+    manifest_id = _uuid_arg(result.get("manifest_id"), "manifest_id")
+    manifest = db.scalar(
+        select(RetrievalManifest).where(
+            RetrievalManifest.id == manifest_id,
+            RetrievalManifest.workspace_id == ctx.workspace_id,
+            RetrievalManifest.principal_id == ctx.principal_id,
+        )
+    )
+    if manifest is None:
+        raise not_found("retrieval manifest")
+    manifest.chunk_ids = [hit["chunk_id"] for hit in visible]
+    manifest.policy_version = f"{manifest.policy_version};source-export-v1"
+    db.flush()
+    return {
+        "manifest_id": str(manifest.id),
+        "results": visible,
+        "export_policy": "source-export-v1",
+        "withheld_sources": withheld,
+        "omissions": ["Sources without current export permission were withheld."]
+        if withheld
+        else [],
+    }
 
 
 def _uuid_arg(value: Any, field: str) -> uuid.UUID:
@@ -192,6 +328,15 @@ def _task_evidence_summary(
     db: Session, ctx: ServiceContext, args: dict[str, Any]
 ) -> dict[str, Any]:
     task_uuid = _uuid_arg(args["task_id"], "task_id")
+    task = db.scalar(
+        select(ResearchTask).where(
+            ResearchTask.id == task_uuid,
+            ResearchTask.workspace_id == ctx.workspace_id,
+        )
+    )
+    if task is None:
+        raise not_found("task")
+    ctx.require("read_project", task.project_id)
     task_id = str(task_uuid)
     claims = [c for c in ClaimService(db).claims(ctx) if c.subject.get("task_id") == task_id]
     by_status: dict[str, int] = {}
@@ -202,6 +347,19 @@ def _task_evidence_summary(
         "claims": len(claims),
         "claims_by_status": by_status,
         "candidate_revisions": len(candidates),
+        "candidates_total": len(candidates),
+        "candidates_truncated": len(candidates) > MAX_SUMMARY_CANDIDATES,
+        "candidates": [
+            {
+                "id": str(candidate.id),
+                "revision": candidate.revision,
+                "status": candidate.status,
+                "hypothesis": (candidate.hypothesis or "")[:MAX_SUMMARY_HYPOTHESIS_CHARS],
+                "hypothesis_truncated": len(candidate.hypothesis or "")
+                > MAX_SUMMARY_HYPOTHESIS_CHARS,
+            }
+            for candidate in candidates[:MAX_SUMMARY_CANDIDATES]
+        ],
     }
 
 

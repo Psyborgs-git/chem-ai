@@ -48,7 +48,10 @@ test("review journey: keyboard-only navigation on a 360px viewport (AT-1103-2)",
 
   // the decisions group is one keyboard journey away — its default
   // view shows the decision log + closure record
-  await tabUntil(page, (f) => f.inTaskNav && f.text === "decisions");
+  await tabUntil(page, (f) => f.inTaskNav && f.text === "Review");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/decisions\?view=closeout$/);
+  await tabUntil(page, (f) => f.inSubNav && f.text === "Decision history");
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-field="decision-log"]')).toBeVisible();
   await expect(page.locator('[data-field="decision-closure"]')).toContainText(
@@ -56,7 +59,7 @@ test("review journey: keyboard-only navigation on a 360px viewport (AT-1103-2)",
   );
 
   // the report lives as a subview of decisions — keyboard-activated link
-  await tabUntil(page, (f) => f.inSubNav && f.text === "report");
+  await tabUntil(page, (f) => f.inSubNav && f.text === "Report");
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-field="task-report"]')).toBeVisible();
   expect((await focused(page)).current).toBe("page");
@@ -81,7 +84,7 @@ test("review journey: keyboard-only navigation on a 360px viewport (AT-1103-2)",
 
   // closeout is a subview of decisions: the hard-gate table keeps
   // required conditions visible
-  await tabUntil(page, (f) => f.inSubNav && f.text === "closeout");
+  await tabUntil(page, (f) => f.inSubNav && f.text === "Review & decide");
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-field="gates-table"]')).toBeVisible();
   await expect(
@@ -181,7 +184,7 @@ test("theme toggle and reduced motion (AT-1103-2)", async ({ page, context }) =>
   const before = await accent();
 
   // toggle by keyboard only: Tab to it, Enter activates
-  const f = await tabUntil(page, (d) => d.tag === "button" && d.text.startsWith("theme:"), 40);
+  const f = await tabUntil(page, (d) => d.tag === "button" && (d.text === "Light" || d.text === "Dark"), 40);
   expect(f.pressed).toBe("false");
   await page.keyboard.press("Enter");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
@@ -192,6 +195,9 @@ test("theme toggle and reduced motion (AT-1103-2)", async ({ page, context }) =>
     .locator(".cs-shell__header")
     .evaluate((el) => getComputedStyle(el).backgroundColor);
   expect(headerBg).not.toBe("rgba(0, 0, 0, 0)");
+
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
   // reduced motion: tokens collapse to 0ms and the spinner stops
   await page.emulateMedia({ reducedMotion: "reduce" });

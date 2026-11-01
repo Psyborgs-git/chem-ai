@@ -2,6 +2,12 @@ import { graphql } from "react-relay";
 
 export const TaskPlansQuery = graphql`
   query labPlansTaskPlansQuery($taskId: ID!) {
+    taskCandidateRevisions(taskId: $taskId, first: 50) {
+      edges { node { id revision hypothesis entityKind } }
+    }
+    taskContractRevisions(taskId: $taskId, first: 50) {
+      edges { node { id revision status } }
+    }
     taskPlans(taskId: $taskId, first: 50) {
       edges {
         node {

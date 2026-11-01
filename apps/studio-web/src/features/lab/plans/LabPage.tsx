@@ -1,4 +1,5 @@
 import { Suspense, useState } from "react";
+import { PageHeader } from "../../../components/layout/StudioLayout";
 import { useLazyLoadQuery } from "react-relay";
 
 import { EmptyState, LoadingState } from "../../../components/states/states";
@@ -61,16 +62,12 @@ export function LabPage() {
 
   return (
     <div>
-      <h1>Lab</h1>
-      <p>
-        Manual-first experiment planning. Approved plans release a packet for
-        qualified human operators — no equipment execution.
-      </p>
+      <PageHeader eyebrow="Manual experiments" title="Lab" description="Plan an experiment, review its scope and capture the results. Approved plans release a packet for qualified human operators — no equipment execution." />
       {projects.length === 0 ? (
         <EmptyState title="No projects yet." />
       ) : (
         <>
-          <div className="cs-field">
+          <div className="cs-lab-selector"><div className="cs-field">
             <label className="cs-field__label" htmlFor="lab-project">
               project
             </label>
@@ -100,6 +97,7 @@ export function LabPage() {
               />
             </Suspense>
           )}
+          </div>
           {taskId && (
             <Suspense fallback={<LoadingState label="loading plans…" />}>
               <PlansPanel key={taskId} taskId={taskId} />

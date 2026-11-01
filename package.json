@@ -8,7 +8,11 @@
     "build:web": "pnpm --filter studio-web build",
     "typecheck": "pnpm --filter studio-web typecheck",
     "test:web": "pnpm --filter studio-web test",
-    "relay": "pnpm --filter studio-web relay"
+    "relay": "pnpm --filter studio-web relay",
+    "build:desktop": "bash infra/local/desktop.sh build",
+    "open:desktop": "bash infra/local/desktop.sh open",
+    "test:desktop": "bash infra/local/desktop.sh test",
+    "smoke:desktop": "node tests/desktop/smoke.mjs"
   },
   "packageManager": "pnpm@10.18.3"
 }

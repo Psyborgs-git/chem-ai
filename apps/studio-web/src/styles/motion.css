@@ -1,0 +1,134 @@
+/* Motion communicates entry, activity, and completion. It never gates work. */
+:root { --ease-out: cubic-bezier(.16,1,.3,1); --ease-standard: cubic-bezier(.2,.7,.3,1); --motion-enter: 320ms; }
+@keyframes cs-enter { from { opacity:1; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@keyframes cs-sheet-enter { from { opacity:1; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@keyframes cs-orbit { to { transform:rotate(360deg); } }
+@keyframes cs-bond-breathe { 0%,100% { opacity:.5; } 50% { opacity:1; } }
+@keyframes cs-check-arrive { from { opacity:0; transform:scale(.7); } to { opacity:1; transform:scale(1); } }
+@keyframes cs-stroke-draw { from { stroke-dashoffset:1; } to { stroke-dashoffset:0; } }
+/* Essential content is visible even while WebKit suspends animation timelines
+   behind a macOS permission prompt. Motion must never hide startup recovery. */
+@keyframes cs-launch-reveal { from { opacity:1; transform:translateY(14px); } to { opacity:1; transform:none; } }
+@keyframes cs-gentle-float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
+@keyframes cs-signal { 0%,100% { box-shadow:0 0 0 0 rgb(88 201 180 / 0%); } 45% { box-shadow:0 0 0 5px rgb(88 201 180 / 15%); } }
+.cs-content > .cs-product-home,.cs-content > .cs-projects-page,.cs-content > .cs-task-workbench,.cs-content > .cs-registry-surface,.cs-content > .cs-run-details { animation:cs-enter var(--motion-enter) var(--ease-out) both; }
+.cs-project-grid > li,.cs-recent-work > li { animation:cs-enter 320ms var(--ease-out) both; }
+.cs-project-grid > li:nth-child(2),.cs-recent-work > li:nth-child(2) { animation-delay:35ms; }
+.cs-project-grid > li:nth-child(3),.cs-recent-work > li:nth-child(3) { animation-delay:65ms; }
+.cs-project-grid > li:nth-child(n+4),.cs-recent-work > li:nth-child(n+4) { animation-delay:90ms; }
+.cs-create-sheet[open] { animation:cs-sheet-enter 260ms var(--ease-out) both; }
+.cs-btn { transition:background-color 150ms,border-color 150ms,box-shadow 180ms,transform 150ms; }
+.cs-btn:active:not(:disabled) { transform:scale(.985); }
+.cs-intent-launch,.cs-project-grid > li > a { transition:transform 220ms var(--ease-out),border-color 180ms,box-shadow 220ms; }
+@media(hover:hover) { .cs-intent-launch:hover,.cs-project-grid > li > a:hover { transform:translateY(-3px); box-shadow:0 9px 28px rgb(20 40 65 / 7%); } }
+.cs-intent-launch:hover .cs-chemistry-art,.cs-mode-card:hover .cs-chemistry-art { transform:translateY(-2px) rotate(-2deg); }
+.cs-chemistry-art { transition:transform 260ms var(--ease-out); }
+.cs-review-check,.cs-workflow-check { animation:cs-check-arrive 260ms var(--ease-out) both; }
+.cs-quick-calculator { position:relative; border-color:color-mix(in srgb,var(--accent) 18%,var(--border)); }
+.cs-quick-calculator::before { content:""; display:block; position:absolute; inset:0 20px auto; height:2px; background:linear-gradient(90deg,transparent,var(--art-blue),var(--art-teal),transparent); opacity:.65; }
+.cs-molecule-loader { color:var(--accent); flex:none; overflow:visible; }
+.cs-molecule-loader__orbit { transform-origin:32px 32px; animation:cs-orbit 1.6s linear infinite; }
+.cs-molecule-loader__bond { animation:cs-bond-breathe 1.6s ease-in-out infinite; }
+.cs-state--loading { align-items:center; gap:1rem; border-style:solid; background:var(--surface); box-shadow:var(--shadow-panel); font-size:.8rem; color:var(--text-muted); padding:1.4rem 1.7rem; min-height:100px; }
+.cs-state--empty { display:flex; flex-direction:column; align-items:center; gap:.8rem; padding:2.2rem 1.5rem; }
+.cs-state--empty .cs-state__title { margin:0; }
+.cs-state__art { width:150px; height:110px; }
+.cs-calculating { border:1px solid var(--border); border-radius:10px; padding:.75rem; background:var(--accent-subtle); }
+.cs-calculating progress { width:60px; }
+.cs-brand-mark { overflow:hidden; }
+.cs-brand-mark > .cs-brand-logo { width:100%; height:100%; }
+.cs-sidebar .cs-brand-mark { background:transparent; border:0; border-radius:0; width:35px; height:35px; }
+.cs-auth .cs-brand-mark { width:38px; height:38px; background:transparent; border:0; }
+.cs-auth__story { position:relative; overflow:hidden; background:linear-gradient(145deg,var(--art-soft),var(--surface) 70%); }
+.cs-auth__story .cs-auth-art { width:260px; height:175px; }
+.cs-auth__story::after { content:""; pointer-events:none; position:absolute; width:330px; height:330px; border:1px solid var(--border); border-radius:50%; top:-160px; right:-160px; opacity:.5; }
+.cs-desktop-titlebar { display:flex; align-items:center; justify-content:center; position:fixed; inset:0 0 auto; height:40px; z-index:60; padding:0 90px; background:color-mix(in srgb,var(--surface) 90%,var(--canvas)); border-bottom:1px solid var(--border); color:var(--text-muted); font-size:11px; font-weight:600; letter-spacing:.01em; user-select:none; -webkit-user-select:none; cursor:default; }
+.cs-desktop-titlebar__detail { position:absolute; right:20px; color:var(--text-muted); font-size:10px; font-weight:400; opacity:.8; }
+.cs-desktop body { padding-top:40px; }
+.cs-desktop .cs-shell { min-height:calc(100dvh - 40px); }
+.cs-desktop .cs-sidebar { top:40px; }
+.cs-desktop .cs-shell__header { top:40px; }
+.cs-desktop .cs-auth { min-height:calc(100dvh - 40px); }
+.cs-desktop .cs-create-sheet { height:calc(100dvh - 40px); max-height:calc(100dvh - 40px); margin-top:40px; }
+.cs-native-launcher { --art-soft:#223c56; --art-mint:#174441; --art-line:#7fadc3; --art-blue:#88afff; --art-teal:#70d6ba; --surface:#19344a; min-height:calc(100dvh - 40px); background:#10283b; color:#e9f2f7; overflow:hidden; position:relative; display:flex; flex-direction:column; padding:clamp(28px,5vw,66px); }
+.cs-native-launcher__brand { display:flex; align-items:center; gap:12px; font-size:18px; font-weight:600; letter-spacing:-.5px; position:relative; z-index:1; }
+.cs-native-launcher__brand > svg { flex:none; }
+.cs-native-launcher__layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.85fr); align-items:center; gap:clamp(40px,6vw,90px); flex:1; max-width:1120px; width:100%; margin:auto; padding:40px 0; position:relative; z-index:1; }
+.cs-native-launcher__story { opacity:1; animation:cs-launch-reveal 600ms var(--ease-out) both; }
+.cs-native-launcher .cs-kicker { color:#94b4c5; font-size:10px; letter-spacing:.15em; }
+.cs-native-launcher__story h1 { font-size:clamp(36px,4.4vw,60px); line-height:1.08; font-weight:550; letter-spacing:-.055em; margin:20px 0; }
+.cs-native-launcher__story h1 > span { color:#83d8c7; }
+.cs-native-launcher__story > p:not(.cs-kicker) { font-size:14px; line-height:1.75; max-width:340px; color:#aac1d0; }
+.cs-native-launcher__art { width:330px; height:220px; position:relative; margin:10px 0 -20px; }
+.cs-native-launcher__art .cs-chemistry-art { width:300px; height:200px; position:relative; z-index:2; animation:cs-gentle-float 5s ease-in-out 2; }
+.cs-launch-orbit { position:absolute; display:block; border:1px solid rgb(123 173 191 / 16%); width:300px; height:140px; border-radius:50%; transform:rotate(-22deg); left:0; top:40px; }
+.cs-launch-orbit--two { width:240px; height:195px; transform:rotate(25deg); left:26px; top:20px; }
+.cs-native-launcher__status { opacity:1; border:1px solid rgb(180 213 226 / 17%); background:linear-gradient(150deg,rgb(255 255 255 / 6%),rgb(255 255 255 / 2%)); box-shadow:0 24px 60px rgb(0 0 0 / 10%); padding:clamp(25px,3vw,40px); border-radius:24px; backdrop-filter:blur(10px); animation:cs-launch-reveal 650ms 60ms var(--ease-out) both; }
+.cs-native-launcher__symbol { margin-bottom:25px; }
+.cs-native-launcher__symbol > svg { animation:cs-check-arrive 700ms var(--ease-out) both; }
+.cs-native-launcher__status h2 { font-size:25px; letter-spacing:-.04em; font-weight:550; line-height:1.2; margin:12px 0; }
+.cs-native-launcher__message { color:#afc6d4; font-size:12px; line-height:1.65; min-height:40px; }
+.cs-launch-stages { list-style:none; padding:0; margin:25px 0; display:grid; gap:0; }
+.cs-launch-stages li { display:flex; gap:12px; align-items:center; min-height:63px; border-bottom:1px solid rgb(169 199 218 / 9%); color:#8aa6b8; }
+.cs-launch-stages li:last-child { border-bottom:0; }
+.cs-launch-stage-symbol { display:grid; place-items:center; width:26px; height:26px; border:1px solid rgb(169 199 218 / 20%); border-radius:50%; font-size:9px; font-weight:500; flex:none; }
+.cs-launch-stages strong { display:block; font-size:12px; font-weight:500; }
+.cs-launch-stages small { display:block; font-size:10px; margin-top:3px; color:#8aa6b8; }
+.cs-launch-stages li[data-state="complete"] .cs-launch-stage-symbol { background:#244a48; color:#86ddc4; border-color:#38645d; font-size:12px; }
+.cs-launch-stages li[data-state="current"] { color:#e9f2f7; }
+.cs-launch-stages li[data-state="current"] .cs-launch-stage-symbol { border-color:#70d6ba; color:#a9efda; }
+.cs-launch-stage-pulse { margin-left:auto; width:6px; height:6px; border-radius:50%; background:#70d6ba; animation:cs-signal 1.8s ease-in-out infinite; }
+.cs-native-launcher__footnote { display:flex; align-items:center; gap:8px; padding-top:15px; color:#8ba9bd; font-size:10px; }
+.cs-native-launcher__footnote > span { font-size:16px; }
+.cs-native-launcher__footer { display:flex; justify-content:space-between; gap:20px; position:relative; z-index:1; font-size:10px; color:#88a6ba; }
+.cs-native-launcher__ambient { pointer-events:none; position:absolute; inset:0; overflow:hidden; }
+.cs-native-launcher__ambient > span { position:absolute; width:700px; height:700px; background:radial-gradient(ellipse, rgb(56 119 122 / 18%),transparent 65%); border-radius:50%; top:10%; left:-180px; }
+.cs-native-launcher__ambient > span:nth-child(2) { background:radial-gradient(ellipse, rgb(59 90 155 / 15%),transparent 65%); left:auto; right:-250px; top:0; }
+.cs-native-launcher__ambient > span:nth-child(3) { width:450px; height:450px; background:none; border:1px solid rgb(180 213 226 / 5%); top:auto; bottom:-300px; left:20%; }
+.cs-launch-recovery { display:grid; gap:15px; }
+.cs-launch-recovery .cs-btn { background:#9ee0cc; border-color:#9ee0cc; color:#173f3f; width:100%; }
+.cs-launch-recovery details { color:#a9c0d0; font-size:11px; }
+.cs-launch-recovery details p,.cs-launch-recovery code { overflow-wrap:anywhere; }
+.cs-launch-recovery summary { min-height:30px; padding:.4rem 0; }
+.cs-native-launcher.is-error .cs-launch-stages { opacity:.65; }
+@media(max-width:850px) { .cs-native-launcher { padding:30px; } .cs-native-launcher__layout { gap:30px; } .cs-native-launcher__story h1 { font-size:36px; } .cs-native-launcher__art { width:240px; } .cs-native-launcher__art .cs-chemistry-art { width:230px; } .cs-launch-orbit { width:220px; } .cs-launch-orbit--two { width:190px; } }
+@media(max-width:650px) { .cs-native-launcher__layout { grid-template-columns:minmax(0,1fr); } .cs-native-launcher__story { display:none; } .cs-native-launcher__status { max-width:450px; width:100%; margin:auto; } .cs-native-launcher__brand { font-size:16px; } .cs-native-launcher__footer > span:first-child { display:none; } .cs-desktop-titlebar__detail { display:none; } }
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+  .cs-molecule-loader__orbit { transform:rotate(35deg); }
+}
+@keyframes cs-logo-write { from { stroke-dashoffset:110; } to { stroke-dashoffset:0; } }
+.cs-native-launcher__symbol .cs-brand-logo__bonds path { stroke-dasharray:110; animation:cs-logo-write 850ms var(--ease-standard) both; }
+.cs-native-launcher__symbol .cs-brand-logo__atom { transform-box:fill-box; transform-origin:center; animation:cs-check-arrive 450ms 300ms var(--ease-out) both; }
+.cs-intent-launch:hover .cs-art__detail,.cs-mode-card:focus-within .cs-art__detail { transform:translateY(-2px); }
+.cs-art__detail { transition:transform 240ms var(--ease-out); }
+@media(prefers-reduced-motion:reduce) { .cs-native-launcher__symbol .cs-brand-logo__bonds path,.cs-native-launcher__symbol .cs-brand-logo__atom { animation:none !important; } }
+/* Keep launch readable in the smallest native window as well as on a laptop. */
+.cs-native-launcher { --text:#e9f2f7; --text-muted:#aac1d0; padding:clamp(24px,3.4vw,44px); }
+.cs-native-launcher__brand,.cs-native-launcher__footer { width:100%; max-width:1120px; margin-inline:auto; }
+.cs-native-launcher__layout { padding:24px 0; }
+.cs-native-launcher__status { padding:32px; }
+.cs-native-launcher__symbol { margin-bottom:18px; }
+.cs-native-launcher__symbol > svg { width:64px; height:64px; }
+.cs-launch-stages li { min-height:56px; }
+@media(max-height:740px) {
+ .cs-native-launcher { padding:24px 32px; }
+ .cs-native-launcher__brand { font-size:16px; }
+ .cs-native-launcher__brand > svg { width:34px; height:34px; }
+ .cs-native-launcher__layout { padding:14px 0; gap:30px; }
+ .cs-native-launcher__story h1 { font-size:36px; margin:14px 0; }
+ .cs-native-launcher__story > p:not(.cs-kicker) { font-size:12px; }
+ .cs-native-launcher__art { height:150px; width:240px; }
+ .cs-native-launcher__art .cs-chemistry-art { width:230px; height:150px; }
+ .cs-launch-orbit { width:220px; height:120px; top:18px; }
+ .cs-launch-orbit--two { width:180px; height:150px; top:0; }
+ .cs-native-launcher__status { padding:24px; }
+ .cs-native-launcher__symbol { display:none; }
+ .cs-native-launcher__status h2 { font-size:22px; }
+ .cs-native-launcher__message { min-height:32px; margin:8px 0; }
+ .cs-launch-stages { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px 14px; margin:16px 0; }
+ .cs-launch-stages li { min-height:62px; gap:8px; align-items:flex-start; padding-block:8px; }
+ .cs-launch-stages small { font-size:9px; }
+ .cs-launch-stage-symbol { width:22px; height:22px; }
+ .cs-native-launcher__footnote { padding-top:10px; font-size:9px; }
+}

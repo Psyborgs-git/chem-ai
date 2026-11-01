@@ -1,0 +1,42 @@
+.cs-calculation-header { display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-start; justify-content:space-between; margin-bottom:1.5rem; }
+.cs-calculation-header h2,.cs-calculation-header h3 { margin-top:0; }
+.cs-calculation-layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(15rem,1fr); gap:1.5rem; align-items:start; }
+.cs-calculation-form { padding:1.5rem; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--surface); }
+.cs-calculation-form .cs-input { font-family:var(--font-mono); font-size:1rem; }
+.cs-calculation-actions { display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; margin-top:1.25rem; }
+.cs-calculation-help { background:var(--surface-raised); border-radius:var(--radius-md); padding:1.5rem; }
+.cs-calculation-help h3 { margin-top:0; }
+.cs-calculation-help p { color:var(--text-muted); line-height:1.6; }
+.cs-calculation-result { margin-top:1.25rem; }
+.cs-calculation-result__status { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; margin-bottom:1rem; }
+.cs-calculation-highlights { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1.25rem 0; }
+.cs-calculation-highlights > div { background:var(--surface-raised); padding:1.25rem; border:1px solid var(--border); border-radius:var(--radius-md); }
+.cs-calculation-highlights dt { font-size:.8rem; color:var(--text-muted); line-height:1.5; }
+.cs-calculation-highlights dd { margin:.5rem 0 0; font-size:1.7rem; font-weight:650; letter-spacing:-.03em; }
+.cs-calculation-highlights small { font-size:.85rem; font-weight:400; }
+.cs-calculation-result__grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(14rem,1fr); gap:1.5rem; align-items:start; }
+.cs-calculation-result .cs-table { min-width:0; width:100%; table-layout:fixed; }
+.cs-calculation-result .cs-table th,.cs-calculation-result .cs-table td { white-space:normal; overflow-wrap:anywhere; padding:.75rem .65rem; }
+.cs-calculation-result .cs-table th:first-child { width:52%; }
+.cs-calculation-result .cs-table th:nth-child(2) { width:24%; }
+.cs-calculation-result .cs-table th:nth-child(3) { width:24%; }
+.cs-calculation-provenance { padding:1.25rem; background:var(--surface-raised); border:1px solid var(--border); border-radius:var(--radius-md); }
+.cs-calculation-provenance h3 { margin-top:0; }
+.cs-calculation-provenance dl,.cs-calculation-input { display:grid; gap:1rem; }
+.cs-calculation-provenance dt,.cs-calculation-input dt,.cs-calculation-times dt { color:var(--text-muted); font-size:.8rem; }
+.cs-calculation-provenance dd,.cs-calculation-input dd,.cs-calculation-times dd { margin:.25rem 0 0; overflow-wrap:anywhere; }
+.cs-calculation-note { padding:.85rem 1rem; border-left:3px solid var(--evidence-computed); background:var(--state-surface-warning); font-size:.85rem; line-height:1.55; }
+.cs-calculation-times { display:flex; flex-wrap:wrap; gap:1.5rem; padding:1rem 0; border-top:1px solid var(--border); }
+.cs-calculation-raw { margin-top:1rem; }
+.cs-calculation-raw summary { cursor:pointer; color:var(--text-muted); }
+.cs-calculation-raw pre,.cs-json { overflow:auto; max-height:32rem; white-space:pre-wrap; overflow-wrap:anywhere; }
+.cs-run-list { list-style:none; padding:0; display:grid; gap:1rem; }
+.cs-run-card { padding:1.25rem; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--surface); }
+.cs-run-card__header { display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:center; }
+.cs-run-card__header h3 { margin:0; }
+.cs-run-card .cs-calculation-highlights dd { font-size:1.25rem; }
+.cs-calculation-history { margin-top:2rem; }
+.cs-run-details__breadcrumb { margin-bottom:1rem; }
+.cs-task-context__actions { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:1rem; }
+@media(max-width:900px) { .cs-calculation-layout,.cs-calculation-result__grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) { .cs-calculation-highlights { grid-template-columns:minmax(0,1fr); } .cs-calculation-highlights > div { padding:1rem; } .cs-calculation-form { padding:1rem; } }

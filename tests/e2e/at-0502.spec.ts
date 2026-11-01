@@ -247,7 +247,12 @@ test("incompatible unit yields inconclusive + finding (AT-0502-2)", async ({
 
   await openResults(page, "at2");
   const item = page.locator(`[data-measurement-id="${mId}"]`);
-  await item.locator('[data-field="contract-check"] summary').click();
+  await item.locator('[data-field="contract-check"] > summary').click();
+  await expect(item.getByRole("button", { name: "compare", exact: true })).toBeDisabled();
+  await item.getByLabel("Comparison metric name", { exact: true }).fill("viscosity");
+  await item.getByRole("combobox", { name: "Comparison comparator", exact: true }).selectOption(">=");
+  await item.getByLabel("Comparison bound", { exact: true }).fill("100");
+  await item.getByLabel("Comparison unit", { exact: true }).fill("mPa·s");
   await item.getByRole("button", { name: "compare" }).click();
   await expect(
     item.locator('[data-field="contract-verdict"]'),

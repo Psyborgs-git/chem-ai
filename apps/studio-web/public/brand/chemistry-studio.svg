@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-labelledby="brand-title">
+  <title id="brand-title">Chemistry Studio</title>
+  <defs>
+    <linearGradient id="tile" x1="9" y1="5" x2="55" y2="61" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#234562"/><stop offset="1" stop-color="#10283D"/>
+    </linearGradient>
+    <linearGradient id="bond" x1="31" y1="15" x2="31" y2="49" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DFEEFF"/><stop offset=".48" stop-color="#B1D0FF"/><stop offset="1" stop-color="#72D8C3"/>
+    </linearGradient>
+  </defs>
+  <g transform="scale(16)">
+    <rect x="5" y="5" width="54" height="54" rx="12.25" fill="url(#tile)"/>
+    <rect x="5.5" y="5.5" width="53" height="53" rx="11.75" stroke="#D5EEFF" stroke-opacity=".12"/>
+    <g stroke-linecap="round" stroke-linejoin="round">
+      <path d="m41 21 7 11-7 11" stroke="#72D8C3" stroke-width="2.25"/>
+      <path d="m41 21-10-6-12 7v20l12 7 10-6" stroke="url(#bond)" stroke-width="6.25"/>
+    </g>
+    <circle cx="41" cy="21" r="4.25" fill="#DBEDFF"/>
+    <circle cx="41" cy="43" r="4.25" fill="#72D8C3"/>
+    <circle cx="48" cy="32" r="3.5" fill="#8CE5D1"/>
+  </g>
+</svg>

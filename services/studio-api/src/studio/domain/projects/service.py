@@ -15,7 +15,7 @@ from studio.audit.log import record as audit_record
 from studio.auth.context import ServiceContext
 from studio.errors import DomainError, ErrorCode, not_found
 from studio.events.outbox import publish
-from studio.persistence.models import Project
+from studio.persistence.models import Project, Workspace
 
 
 class ProjectService:
@@ -34,6 +34,31 @@ class ProjectService:
         if row is None:
             raise not_found("project")
         return row
+
+    def research_inbox(self) -> Project:
+        """Reuse one active inbox without requiring a project setup step."""
+        self.ctx.require(CAP_READ_PROJECT)
+        self.ctx.require(CAP_EDIT_TASK)
+        self.db.execute(
+            select(Workspace).where(Workspace.id == self.ctx.workspace_id).with_for_update()
+        ).scalar_one()
+        project = self.db.execute(
+            select(Project)
+            .where(
+                Project.workspace_id == self.ctx.workspace_id,
+                Project.slug == "research-inbox",
+                Project.status == "active",
+            )
+            .order_by(Project.created_at, Project.id)
+            .limit(1)
+        ).scalar_one_or_none()
+        if project is not None:
+            return project
+        return self.create(
+            slug="research-inbox",
+            name="Research inbox",
+            description="Research tasks organized automatically when no project is selected.",
+        )
 
     def create(self, *, slug: str, name: str, description: str | None = None) -> Project:
         self.ctx.require(CAP_EDIT_TASK)

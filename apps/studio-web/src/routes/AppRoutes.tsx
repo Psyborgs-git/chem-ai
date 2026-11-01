@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from "react";
 import { Component } from "react";
 import { RelayEnvironmentProvider, useLazyLoadQuery } from "react-relay";
 import {
@@ -9,6 +9,7 @@ import {
   Routes,
   useLocation,
   useParams,
+  useSearchParams,
 } from "react-router";
 
 import {
@@ -22,18 +23,14 @@ import {
   SignInScreen,
 } from "../features/auth/AuthScreens";
 import { InlineFinding } from "../components/molecules/InlineFinding";
-import { EvidencePanel } from "../features/evidence/EvidencePanel";
-import { QualityPanel } from "../features/evidence/quality/QualityPanel";
-import { ComputePanel } from "../features/compute/ComputePanel";
-import { FallbackPanel } from "../features/compute/fallback/FallbackPanel";
+import { PageHeader, StudioIcon, humanize } from "../components/layout/StudioLayout";
+import { CreateSheet } from "../components/layout/CreateSheet";
+import { WorkspaceFinder } from "../components/layout/WorkspaceFinder";
+import { ResearchSheet } from "../features/tasks/ResearchSheet";
+import { BrandMark } from "../components/layout/BrandMark";
+import { ChemistryArt } from "../components/layout/ChemistryArt";
+import { AgentSidebar } from "../features/agent/AgentSidebar";
 import { HomePage } from "../features/home/HomePage";
-import { ImportReview } from "../features/imports/ImportReview";
-import { ExportReviewPanel } from "../features/privacy/export-review/ExportReviewPanel";
-import { LabPage } from "../features/lab/plans/LabPage";
-import { MaterialsPage } from "../features/registry/MaterialsPage";
-import { ModelsPanel } from "../features/learning/models/ModelsPanel";
-import { TaskCreateForm } from "../features/tasks/TaskCreateForm";
-import { TaskWorkspace } from "../features/tasks/TaskWorkspace";
 import {
   ProjectListQuery,
   ProjectTasksQuery,
@@ -49,10 +46,28 @@ import {
   probeViewer,
 } from "../relay/network";
 import { writeTheme } from "../theme";
-import { DevComponents } from "./DevComponents";
 
 import type { tasksProjectListQuery } from "../__generated__/tasksProjectListQuery.graphql";
 import type { tasksProjectTasksQuery } from "../__generated__/tasksProjectTasksQuery.graphql";
+
+
+// Keep first-run entry light; scientific surfaces load when opened.
+const RunDetailsPage = lazy(() => import("../features/runs/RunDetailsPage").then((module) => ({ default: module.RunDetailsPage })));
+const EvidencePanel = lazy(() => import("../features/evidence/EvidencePanel").then((module) => ({ default: module.EvidencePanel })));
+const QualityPanel = lazy(() => import("../features/evidence/quality/QualityPanel").then((module) => ({ default: module.QualityPanel })));
+const ComputePanel = lazy(() => import("../features/compute/ComputePanel").then((module) => ({ default: module.ComputePanel })));
+const FallbackPanel = lazy(() => import("../features/compute/fallback/FallbackPanel").then((module) => ({ default: module.FallbackPanel })));
+const ImportReview = lazy(() => import("../features/imports/ImportReview").then((module) => ({ default: module.ImportReview })));
+const ExportReviewPanel = lazy(() => import("../features/privacy/export-review/ExportReviewPanel").then((module) => ({ default: module.ExportReviewPanel })));
+const LabPage = lazy(() => import("../features/lab/plans/LabPage").then((module) => ({ default: module.LabPage })));
+const MaterialsPage = lazy(() => import("../features/registry/MaterialsPage").then((module) => ({ default: module.MaterialsPage })));
+const ModelsPanel = lazy(() => import("../features/learning/models/ModelsPanel").then((module) => ({ default: module.ModelsPanel })));
+const ProvidersPage = lazy(() => import("../features/providers/ProvidersPage").then((module) => ({ default: module.ProvidersPage })));
+const NotebooksPage = lazy(() => import("../features/notebooks/NotebooksPage").then((module) => ({ default: module.NotebooksPage })));
+const ResearchLibraryPage = lazy(() => import("../features/notebooks/ResearchLibraryPage").then((module) => ({ default: module.ResearchLibraryPage })));
+const LocalLearningPage = lazy(() => import("../features/learning/LocalLearningPage").then((module) => ({ default: module.LocalLearningPage })));
+const TaskWorkspace = lazy(() => import("../features/tasks/TaskWorkspace").then((module) => ({ default: module.TaskWorkspace })));
+const DevComponents = lazy(() => import("./DevComponents").then((module) => ({ default: module.DevComponents })));
 
 type QueryFailureKind = "auth" | "forbidden" | "not_found" | "unknown";
 
@@ -125,7 +140,7 @@ class QueryBoundary extends Component<
       return <SignInScreen expired />;
     }
     if (kind === "forbidden") return <ForbiddenState />;
-    return <ErrorState detail={queryErrorDetail(error)} />;
+    return <ErrorState detail={queryErrorDetail(error)} onRetry={() => window.location.reload()} />;
   }
 }
 
@@ -151,7 +166,7 @@ class FallbackQueryBoundary extends Component<
       case "not_found":
         return <EmptyState title="Run not found." />;
       default:
-        return <ErrorState detail={queryErrorDetail(error)} />;
+        return <ErrorState detail={queryErrorDetail(error)} onRetry={() => window.location.reload()} />;
     }
   }
 }
@@ -163,13 +178,20 @@ class FallbackQueryBoundary extends Component<
  * (CS-1201). PAR-07 restored "Materials & Products" now that a real
  * registry surface exists at /materials. */
 const NAV = [
-  { to: "/projects", label: "Projects" },
-  { to: "/materials", label: "Materials & Products" },
-  { to: "/imports", label: "Imports" },
-  { to: "/evidence", label: "Evidence" },
-  { to: "/lab", label: "Lab" },
-  { to: "/models", label: "Models & Learning" },
-  { to: "/compute", label: "Compute" },
+  { to: "/", label: "Workspace", icon: "home" },
+  { to: "/projects", label: "Projects", icon: "projects" },
+  { to: "/notebooks", label: "Notebooks", icon: "notebooks" },
+  { to: "/library/research", label: "Research library", icon: "research" },
+  { to: "/downloads", label: "Downloads", icon: "imports" },
+  { to: "/memory", label: "Research memory", icon: "models" },
+  { to: "/materials", label: "Materials & Products", icon: "materials" },
+  { to: "/imports", label: "Imports", icon: "imports" },
+  { to: "/evidence", label: "Evidence", icon: "evidence" },
+  { to: "/lab", label: "Lab", icon: "lab" },
+  { to: "/models", label: "Models & Learning", icon: "models" },
+  { to: "/learning", label: "Local learning", icon: "models" },
+  { to: "/compute", label: "Compute", icon: "compute" },
+  { to: "/settings/providers", label: "Providers", icon: "providers" },
 ];
 
 function ThemeToggle() {
@@ -182,13 +204,14 @@ function ThemeToggle() {
       type="button"
       className="cs-btn cs-btn--ghost cs-theme-toggle"
       aria-pressed={theme === "dark"}
+      aria-label={`Switch to ${next} theme`}
       onClick={() => {
         document.documentElement.dataset.theme = next;
         writeTheme(next);
         setTheme(next);
       }}
     >
-      theme: {theme}
+      <svg className="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">{theme === "dark" ? <path d="M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10Z" /> : <><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></>}</svg>{theme === "dark" ? "Dark" : "Light"}
     </button>
   );
 }
@@ -234,97 +257,104 @@ function AppShell({
   displayName: string;
   children: ReactNode;
 }) {
+  const { pathname } = useLocation();
+  const [navOpen, setNavOpen] = useState(false);
+  const [finderOpen, setFinderOpen] = useState(false);
+  useEffect(() => { const openFinder = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setFinderOpen((value) => !value); } }; document.addEventListener("keydown", openFinder); return () => document.removeEventListener("keydown", openFinder); }, []);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLButtonElement>(null);
+  const closeNav = () => { setNavOpen(false); menuRef.current?.focus(); };
+  const location = pathname.startsWith("/tasks/") ? "Research task"
+    : pathname.startsWith("/runs/") ? "Calculation details"
+    : pathname.startsWith("/privacy/") ? "Export review"
+    : NAV.find((n) => n.to !== "/" && pathname.startsWith(n.to))?.label ?? "Workspace";
+  useEffect(() => { setNavOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!navOpen || !window.matchMedia("(max-width: 767px)").matches) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    sidebarRef.current?.querySelector<HTMLButtonElement>(".cs-sidebar-close")?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setNavOpen(false); menuRef.current?.focus(); }
+      if (event.key !== "Tab") return;
+      const controls = [...(sidebarRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? [])].filter((node) => node.getClientRects().length > 0);
+      const first = controls[0], last = controls.at(-1);
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = previousOverflow; };
+  }, [navOpen]);
   return (
-    <div className="cs-shell">
+    <div className="cs-shell cs-shell--workspace">
       <a className="cs-skip-link" href="#main">
         Skip to content
       </a>
-      <header className="cs-shell__header">
+      <WorkspaceFinder open={finderOpen} onClose={() => setFinderOpen(false)} />
+      <aside ref={sidebarRef} className={`cs-sidebar${navOpen ? " is-open" : ""}`} aria-label="Workspace navigation">
         <Link to="/" className="cs-shell__brand">
-          Chemistry Studio
+          <span className="cs-brand-mark"><BrandMark size={35} className="cs-brand-logo" /></span> Chemistry Studio
         </Link>
-        <nav aria-label="primary">
-          {NAV.map((n) => (
-            <NavLink key={n.to} to={n.to}>
-              {n.label}
-            </NavLink>
-          ))}
+        <button type="button" className="cs-icon-btn cs-sidebar-close" aria-label="Close navigation" onClick={closeNav}><StudioIcon name="close" /></button>
+        <div className="cs-sidebar__workspace"><span className="cs-live-dot"/><span>Local workspace</span></div>
+        <Link to="/?new=research" className="cs-sidebar__new" onClick={() => setNavOpen(false)}><span aria-hidden="true">＋</span> New research</Link>
+        <nav aria-label="primary" id="primary-navigation">
+          {[
+            { label: "YOUR WORK", destinations: ["/", "/projects", "/notebooks", "/lab"] },
+            { label: "REFERENCE LIBRARY", destinations: ["/library/research", "/downloads", "/memory", "/materials", "/evidence", "/imports"] },
+            { label: "TOOLS", destinations: ["/compute", "/learning", "/models", "/settings/providers"] },
+          ].map((group) => <div className="cs-navigation-group" key={group.label}><div className="cs-sidebar__label">{group.label}</div>{group.destinations.map((destination) => {
+            const item = NAV.find((entry) => entry.to === destination)!;
+            return <NavLink key={item.to} to={item.to} end={item.to === "/"} onClick={() => setNavOpen(false)}><StudioIcon name={item.icon}/>{item.label}</NavLink>;
+          })}</div>)}
         </nav>
-        <span className="cs-shell__session">
-          Signed in as {displayName}
-        </span>
+        <div className="cs-sidebar__footer"><span className="cs-sidebar__footer-mark">✦</span><strong>Questions become evidence.</strong><span>One connected research workspace.</span></div>
+      </aside>
+      <button type="button" className="cs-sidebar-backdrop" aria-label="Dismiss navigation" onClick={closeNav} tabIndex={-1} />
+      <header className="cs-shell__header">
+        <button ref={menuRef} type="button" className="cs-icon-btn cs-menu-button" aria-label="Open navigation" aria-expanded={navOpen} aria-controls="primary-navigation" onClick={() => setNavOpen(true)}><StudioIcon name="menu" /></button>
+        <div className="cs-shell__location"><span aria-hidden="true">Studio /</span><span>{location}</span></div>
+        <button className="cs-workspace-finder" type="button" onClick={() => setFinderOpen(true)}><svg className="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><span>Find your work</span><kbd>⌘ K</kbd></button>
+        <span className="cs-shell__session"><span className="cs-avatar" aria-hidden="true">{displayName.split(/\s+/).map((name) => name[0]).slice(0,2).join("")}</span>{displayName}</span>
         <SignOutControl />
         <ThemeToggle />
+        <AgentSidebar />
       </header>
       <main id="main" tabIndex={-1}>
-        {children}
+        <div className="cs-content">{children}</div>
       </main>
     </div>
   );
 }
 
 function ProjectsPage() {
-  // store-and-network: re-reads the server list on every mount (a
-  // project created moments ago is shown without a manual reload)
-  // while replaying the cache instantly — never re-suspends once data
-  // exists, so no StrictMode refetch loop on vite dev (PAR-06, #27).
-  const data = useLazyLoadQuery<tasksProjectListQuery>(
-    ProjectListQuery,
-    {},
-    { fetchPolicy: "store-and-network" },
-  );
-  const projects = data.projects.edges.map((e) => e.node);
-  return (
-    <div>
-      <h1>Projects</h1>
-      {projects.length === 0 ? (
-        <EmptyState title="No projects yet — create one below." />
-      ) : (
-        <ul>
-          {projects.map((p) => (
-            <li key={p.id}>
-              <Link to={`/projects/${p.id}`}>{p.name}</Link>{" "}
-              <small>({p.slug})</small>
-            </li>
-          ))}
-        </ul>
-      )}
-      <h2>new project</h2>
-      <ProjectCreateForm />
-    </div>
-  );
+  const data = useLazyLoadQuery<tasksProjectListQuery>(ProjectListQuery, {}, { fetchPolicy: "store-and-network" });
+  const projects = data.projects.edges.map((edge) => edge.node);
+  const [params, setParams] = useSearchParams();
+  const [creating, setCreating] = useState(params.get("new") === "project");
+  const close = () => { setCreating(false); const next = new URLSearchParams(params); next.delete("new"); setParams(next, {replace:true}); };
+  return <div className="cs-projects-page">
+    <PageHeader eyebrow="Your work" title="Projects" description="Keep each research question and its evidence together." actions={<button className="cs-btn cs-btn--primary" onClick={() => setCreating(true)}><span aria-hidden="true">＋</span> New project</button>} />
+    <CreateSheet open={creating} onClose={close} title="New project" description="Give this research a name. Everything else can wait."><ProjectCreateForm /></CreateSheet>
+    <ResearchSheet open={params.get("new") === "research"} onClose={close} projects={projects} />
+    {projects.length ? <ul className="cs-project-grid">{projects.map((project) => <li key={project.id}><Link to={`/projects/${encodeURIComponent(project.id)}`}><div className="cs-project-card__art"><ChemistryArt kind="research"/><span className="cs-count">{humanize(project.status)}</span></div><h2>{project.name}</h2><span className="cs-project-card__open">Open project <StudioIcon name="arrow"/></span></Link></li>)}</ul> : <div className="cs-friendly-empty"><ChemistryArt kind="research"/><h2>A home for your next question</h2><p>A project brings your tasks, candidates, experiments, and evidence together.</p><button className="cs-btn cs-btn--primary" onClick={() => setCreating(true)}>Create first project</button></div>}
+  </div>;
 }
 
 function ProjectDetailPage() {
   const { projectId = "" } = useParams();
-  const data = useLazyLoadQuery<tasksProjectTasksQuery>(ProjectTasksQuery, {
-    projectId,
-  });
-  const tasks = data.projectTasks.edges.map((e) => e.node);
-  return (
-    <div>
-      <h1>Project</h1>
-      <h2>tasks</h2>
-      {tasks.length === 0 ? (
-        <EmptyState title="No tasks yet — create one below." />
-      ) : (
-        <ul>
-          {tasks.map((t) => (
-            <li key={t.id}>
-              <Link to={`/tasks/${t.id}`}>{t.title}</Link>{" "}
-              <small>
-                {t.mode} · {t.workflowState}
-                {t.unresolvedInputs.length > 0 &&
-                  ` · blockers: ${t.unresolvedInputs.join(", ")}`}
-              </small>
-            </li>
-          ))}
-        </ul>
-      )}
-      <h2>new task</h2>
-      <TaskCreateForm projectId={projectId} />
-    </div>
-  );
+  const data = useLazyLoadQuery<tasksProjectTasksQuery>(ProjectTasksQuery, { projectId });
+  const tasks = data.projectTasks.edges.map((edge) => edge.node);
+  const project = data.node?.__typename === "Project" ? data.node : null;
+  const [params, setParams] = useSearchParams();
+  const [creating, setCreating] = useState(params.get("new") === "task");
+  const close = () => { setCreating(false); const next = new URLSearchParams(params); next.delete("new"); setParams(next,{replace:true}); };
+  return <div className="cs-projects-page">
+    <Link className="cs-project-back" to="/projects">← Projects</Link>
+    <PageHeader eyebrow="Research project" title={project?.name ?? "Project"} description="Move from a question to evidence, one research task at a time." actions={<button className="cs-btn cs-btn--primary" onClick={() => setCreating(true)}><span aria-hidden="true">＋</span> New research task</button>} />
+    <ResearchSheet open={creating} onClose={close} projectId={projectId} />
+    {tasks.length ? <ul className="cs-recent-work">{tasks.map((task) => <li key={task.id}><Link to={`/tasks/${encodeURIComponent(task.id)}`}><span className="cs-record-symbol"><StudioIcon name="lab"/></span><div><strong>{task.title}</strong><span>{humanize(task.mode)}{task.unresolvedInputs.length ? " · More context needed" : ""}</span></div><span className="cs-count">{humanize(task.workflowState)}</span><StudioIcon name="arrow"/></Link></li>)}</ul> : <div className="cs-friendly-empty"><ChemistryArt kind="research"/><h2>What would you like to find out?</h2><p>Start with a question. Add the scientific details as the research takes shape.</p><button className="cs-btn cs-btn--primary" onClick={() => setCreating(true)}>Start first task</button></div>}
+  </div>;
 }
 
 function TaskPage() {
@@ -335,7 +365,7 @@ function TaskPage() {
 function ModelsPage() {
   return (
     <div>
-      <h1>model registry</h1>
+      <PageHeader eyebrow="Models & learning" title="Model registry" description="Review versioned releases, serving pointers and the evidence behind each model decision." actions={<Link className="cs-btn cs-btn--primary" to="/learning">Open local learning</Link>} />
       <ModelsPanel taskId={null} />
     </div>
   );
@@ -398,11 +428,18 @@ function ShellContent() {
           <Route path="/evidence" element={<EvidencePanel />} />
           <Route
             path="/evidence/quality"
-            element={<QualityPanel />}
+            element={<><PageHeader eyebrow="Evidence stewardship" title="Source quality" description="Inspect extraction coverage, flags and source revocations. Quality stays visible as individual findings and counts." /><QualityPanel /></>}
           />
           <Route path="/lab" element={<LabPage />} />
           <Route path="/models" element={<ModelsPage />} />
+          <Route path="/learning" element={<LocalLearningPage />} />
+          <Route path="/notebooks" element={<NotebooksPage />} />
+          <Route path="/library/research" element={<ResearchLibraryPage />} />
+          <Route path="/downloads" element={<ResearchLibraryPage view="downloads" />} />
+          <Route path="/memory" element={<ResearchLibraryPage view="memory" />} />
           <Route path="/compute" element={<ComputePanel />} />
+          <Route path="/settings/providers" element={<ProvidersPage />} />
+          <Route path="/runs/:runId" element={<RunDetailsPage />} />
           <Route
             path="/compute/fallback/:runId"
             element={<FallbackPage />}
@@ -470,7 +507,7 @@ export function AppRoutes() {
     <Router>
       <Routes>
         {/* dev-only showcase — no auth required */}
-        <Route path="/dev/components" element={<DevComponents />} />
+        <Route path="/dev/components" element={<Suspense fallback={<LoadingState label="loading components…" />}><DevComponents /></Suspense>} />
         <Route
           path="*"
           element={
@@ -480,6 +517,7 @@ export function AppRoutes() {
               <ErrorState
                 title="Backend unreachable"
                 detail={state.message}
+                onRetry={() => window.location.reload()}
               />
             ) : state.kind === "setup" ? (
               <FirstRunScreen />

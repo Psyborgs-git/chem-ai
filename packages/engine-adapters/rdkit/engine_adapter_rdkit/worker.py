@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Callable
+from typing import Protocol, cast
 
 DESCRIPTORS = (
     "mw",
@@ -27,6 +29,13 @@ DESCRIPTORS = (
 )
 
 
+class _DrawingOptions(Protocol):
+    """The actual setter types of RDKit's generated drawing properties."""
+
+    clearBackground: bool
+    padding: float
+
+
 def _fail(code: str, message: str, stage: str) -> dict[str, object]:
     return {"ok": False, "error": {"code": code, "message": message, "stage": stage}}
 
@@ -34,7 +43,7 @@ def _fail(code: str, message: str, stage: str) -> dict[str, object]:
 def run(payload: dict[str, object]) -> dict[str, object]:
     try:
         from rdkit import Chem, rdBase
-        from rdkit.Chem import Descriptors, rdMolDescriptors
+        from rdkit.Chem import Descriptors, rdinchi, rdMolDescriptors
     except ImportError:
         return _fail("ENGINE_UNAVAILABLE", "rdkit is not importable", "init")
 
@@ -66,16 +75,18 @@ def run(payload: dict[str, object]) -> dict[str, object]:
 
     try:
         canonical = Chem.MolToSmiles(mol)
-        inchi = Chem.MolToInchiKey(mol) or None
+        inchi = rdinchi.MolToInchiKey(mol) or None
         formula = rdMolDescriptors.CalcMolFormula(mol)
+        # MolWt is installed dynamically in RDKit's descriptor registry.
+        molecular_weight = cast(Callable[[object], float], vars(Descriptors)["MolWt"])
         descriptors = {
-            "mw": round(Descriptors.MolWt(mol), 4),
-            "exact_mw": round(Descriptors.ExactMolWt(mol), 4),
-            "logp": round(Descriptors.MolLogP(mol), 4),
-            "hbd": Descriptors.NumHDonors(mol),
-            "hba": Descriptors.NumHAcceptors(mol),
-            "tpsa": round(Descriptors.TPSA(mol), 4),
-            "rotatable_bonds": Descriptors.NumRotatableBonds(mol),
+            "mw": round(molecular_weight(mol), 4),
+            "exact_mw": round(rdMolDescriptors.CalcExactMolWt(mol), 4),
+            "logp": round(rdMolDescriptors.CalcCrippenDescriptors(mol)[0], 4),
+            "hbd": rdMolDescriptors.CalcNumHBD(mol),
+            "hba": rdMolDescriptors.CalcNumHBA(mol),
+            "tpsa": round(rdMolDescriptors.CalcTPSA(mol), 4),
+            "rotatable_bonds": rdMolDescriptors.CalcNumRotatableBonds(mol),
             "num_atoms": mol.GetNumAtoms(),
             "num_heavy_atoms": mol.GetNumHeavyAtoms(),
             "num_rings": rdMolDescriptors.CalcNumRings(mol),
@@ -83,6 +94,27 @@ def run(payload: dict[str, object]) -> dict[str, object]:
         }
     except Exception as exc:
         return _fail("INTERNAL", f"descriptor computation failed: {exc}", "describe")
+
+    # Draw the parsed molecular graph with RDKit's actual 2D coordinates.
+    # Rendering failure must not replace the valid calculated descriptors.
+    depiction_svg: str | None = None
+    depiction_error: str | None = None
+    try:
+        from rdkit.Chem.Draw import rdMolDraw2D
+
+        drawer = rdMolDraw2D.MolDraw2DSVG(720, 420)
+        options = cast(_DrawingOptions, drawer.drawOptions())
+        options.clearBackground = False
+        options.padding = 0.12
+        rdMolDraw2D.PrepareAndDrawMolecule(drawer, mol)
+        drawer.FinishDrawing()
+        drawn = str(drawer.GetDrawingText())
+        if len(drawn.encode()) > 512 * 1024:
+            depiction_error = "Structure drawing exceeds the display size limit."
+        else:
+            depiction_svg = drawn
+    except Exception:
+        depiction_error = "The engine could not draw this structure."
 
     return {
         "ok": True,
@@ -92,6 +124,8 @@ def run(payload: dict[str, object]) -> dict[str, object]:
             "canonical_smiles": canonical,
             "inchi_key": inchi,
             "formula": formula,
+            "depiction_svg": depiction_svg,
+            "depiction_error": depiction_error,
         },
         "descriptors": descriptors,
     }

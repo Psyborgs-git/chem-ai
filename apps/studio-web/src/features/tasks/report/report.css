@@ -1,0 +1,14 @@
+/* Bound the report grid to the available viewport. Scientific tables
+ * keep their readable width and scroll inside their own regions. */
+.cs-report-layout {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+.cs-report-layout > * {
+  min-width: 0;
+}
+.cs-report-layout .cs-table-wrap {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}

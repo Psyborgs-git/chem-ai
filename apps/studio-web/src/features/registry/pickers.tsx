@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useId, useState } from "react";
+import { Suspense, useEffect, useId, useRef, useState } from "react";
 import { useLazyLoadQuery } from "react-relay";
 
 import { TextField } from "../../components/atoms/TextField";
@@ -21,6 +21,50 @@ import type { tasksContractRevisionsQuery } from "../../__generated__/tasksContr
  * plus the raw uuid for payload fields that store bare revision
  * ids (modeInputs, candidate.entityRevisionId, plan.payload). */
 export type Picked = { globalId: string; uuid: string; label: string };
+
+type SelectionProps = {
+  selectedId: string | null;
+  onClear: () => void;
+};
+
+/** A single authoritative choice can save a selection. Once selected
+ * or explicitly cleared, it is never silently selected again. */
+function useSingleChoice(
+  enabled: boolean,
+  selectedId: string | null,
+  options: readonly Picked[],
+  select: (choice: Picked) => void,
+  onPick: (choice: Picked) => void,
+) {
+  const handled = useRef(false);
+  const only = options.length === 1 ? options[0] : null;
+  useEffect(() => {
+    if (selectedId) handled.current = true;
+    if (!enabled || handled.current || !only || selectedId) return;
+    handled.current = true;
+    select(only);
+    onPick(only);
+  }, [enabled, selectedId, only, select, onPick]);
+  return () => { handled.current = true; };
+}
+
+/** Parent IDs are authoritative, including resets after a successful save. */
+function useSelection(selectedId: string | null, onClear: () => void) {
+  const [selection, setSelection] = useState<Picked | null>(null);
+  const picked = selectedId
+    ? selection && [selection.uuid, selection.globalId].includes(selectedId)
+      ? selection
+      : { globalId: selectedId, uuid: selectedId, label: "Linked registry record" }
+    : null;
+  return {
+    picked,
+    select: setSelection,
+    clear: () => {
+      setSelection(null);
+      onClear();
+    },
+  };
+}
 
 function useDebounced(value: string, ms: number): string {
   const [debounced, setDebounced] = useState(value);
@@ -99,7 +143,7 @@ function PickerShell({
         aria-controls={listId}
         aria-autocomplete="list"
         autoComplete="off"
-        readOnly={readOnly}
+        readOnly={readOnly || picked !== null}
       />
       {picked ? (
         <p className="cs-registry-picker__picked" data-picked="true">
@@ -161,14 +205,16 @@ export function MaterialIdentityPicker({
   label = "material",
   hint,
   onPick,
+  selectedId,
+  onClear,
 }: {
   label?: string;
   hint?: string;
   onPick: (p: Picked) => void;
-}) {
+} & SelectionProps) {
   const listId = useId();
   const [term, setTerm] = useState("");
-  const [picked, setPicked] = useState<Picked | null>(null);
+  const { picked, select: setPicked, clear } = useSelection(selectedId, onClear);
   const search = useDebounced(term, 250);
   return (
     <PickerShell
@@ -177,7 +223,7 @@ export function MaterialIdentityPicker({
       term={term}
       onTerm={setTerm}
       picked={picked}
-      onClear={() => setPicked(null)}
+      onClear={() => { clear(); setTerm(""); }}
       listId={listId}
       expanded={!picked && search.length > 0}
     >
@@ -235,14 +281,16 @@ export function ReferenceProductPicker({
   label = "reference product",
   hint,
   onPick,
+  selectedId,
+  onClear,
 }: {
   label?: string;
   hint?: string;
   onPick: (p: Picked) => void;
-}) {
+} & SelectionProps) {
   const listId = useId();
   const [term, setTerm] = useState("");
-  const [picked, setPicked] = useState<Picked | null>(null);
+  const { picked, select: setPicked, clear } = useSelection(selectedId, onClear);
   const search = useDebounced(term, 250);
   return (
     <PickerShell
@@ -251,7 +299,7 @@ export function ReferenceProductPicker({
       term={term}
       onTerm={setTerm}
       picked={picked}
-      onClear={() => setPicked(null)}
+      onClear={() => { clear(); setTerm(""); }}
       listId={listId}
       expanded={!picked && search.length > 0}
     >
@@ -276,16 +324,18 @@ export function FormulationRevisionPicker({
   hint,
   statusFilter,
   onPick,
+  selectedId,
+  onClear,
 }: {
   label?: string;
   hint?: string;
   /** client-side status filter (e.g. only "accepted" for baselines) */
   statusFilter?: string;
   onPick: (p: Picked) => void;
-}) {
+} & SelectionProps) {
   const listId = useId();
   const [term, setTerm] = useState("");
-  const [picked, setPicked] = useState<Picked | null>(null);
+  const { picked, select: setPicked, clear } = useSelection(selectedId, onClear);
   const search = useDebounced(term, 250);
   return (
     <PickerShell
@@ -294,7 +344,7 @@ export function FormulationRevisionPicker({
       term={term}
       onTerm={setTerm}
       picked={picked}
-      onClear={() => setPicked(null)}
+      onClear={() => { clear(); setTerm(""); }}
       listId={listId}
       expanded={!picked}
     >
@@ -360,13 +410,17 @@ export function CandidateRevisionPicker({
   taskId,
   label = "candidate revision",
   onPick,
+  selectedId,
+  onClear,
+  autoSelectSingle = false,
 }: {
   taskId: string;
   label?: string;
   onPick: (p: Picked) => void;
-}) {
+  autoSelectSingle?: boolean;
+} & SelectionProps) {
   const listId = useId();
-  const [picked, setPicked] = useState<Picked | null>(null);
+  const { picked, select: setPicked, clear } = useSelection(selectedId, onClear);
   const data = useLazyLoadQuery<candidatesRevisionPickerQuery>(
     CandidateRevisionPickerQuery,
     { taskId },
@@ -382,6 +436,7 @@ export function CandidateRevisionPicker({
         n.hypothesis ? ` · ${n.hypothesis.slice(0, 60)}` : ""
       }`,
     }));
+  const preventAutomaticChoice = useSingleChoice(autoSelectSingle, selectedId, options, setPicked, onPick);
   return (
     <PickerShell
       label={label}
@@ -389,7 +444,7 @@ export function CandidateRevisionPicker({
       term=""
       onTerm={() => {}}
       picked={picked}
-      onClear={() => setPicked(null)}
+      onClear={() => { preventAutomaticChoice(); clear(); }}
       listId={listId}
       expanded={!picked && options.length > 0}
       readOnly
@@ -413,13 +468,17 @@ export function ContractRevisionPicker({
   taskId,
   label = "contract revision",
   onPick,
+  selectedId,
+  onClear,
+  autoSelectSingle = false,
 }: {
   taskId: string;
   label?: string;
   onPick: (p: Picked) => void;
-}) {
+  autoSelectSingle?: boolean;
+} & SelectionProps) {
   const listId = useId();
-  const [picked, setPicked] = useState<Picked | null>(null);
+  const { picked, select: setPicked, clear } = useSelection(selectedId, onClear);
   const data = useLazyLoadQuery<tasksContractRevisionsQuery>(
     ContractRevisionsQuery,
     { taskId },
@@ -433,6 +492,7 @@ export function ContractRevisionPicker({
       uuid: rawUuid(n.id),
       label: `contract rev ${n.revision} · ${n.status}`,
     }));
+  const preventAutomaticChoice = useSingleChoice(autoSelectSingle, selectedId, options, setPicked, onPick);
   return (
     <PickerShell
       label={label}
@@ -440,7 +500,7 @@ export function ContractRevisionPicker({
       term=""
       onTerm={() => {}}
       picked={picked}
-      onClear={() => setPicked(null)}
+      onClear={() => { preventAutomaticChoice(); clear(); }}
       listId={listId}
       expanded={!picked && options.length > 0}
       readOnly

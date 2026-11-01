@@ -401,3 +401,102 @@ class TestRequestDbLifecycle:
         assert "errors" not in out, out
         assert sessions, "GraphQL request should open a session"
         assert all(closed)
+
+
+class TestResearchInbox:
+    @staticmethod
+    def _create(client: TestClient, payload: dict[str, Any]) -> dict[str, Any]:
+        response = _gql(
+            client,
+            """mutation($input: TaskCreateInput!) { taskCreate(input: $input) {
+                task { id title mode } errors { code message fieldPath }
+            }}""",
+            {"input": payload},
+        )
+        assert "errors" not in response, response
+        return response["data"]["taskCreate"]
+
+    def test_omitted_project_first_task_and_metadata_replay(self, db_url: str, session: Session):
+        client = _client(db_url)
+        _setup_owner(client)
+        payload = {
+            "title": "Explore a new molecule",
+            "mode": "discover",
+            "objective": "The user's actual research question",
+            "targetKind": "molecule",
+            "modeInputs": {"question": "preserve this user input"},
+            "idempotencyKey": "first-inbox-task",
+        }
+        first = self._create(client, payload)
+        assert first["errors"] == [], first
+        replay = self._create(client, {**payload, "projectId": None})
+        assert replay["task"]["id"] == first["task"]["id"]
+        mismatch = self._create(client, {**payload, "objective": "different objective"})
+        assert mismatch["errors"][0]["code"] == "IDEMPOTENCY_MISMATCH"
+        project = session.query(Project).one()
+        assert project.slug == "research-inbox"
+        assert project.name == "Research inbox"
+        task = session.query(ResearchTask).one()
+        assert task.project_id == project.id
+        assert task.title == payload["title"]
+        assert task.mode == payload["mode"]
+        assert task.target_kind == payload["targetKind"]
+        assert task.objective == payload["objective"]
+        assert task.mode_inputs == payload["modeInputs"]
+        assert task.workflow_state == "draft"
+        assert task.current_contract_revision_id is None
+
+    def test_new_tasks_reuse_one_inbox(self, db_url: str, session: Session):
+        client = _client(db_url)
+        _setup_owner(client)
+        for title in ["Question one", "Question two"]:
+            result = self._create(client, {"title": title, "mode": "discover"})
+            assert result["errors"] == [], result
+        assert session.query(Project).count() == 1
+        assert session.query(ResearchTask).count() == 2
+        project = session.query(Project).one()
+        assert {task.project_id for task in session.query(ResearchTask)} == {project.id}
+        assert all(task.target_kind == "unknown" for task in session.query(ResearchTask))
+
+    def test_unauthorized_create_has_no_implicit_project_side_effect(
+        self, db_url: str, session: Session
+    ):
+        client = _client(db_url)
+        _setup_owner(client)
+        workspace = session.query(Workspace).one()
+        viewer = _principal(session, workspace, "user", "viewer", "inbox-viewer")
+        issued = issue_session(session, workspace.id, viewer, 3600)
+        session.commit()
+        client.cookies.set("studio_session", issued.token)
+        result = self._create(client, {"title": "Denied", "mode": "discover"})
+        assert result["task"] is None
+        assert result["errors"][0]["code"] == "FORBIDDEN"
+        assert session.query(Project).count() == 0
+        assert session.query(ResearchTask).count() == 0
+
+    def test_explicit_project_unchanged_and_foreign_scope_refused(
+        self, db_url: str, session: Session
+    ):
+        client = _client(db_url)
+        _setup_owner(client)
+        workspace = session.query(Workspace).one()
+        project = _project(session, workspace, "chosen", "Chosen project")
+        foreign_workspace = Workspace(slug="foreign-inbox", display_name="Foreign")
+        session.add(foreign_workspace)
+        session.flush()
+        foreign = _project(session, foreign_workspace, "foreign", "Foreign project")
+        session.commit()
+        result = self._create(
+            client,
+            {"projectId": _gid("Project", project.id), "title": "Chosen task", "mode": "discover"},
+        )
+        assert result["errors"] == [], result
+        assert session.query(ResearchTask).one().project_id == project.id
+        denied = self._create(
+            client,
+            {"projectId": _gid("Project", foreign.id), "title": "Foreign task", "mode": "discover"},
+        )
+        assert denied["task"] is None
+        assert denied["errors"][0]["code"] == "NOT_FOUND"
+        assert session.query(ResearchTask).count() == 1
+        assert session.query(Project).filter_by(slug="research-inbox").count() == 0

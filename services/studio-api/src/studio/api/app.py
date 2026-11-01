@@ -98,4 +98,27 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(events_router, prefix="/api/events")
 
+    from studio.api.agent_workspace import agent_router
+    from studio.api.background import background_router
+    from studio.api.learning_workspace import router as learning_router
+    from studio.api.library import library_router
+    from studio.domain.agent_workspace.runtime import start_agent_worker
+    from studio.domain.learning.workspace_runtime.dispatcher import (
+        start_learning_dispatcher,
+        stop_learning_dispatcher,
+    )
+
+    app.include_router(library_router)
+    app.include_router(agent_router, prefix="/api/agent-workspace")
+    app.include_router(background_router)
+    app.include_router(learning_router)
+    start_agent_worker(app)
+    app.router.add_event_handler("startup", lambda: start_learning_dispatcher(app))
+    app.router.add_event_handler("shutdown", lambda: stop_learning_dispatcher(app))
+
+    # Last: the optional native frontend must not shadow any API route.
+    from studio.api.desktop import mount_desktop_web
+
+    mount_desktop_web(app, settings)
+
     return app

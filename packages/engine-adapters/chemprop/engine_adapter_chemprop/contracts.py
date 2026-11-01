@@ -60,6 +60,8 @@ class TrainSpec(StrictModel):
     exactly the rows supplied and never re-splits."""
 
     schema_version: Literal["1"] = "1"
+    task_type: Literal["regression", "classification"] = "regression"
+    device: Literal["cpu", "cuda", "mps", "auto"] = "cpu"
     scope: TargetScope
     representation: Literal["mpnn-dmpnn"] = REPRESENTATION
     # Immutable representation/method context: grade, process, substrate, conditions.
@@ -77,6 +79,10 @@ class TrainSpec(StrictModel):
         ids = [r.row_id for r in self.rows]
         if len(set(ids)) != len(ids):
             raise ValueError("duplicate training row ids")
+        if self.task_type == "classification":
+            labels = {row.label for row in self.rows}
+            if labels != {Decimal(0), Decimal(1)}:
+                raise ValueError("Binary classification requires both 0 and 1 training labels")
         if any(len(k) > 100 or len(v) > 300 for k, v in self.context.items()):
             raise ValueError("context is bounded metadata, not free-text documents")
         return self
@@ -91,6 +97,8 @@ class TrainSpec(StrictModel):
 
 class PredictSpec(StrictModel):
     schema_version: Literal["1"] = "1"
+    task_type: Literal["regression", "classification"] = "regression"
+    device: Literal["cpu", "cuda", "mps", "auto"] = "cpu"
     scope: TargetScope
     representation: Literal["mpnn-dmpnn"] = REPRESENTATION
     rows: tuple[PredictRow, ...] = Field(min_length=1, max_length=PREDICT_ROW_LIMIT)
@@ -115,6 +123,8 @@ class EngineFailure(Exception):
 
 class TrainResult(StrictModel):
     status: Literal["trained"]
+    task_type: Literal["regression", "classification"] = "regression"
+    device: str = "cpu"
     model_files: list[str] = Field(min_length=1, max_length=MODEL_FILE_LIMIT)
     model_digest: str
     trained_rows: int
@@ -142,6 +152,8 @@ class PredictionItem(StrictModel):
 
 class PredictResult(StrictModel):
     status: Literal["predicted", "partial"]
+    task_type: Literal["regression", "classification"] = "regression"
+    device: str = "cpu"
     predictions: list[PredictionItem] = Field(max_length=PREDICT_ROW_LIMIT)
     rejected: dict[str, int]
     model_digest: str

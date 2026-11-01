@@ -1,0 +1,24 @@
+.cs-learning-runtime-strip { display:flex; flex-wrap:wrap; gap:.65rem; margin:0 0 1.4rem; }
+.cs-learning-runtime-strip details { border:1px solid var(--border); padding:.6rem .8rem; background:var(--surface); border-radius:8px; font-size:.72rem; }
+.cs-learning-runtime-strip summary { display:flex; gap:.6rem; align-items:center; cursor:pointer; }
+.cs-learning-runtime-strip small { color:var(--text-muted); }
+.cs-learning-runtime-strip details[open] { flex-basis:100%; }
+.cs-learning-runtime-strip code { display:block; overflow-wrap:anywhere; font-size:.7rem; }
+.cs-learning-tab { background:none; border:0; padding:.7rem .1rem; color:var(--text-muted); font:inherit; font-size:.83rem; cursor:pointer; white-space:nowrap; }
+.cs-learning-tab[aria-selected=true] { border-bottom:2px solid var(--accent); color:var(--accent); font-weight:600; }
+.cs-learning-columns { display:grid; grid-template-columns:minmax(270px,.9fr) minmax(0,1.2fr); gap:1.4rem; align-items:start; }
+.cs-learning-workspace .cs-field { display:grid; gap:.35rem; margin-bottom:1rem; min-width:0; }
+.cs-learning-workspace .cs-panel { margin-bottom:1rem; }
+.cs-learning-workspace .cs-panel > h2,.cs-learning-columns > section > h2 { font-size:1.05rem; margin-top:0; }
+.cs-learning-workspace .cs-panel > h3 { font-size:.95rem; margin-top:0; }
+.cs-learning-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:0 1rem; }
+.cs-learning-record > header { display:flex; align-items:start; gap:1rem; justify-content:space-between; }
+.cs-learning-record > header > h2,.cs-learning-record > header > h3 { font-size:.95rem; margin:0; }
+.cs-learning-record > p { font-size:.75rem; color:var(--text-muted); }
+.cs-learning-record .cs-record { font-size:.72rem; }
+.cs-learning-record > details { font-size:.75rem; padding:.5rem 0; }
+.cs-learning-record .cs-actions { margin-top:.8rem; }
+.cs-learning-catalog { margin-bottom:1.5rem; }
+.cs-learning-train-form { max-width:850px; }
+.cs-learning-jobs { display:grid; gap:1rem; }
+@media(max-width:850px) { .cs-learning-columns { grid-template-columns:minmax(0,1fr); } }

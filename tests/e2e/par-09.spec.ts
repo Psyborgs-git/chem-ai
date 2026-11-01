@@ -1,3 +1,4 @@
+import { openCriteriaEditor } from "./ux-helpers";
 import { expect, request, test } from "@playwright/test";
 import {
   gql,
@@ -170,6 +171,7 @@ test.describe("PAR-09 task workspace organization", () => {
     // bare task URL lands on the overview group
     await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
     await expect(page).toHaveURL(/\/tasks\/.+\/overview$/);
+    await openCriteriaEditor(page);
     await expect(
       page.locator('[aria-label="success contract editor"]'),
     ).toBeVisible();
@@ -182,12 +184,13 @@ test.describe("PAR-09 task workspace organization", () => {
       "research",
       "candidates",
       "experiments",
-      "evidence",
-      "decisions",
-      "advanced",
+      "Sources",
+      "Review",
     ]) {
       await expect(sections.getByRole("link", { name: g })).toBeVisible();
     }
+    await expect(sections.getByRole("link")).toHaveCount(6);
+    await expect(page.locator("details.cs-workbench-tools > summary")).toBeVisible();
     await expect(
       sections.getByRole("link", { name: "training" }),
     ).toHaveCount(0);
@@ -204,7 +207,7 @@ test.describe("PAR-09 task workspace organization", () => {
     await subnav.getByRole("link", { name: "results" }).click();
     await expect(page).toHaveURL(/\/experiments\?view=results$/);
     await expect(
-      page.locator('section[aria-labelledby="results-heading"]'),
+      page.locator('section[data-task-view="results"]'),
     ).toBeVisible();
 
     // refresh restores the same group + subview
@@ -215,17 +218,18 @@ test.describe("PAR-09 task workspace organization", () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/experiments\?view=plans$/);
     await page.goBack();
-    await expect(page).toHaveURL(/\/overview$/);
+    await expect(page).toHaveURL(/\/overview(?:\?edit=criteria)?$/);
 
     // a deep link into an advanced panel works without clicking through
     await page.goto(`/tasks/${encodeURIComponent(taskId)}/advanced?view=runs`);
     await expect(
-      page.locator('section[aria-labelledby="runs-heading"]'),
+      page.locator('section[data-task-view="runs"]'),
     ).toBeVisible();
 
     // an unknown group segment corrects to overview instead of dead-ending
     await page.goto(`/tasks/${encodeURIComponent(taskId)}/not-a-group`);
-    await expect(page).toHaveURL(/\/overview$/);
+    await expect(page).toHaveURL(/\/overview(?:\?edit=criteria)?$/);
+    await openCriteriaEditor(page);
     await expect(
       page.locator('[aria-label="success contract editor"]'),
     ).toBeVisible();
@@ -357,6 +361,7 @@ test.describe("PAR-09 task workspace organization", () => {
     const revGid = await draftContract(token, taskId);
 
     await page.goto(`/tasks/${encodeURIComponent(taskId)}/overview`);
+    await openCriteriaEditor(page);
     const editor = page.locator('[aria-label="success contract editor"]');
     await expect(editor.getByRole("button", { name: "save draft" })).toBeVisible();
 
@@ -394,6 +399,7 @@ test.describe("PAR-09 task workspace organization", () => {
     const taskId = await makeTask(token, projectId);
 
     await page.goto(`/tasks/${encodeURIComponent(taskId)}/overview`);
+    await openCriteriaEditor(page);
     const editor = page.locator('[aria-label="success contract editor"]');
     await editor.getByLabel("metric id").first().fill("metric.par09");
     await editor.getByLabel("metric label").first().fill("Synthetic");
@@ -426,17 +432,22 @@ test.describe("PAR-09 task workspace organization", () => {
     const taskId = await seedClosedTask(token, { close: false });
 
     await page.goto("/");
+    await expect(page.getByRole("region", { name: "Ready for your review" }).getByRole("heading", { name: "Ready for your review", exact: true })).toBeVisible();
     const pending = page.locator('[data-field="pending-decisions"]');
     await expect(pending).toContainText("a11y review task");
-    await expect(pending).toContainText("awaiting review");
     const recent = page.locator('[data-field="recent-tasks"]');
     await expect(recent).toContainText("a11y review task");
+    const recentTask = recent.getByRole("link", { name: /a11y review task/ });
+    await expect(recentTask).toContainText("awaiting review");
+    await expect(recentTask).toHaveAttribute("href", `/tasks/${encodeURIComponent(taskId)}/overview`);
 
     // the pending entry deep-links to the closeout subview
-    await pending.getByRole("link", { name: /a11y review task/ }).click();
+    const pendingTask = pending.getByRole("link", { name: /a11y review task/ });
+    await expect(pendingTask).toHaveAttribute("href", `/tasks/${encodeURIComponent(taskId)}/decisions?view=closeout`);
+    await pendingTask.click();
     await expect(page).toHaveURL(/\/decisions\?view=closeout$/);
     await expect(
-      page.locator('section[aria-labelledby="closeout-heading"]'),
+      page.locator('section[data-task-view="closeout"]'),
     ).toBeVisible();
   });
 
@@ -455,12 +466,13 @@ test.describe("PAR-09 task workspace organization", () => {
       "research",
       "candidates",
       "experiments",
-      "evidence",
-      "decisions",
-      "advanced",
+      "Sources",
+      "Review",
     ]) {
       await expect(sections.getByRole("link", { name: g })).toBeVisible();
     }
+    await expect(sections.getByRole("link")).toHaveCount(6);
+    await expect(page.locator("details.cs-workbench-tools > summary")).toBeVisible();
     await expect(page.locator(".cs-task-context")).toBeVisible();
     const overflow = await page.evaluate(
       () =>
@@ -481,7 +493,7 @@ test.describe("PAR-09 task workspace organization", () => {
     await expect(page.locator(".cs-task-context")).toBeVisible();
 
     // tab to a group link, activate it — the URL changes
-    await tabUntil(page, (f) => f.inTaskNav && f.text === "evidence");
+    await tabUntil(page, (f) => f.inTaskNav && f.text === "Sources");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/evidence\?view=claims$/);
     // navigation remounts the boundary, so DOM focus is lost — the
@@ -489,23 +501,23 @@ test.describe("PAR-09 task workspace organization", () => {
     await expect(
       page
         .locator('nav[aria-label="task sections"]')
-        .getByRole("link", { name: "evidence" }),
+        .getByRole("link", { name: "Sources" }),
     ).toHaveAttribute("aria-current", "page");
 
     // subview links are in the tab order too
-    await tabUntil(page, (f) => f.inSubNav && f.text === "source quality");
+    await tabUntil(page, (f) => f.inSubNav && f.text === "Source quality");
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/evidence\?view=quality$/);
     await expect(page.getByRole("heading", { name: "revoke a source" })).toBeVisible();
 
     // advanced disclosure: the group link, then the runs subview
-    await tabUntil(page, (f) => f.inTaskNav && f.text === "advanced");
+    await tabUntil(page, (f) => f.tag === "summary" && f.text.includes("Tools"));
     await page.keyboard.press("Enter");
-    await tabUntil(page, (f) => f.inSubNav && f.text === "runs");
+    await tabUntil(page, (f) => f.tag === "a" && f.text.startsWith("Run history"));
     await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/advanced\?view=runs$/);
     await expect(
-      page.locator('section[aria-labelledby="runs-heading"]'),
+      page.locator('section[data-task-view="runs"]'),
     ).toBeVisible();
   });
 });

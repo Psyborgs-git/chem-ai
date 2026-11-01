@@ -1,0 +1,145 @@
+/* Product foundations and graphical wayfinding. Scientific status and evidence
+   continue to use their separate semantic tokens. */
+:root { --art-soft:#edf3ff; --art-mint:#e5f5ef; --art-line:#a1b4d8; --art-blue:#416bd8; --art-teal:#268b7b; --nav-surface:#14283e; --nav-text:#d7e1ee; --nav-muted:#9cafc5; --nav-active:#29415e; }
+:root[data-theme="dark"] { --art-soft:#243b59; --art-mint:#163d3a; --art-line:#6c88ae; --art-blue:#91b5ff; --art-teal:#6ad2bb; --nav-surface:#101e30; --nav-text:#e0e8f4; --nav-muted:#a6b8cf; --nav-active:#2a4262; }
+.cs-shell--workspace { --sidebar-width:232px; }
+.cs-sidebar { background:var(--nav-surface); border:0; color:var(--nav-text); padding-inline:1rem; }
+.cs-sidebar .cs-shell__brand { color:#fff; letter-spacing:-.03em; font-size:1rem; gap:.65rem; padding-block:1.5rem; }
+.cs-sidebar .cs-brand-mark { background:#7bdecd; color:#143a3c; width:32px; height:32px; border-radius:10px; }
+.cs-sidebar__workspace { border-color:#3e5066; display:flex; align-items:center; gap:.5rem; font-size:.72rem; color:var(--nav-muted); padding:.8rem .6rem; }
+.cs-live-dot { display:inline-block; width:6px; height:6px; flex:none; border-radius:50%; background:#329d81; box-shadow:0 0 0 3px rgb(50 157 129 / 12%); }
+.cs-sidebar .cs-live-dot { background:#70d7b8; }
+.cs-live-dot.is-unavailable { background:var(--status-warning); }
+.cs-sidebar__new { display:flex; justify-content:center; align-items:center; gap:.6rem; min-height:42px; background:#e1f4ef; color:#194d45; text-decoration:none; border-radius:8px; font-weight:650; font-size:.8rem; margin:.5rem .15rem .9rem; }
+.cs-sidebar__new:hover { background:#c4eade; }
+.cs-sidebar__new > span { font-size:1.2rem; }
+.cs-sidebar nav { gap:.7rem; }
+.cs-navigation-group { display:grid; gap:.15rem; }
+.cs-sidebar__label { color:var(--nav-muted); font-size:.6rem; letter-spacing:.11em; padding:.55rem .7rem; }
+.cs-sidebar nav a { color:var(--nav-text); font-weight:450; font-size:.8rem; min-height:42px; padding:.55rem .75rem; }
+.cs-sidebar nav a:hover { background:#213b56; color:#fff; }
+.cs-sidebar nav a[aria-current="page"] { background:var(--nav-active); color:#fff; font-weight:600; box-shadow:inset 3px 0 #7bdecd; }
+.cs-sidebar__footer { color:var(--nav-muted); font-size:.65rem; padding:.9rem .7rem; line-height:1.6; }
+.cs-sidebar__footer strong { display:block; color:var(--nav-text); font-size:.73rem; font-weight:500; }
+.cs-sidebar__footer span { color:var(--nav-muted); font-weight:400; }
+.cs-sidebar__footer .cs-sidebar__footer-mark { font-size:1.4rem; color:#7bdecd; margin-bottom:.4rem; }
+.cs-sidebar-close { color:var(--nav-text); }
+.cs-shell__header { gap:.8rem; padding-inline:2rem; border-bottom:1px solid var(--border); }
+.cs-shell__location { margin-right:0; white-space:nowrap; }
+.cs-shell__location > span:first-child { color:var(--text-muted); }
+.cs-workspace-finder { display:flex; align-items:center; gap:.65rem; border:1px solid var(--border); border-radius:7px; padding:.5rem .7rem; background:var(--surface-raised); color:var(--text-muted); min-height:36px; width:240px; margin-left:auto; font:inherit; font-size:.75rem; cursor:pointer; }
+.cs-workspace-finder kbd { margin-left:auto; font:inherit; font-size:.65rem; border:1px solid var(--border); background:var(--surface); border-radius:4px; padding:0 .25rem; }
+.cs-shell__session { display:flex; gap:.5rem; align-items:center; margin-left:.4rem; white-space:nowrap; }
+.cs-avatar { display:grid; place-items:center; width:28px; height:28px; border-radius:50%; background:var(--art-mint); color:var(--art-teal); font-size:.62rem; font-weight:700; }
+.cs-theme-toggle { display:flex; gap:.4rem; align-items:center; }
+.cs-content { max-width:1280px; }
+.cs-chemistry-art { display:block; max-width:100%; overflow:visible; }
+.cs-kicker { font-size:.63rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); margin:0 0 .55rem; display:flex; gap:.55rem; align-items:center; }
+.cs-home-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:.4rem 0 2rem; }
+.cs-home-heading h1 { font-size:clamp(1.65rem,2.6vw,2.25rem); letter-spacing:-.045em; margin:0 0 .5rem; font-weight:650; line-height:1.2; }
+.cs-home-heading p:not(.cs-kicker) { color:var(--text-muted); margin:0; font-size:.85rem; }
+.cs-local-tag { display:flex; align-items:center; gap:.5rem; font-size:.65rem; color:var(--text-muted); white-space:nowrap; border:1px solid var(--border); border-radius:20px; padding:.35rem .65rem; }
+.cs-home-launchpad { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr); gap:1.25rem; align-items:start; }
+.cs-quick-calculator { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.7rem; box-shadow:var(--shadow-panel); min-width:0; }
+.cs-quick-calculator__intro { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.6rem; }
+.cs-quick-calculator__intro .cs-chemistry-art { width:145px; height:112px; flex-shrink:0; }
+.cs-quick-calculator h2 { font-size:1.35rem; font-weight:650; letter-spacing:-.03em; margin:0 0 .55rem; }
+.cs-quick-calculator__intro p { color:var(--text-muted); font-size:.8rem; margin:0; max-width:250px; }
+.cs-quick-calculator .cs-input { min-height:48px; font-family:var(--font-mono); font-size:.85rem; background:var(--surface-raised); }
+.cs-quick-calculator__actions { display:flex; flex-wrap:wrap; align-items:center; gap:.6rem; margin:1.15rem 0 .9rem; }
+.cs-quick-calculator__actions .cs-btn { gap:.7rem; }
+.cs-save-context { border:0; padding:0; margin:.6rem 0 0; }
+.cs-save-context summary { color:var(--text-muted); font-size:.72rem; cursor:pointer; }
+.cs-save-context summary span { font-size:.6rem; margin-left:.4rem; background:var(--surface-sunken); padding:.1rem .3rem; border-radius:4px; }
+.cs-save-context label { display:block; font-size:.75rem; margin:.75rem 0 .4rem; }
+.cs-save-note { display:flex; gap:.4rem; align-items:center; color:var(--text-muted); font-size:.65rem; margin:1.1rem 0 0; }
+.cs-save-note .cs-icon { width:13px; height:13px; }
+.cs-home-shortcuts { display:grid; gap:1.25rem; }
+.cs-intent-launch { display:flex; align-items:center; gap:1.1rem; background:var(--art-mint); border:1px solid var(--border); border-radius:16px; padding:1.4rem 1.25rem; text-decoration:none; color:var(--text); min-width:0; transition:box-shadow var(--motion-fast),border-color var(--motion-fast); }
+.cs-intent-launch:hover { border-color:var(--art-teal); box-shadow:var(--shadow-panel); }
+.cs-intent-launch .cs-chemistry-art { width:105px; height:120px; flex-shrink:0; }
+.cs-intent-launch--lab { background:var(--art-soft); }
+.cs-intent-launch--lab:hover { border-color:var(--art-blue); }
+.cs-intent-launch h2 { font-size:1.1rem; letter-spacing:-.025em; line-height:1.3; margin:0 0 .4rem; }
+.cs-intent-launch p { color:var(--text-muted); font-size:.75rem; margin:0 0 .8rem; }
+.cs-text-action { display:flex; align-items:center; gap:.5rem; font-weight:650; color:var(--accent); font-size:.72rem; }
+.cs-text-action .cs-icon { width:15px; height:15px; }
+.cs-home-work { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(245px,1fr); gap:2rem; margin-top:2.3rem; align-items:start; }
+.cs-section-heading { display:flex; gap:1rem; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+.cs-section-heading h2 { margin:0; font-size:1rem; font-weight:650; letter-spacing:-.02em; }
+.cs-section-heading .cs-kicker { margin-bottom:.35rem; }
+.cs-section-heading > a { display:flex; align-items:center; gap:.4rem; font-size:.72rem; text-decoration:none; color:var(--accent); white-space:nowrap; }
+.cs-count { border:1px solid var(--border); border-radius:6px; padding:.15rem .45rem; color:var(--text-muted); background:var(--surface); font-size:.65rem; }
+.cs-recent-work,.cs-review-list { list-style:none; margin:0; padding:0; background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+.cs-recent-work li + li,.cs-review-list li + li { border-top:1px solid var(--border); }
+.cs-recent-work li > a,.cs-review-list li > a { display:flex; gap:.9rem; align-items:center; color:var(--text); text-decoration:none; padding:1rem; min-width:0; }
+.cs-recent-work li > a:hover,.cs-review-list li > a:hover { background:var(--surface-raised); }
+.cs-recent-work li > a > div,.cs-review-list li > a > div { flex:1; min-width:0; }
+.cs-recent-work strong,.cs-review-list strong { display:block; font-size:.78rem; font-weight:600; overflow-wrap:anywhere; }
+.cs-recent-work div > span,.cs-review-list div > span { display:block; font-size:.67rem; color:var(--text-muted); margin-top:.2rem; }
+.cs-record-symbol { display:grid; place-items:center; width:36px; height:36px; background:var(--art-soft); color:var(--accent); border-radius:9px; flex-shrink:0; }
+.cs-recent-work li > a > .cs-icon,.cs-review-list li > a > .cs-icon { width:14px; height:14px; color:var(--text-muted); flex-shrink:0; }
+.cs-home-review { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.15rem; }
+.cs-home-review .cs-review-list { border:0; }
+.cs-review-clear { padding:1.4rem .4rem; text-align:center; }
+.cs-review-check { display:grid; place-items:center; width:38px; height:38px; border-radius:50%; margin:0 auto .85rem; background:var(--art-mint); color:var(--art-teal); font-size:1.2rem; }
+.cs-review-clear h3 { font-size:.85rem; margin:0 0 .4rem; font-weight:600; }
+.cs-review-clear p { font-size:.73rem; color:var(--text-muted); margin:0 auto; max-width:190px; }
+.cs-review-dot { width:8px; height:8px; border-radius:50%; background:var(--status-warning); flex-shrink:0; }
+.cs-friendly-empty { display:flex; flex-direction:column; align-items:center; text-align:center; padding:2rem 1rem; border:1px dashed var(--border-strong); border-radius:12px; background:var(--surface); }
+.cs-friendly-empty .cs-chemistry-art { width:130px; height:110px; margin-bottom:.7rem; }
+.cs-friendly-empty h2,.cs-friendly-empty h3 { font-size:1.1rem; margin:0 0 .5rem; }
+.cs-friendly-empty p { font-size:.8rem; color:var(--text-muted); max-width:330px; margin:0 0 1rem; }
+.cs-project-grid { list-style:none; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1.25rem; }
+.cs-project-grid > li > a { display:block; padding:1rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; text-decoration:none; color:var(--text); height:100%; }
+.cs-project-grid > li > a:hover { border-color:var(--accent); }
+.cs-project-card__art { position:relative; border-radius:8px; background:var(--art-soft); height:140px; display:grid; place-items:center; }
+.cs-project-card__art .cs-chemistry-art { width:140px; height:130px; }
+.cs-project-card__art .cs-count { position:absolute; right:.6rem; top:.6rem; }
+.cs-project-grid h2 { font-size:.95rem; font-weight:650; margin:1rem 0 .7rem; overflow-wrap:anywhere; }
+.cs-project-card__open { display:flex; align-items:center; justify-content:space-between; color:var(--text-muted); font-size:.72rem; }
+.cs-project-back { display:inline-block; margin-bottom:1rem; color:var(--text-muted); font-size:.75rem; text-decoration:none; }
+.cs-create-sheet { margin:0 0 0 auto; height:100dvh; max-height:100dvh; width:min(600px,100%); max-width:100%; padding:0; border:0; border-left:1px solid var(--border); background:var(--surface); color:var(--text); box-shadow:-12px 0 60px rgb(15 30 50 / 15%); }
+.cs-create-sheet::backdrop { background:rgb(10 23 40 / 38%); backdrop-filter:blur(2px); }
+.cs-create-sheet__header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding:2rem; border-bottom:1px solid var(--border); }
+.cs-create-sheet__header h2 { font-size:1.5rem; letter-spacing:-.035em; margin:0; }
+.cs-create-sheet__header p:not(.cs-kicker) { font-size:.8rem; color:var(--text-muted); margin:.5rem 0 0; }
+.cs-create-sheet__header > button { font-size:1.5rem; flex:none; }
+.cs-create-sheet__body { padding:1.75rem 2rem 3rem; }
+.cs-create-sheet .cs-panel { border:0; padding:0; box-shadow:none; }
+.cs-finder-results { margin-top:1.5rem; }
+.cs-finder-results section { margin:1.5rem 0; }
+.cs-finder-results h3 { font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); }
+.cs-finder-results a { display:flex; align-items:center; gap:.8rem; padding:.9rem .6rem; border-radius:8px; color:var(--text); text-decoration:none; border-bottom:1px solid var(--border); }
+.cs-finder-results a:hover { background:var(--surface-raised); }
+.cs-finder-results a > span { flex:1; }
+.cs-finder-results small { display:block; color:var(--text-muted); }
+.cs-quick-result { border-top:1px solid var(--border); margin-top:1.5rem; padding-top:1.5rem; }
+.cs-quick-result > header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; }
+.cs-quick-result h3 { margin:0; font-size:1.1rem; }
+.cs-calculating { display:flex; flex-wrap:wrap; align-items:center; gap:.75rem; margin-top:1rem; font-size:.75rem; }
+.cs-calculating progress { width:90px; height:5px; accent-color:var(--accent); }
+.cs-action-error { padding:1rem; margin-top:1rem; background:var(--state-surface-error); border-radius:8px; font-size:.8rem; }
+.cs-action-error p { margin:.4rem 0; }
+.cs-molecule-summary { display:grid; grid-template-columns:minmax(160px,.9fr) minmax(0,1fr); gap:1rem; align-items:stretch; }
+.cs-molecule-drawing { margin:0; background:#fff; border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:200px; overflow:hidden; }
+.cs-molecule-drawing img { width:100%; height:auto; max-height:250px; object-fit:contain; }
+.cs-molecule-drawing figcaption { color:#52647a; font-size:.65rem; padding:.4rem .6rem; }
+.cs-molecule-drawing code { overflow-wrap:anywhere; padding:1rem; color:#17283e; }
+.cs-molecule-summary .cs-calculation-highlights { grid-template-columns:minmax(0,1fr); gap:.5rem; margin:0; }
+.cs-molecule-summary .cs-calculation-highlights > div { padding:.7rem 1rem; border:0; }
+.cs-molecule-summary .cs-calculation-highlights dd { font-size:1.25rem; margin:.15rem 0 0; }
+.cs-molecule-summary .cs-calculation-highlights dt { font-size:.68rem; }
+@media(min-width:1500px) { .cs-home-launchpad { grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr); } }
+@media(max-width:1150px) { .cs-shell__session { font-size:0; gap:0; } .cs-workspace-finder { width:180px; } .cs-home-launchpad { grid-template-columns:minmax(0,1fr); } .cs-home-shortcuts { grid-template-columns:1fr 1fr; } .cs-intent-launch { flex-direction:column; align-items:flex-start; gap:.5rem; } .cs-intent-launch .cs-chemistry-art { height:80px; width:85px; } }
+@media(max-width:767px) { .cs-shell__header { padding-inline:1rem; gap:.5rem; } .cs-shell__location { display:none; } .cs-workspace-finder { width:auto; flex:1; } .cs-workspace-finder kbd { display:none; } .cs-shell__session { margin-left:0; } .cs-home-heading { margin-top:.5rem; margin-bottom:1.4rem; } .cs-home-heading h1 { font-size:1.65rem; } .cs-local-tag { display:none; } .cs-home-work { grid-template-columns:minmax(0,1fr); gap:1.5rem; } .cs-quick-calculator { padding:1.15rem; } .cs-quick-calculator__intro .cs-chemistry-art { width:95px; height:90px; } .cs-quick-calculator__intro { margin-bottom:1.1rem; } .cs-quick-calculator__intro p { font-size:.75rem; } .cs-quick-calculator h2 { font-size:1.2rem; } .cs-home-shortcuts { gap:.8rem; } .cs-intent-launch { padding:1rem; } .cs-intent-launch h2 { font-size:.95rem; } .cs-intent-launch p { font-size:.7rem; } .cs-intent-launch .cs-kicker { font-size:.55rem; } .cs-create-sheet__header { padding:1.3rem; } .cs-create-sheet__body { padding:1.3rem; } .cs-recent-work li > a { gap:.6rem; padding:.85rem; } .cs-recent-work .cs-badge { font-size:.58rem; } }
+@media(max-width:420px) { .cs-workspace-finder { padding:.5rem; font-size:.68rem; gap:.4rem; } .cs-shell__header .cs-btn { padding:.35rem; font-size:.65rem; } .cs-theme-toggle .cs-icon { display:none; } .cs-shell__session { display:none; } .cs-home-shortcuts { grid-template-columns:minmax(0,1fr); } .cs-intent-launch { flex-direction:row; align-items:center; gap:.8rem; } .cs-intent-launch .cs-chemistry-art { width:80px; height:95px; } .cs-quick-calculator__intro { gap:.4rem; } .cs-quick-calculator__intro .cs-chemistry-art { width:80px; } .cs-molecule-summary { grid-template-columns:minmax(0,1fr); } .cs-molecule-drawing { min-height:160px; } }
+.cs-quick-calculator form { display:block; }
+.cs-quick-calculator .cs-save-context summary { padding-block:.5rem; min-height:36px; }
+.cs-error-code { display:block; font-size:.65rem; font-family:var(--font-mono); color:var(--text-muted); margin-top:.4rem; }
+.cs-auth__story { background:var(--art-soft); }
+.cs-auth__story .cs-shell__brand { margin-bottom:2rem; }
+.cs-auth-art { width:220px; height:150px; margin:0 0 1.5rem; }
+.cs-auth__story h2 { margin:.4rem 0 1.2rem; }
+@media(max-width:767px) { .cs-auth-art { display:none; } .cs-auth__story .cs-shell__brand { margin-bottom:0; } }
+.cs-sidebar { overflow-y:auto; }

@@ -170,7 +170,7 @@ class ReinventAdapter:
         # the host-side gate is syntactic; the container is
         # authoritative on chemistry.
         from rdkit import Chem, DataStructs
-        from rdkit.Chem import AllChem
+        from rdkit.Chem import rdMolDescriptors
 
         anchor_mol = Chem.MolFromSmiles(spec.anchor.smiles)
         if anchor_mol is None:
@@ -256,7 +256,7 @@ class ReinventAdapter:
         if not rows:
             raise EngineFailure("ENGINE_MALFORMED_OUTPUT", "reinvent emitted zero candidates")
 
-        anchor_fp = AllChem.GetMorganFingerprintAsBitVect(anchor_mol, 2, nBits=2048)
+        anchor_fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(anchor_mol, 2, nBits=2048)
         candidates: list[DesignCandidate] = []
         for i, row in enumerate(rows[:n], start=1):
             smi = (row.get("SMILES") or "").strip()
@@ -265,7 +265,7 @@ class ReinventAdapter:
             sim: float | None = None
             cand_mol = Chem.MolFromSmiles(smi)
             if cand_mol is not None:
-                cand_fp = AllChem.GetMorganFingerprintAsBitVect(cand_mol, 2, nBits=2048)
+                cand_fp = rdMolDescriptors.GetMorganFingerprintAsBitVect(cand_mol, 2, nBits=2048)
                 sim = round(float(DataStructs.TanimotoSimilarity(anchor_fp, cand_fp)), 4)
             try:
                 nll = float(row["NLL"]) if row.get("NLL") else None

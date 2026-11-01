@@ -3,6 +3,8 @@ import { useState, type FormEvent } from "react";
 import { Button } from "../../components/atoms/Button";
 import { TextField } from "../../components/atoms/TextField";
 import { InlineFinding } from "../../components/molecules/InlineFinding";
+import { ChemistryArt } from "../../components/layout/ChemistryArt";
+import { BrandMark } from "../../components/layout/BrandMark";
 import {
   authSetupOwner,
   authSignIn,
@@ -45,16 +47,26 @@ function AuthFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="cs-shell">
+    <div className="cs-auth">
       <a className="cs-skip-link" href="#main">
         Skip to content
       </a>
-      <header className="cs-shell__header">
-        <span className="cs-shell__brand">Chemistry Studio</span>
-      </header>
+      <aside className="cs-auth__story" aria-label="About the studio">
+        <span className="cs-shell__brand"><span className="cs-brand-mark"><BrandMark size={38} className="cs-brand-logo" /></span>Chemistry Studio</span>
+        <ChemistryArt kind="research" className="cs-auth-art" />
+        <p className="cs-eyebrow">A home for your research</p>
+        <h2>From a question to evidence.</h2>
+        <p>Plan your research, explore candidates and keep the scientific context behind every decision.</p>
+        <ol className="cs-auth__steps">
+          <li><div><strong>Define the question</strong>Projects and versioned success criteria.</div></li>
+          <li><div><strong>Build the evidence</strong>Calculations, sources and manual experiments.</div></li>
+          <li><div><strong>Make a reviewed decision</strong>Results, limitations and a traceable record.</div></li>
+        </ol>
+      </aside>
       <main id="main" tabIndex={-1}>
-        <h1>{title}</h1>
+        <div className="cs-auth__card"><p className="cs-eyebrow">Your local workspace</p><h1>{title}</h1>
         {children}
+        <p className="cs-auth__note">This account belongs to this installation of Chemistry Studio.</p></div>
       </main>
     </div>
   );
@@ -109,6 +121,7 @@ export function FirstRunScreen() {
           value={login}
           onChange={(e) => setLogin(e.target.value)}
           autoComplete="username"
+          autoFocus
           required
         />
         <TextField
@@ -121,6 +134,7 @@ export function FirstRunScreen() {
           label="password"
           hint="at least 10 characters"
           type="password"
+          minLength={10}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
@@ -129,6 +143,7 @@ export function FirstRunScreen() {
         <TextField
           label="confirm password"
           type="password"
+          minLength={10}
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           autoComplete="new-password"

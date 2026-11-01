@@ -3,6 +3,7 @@
  * ambiguity flags on the right. Nothing is accepted automatically;
  * every accept/reject/promote is an explicit reviewer action. */
 import { Suspense, useState } from "react";
+import { PageHeader, Panel, StructuredData } from "../../components/layout/StudioLayout";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
 import {
@@ -126,7 +127,7 @@ function RecordRow({
         <code>{record.originalText}</code>
       </td>
       <td>
-        <code>{record.payload ? JSON.stringify(record.payload) : "—"}</code>
+        <StructuredData value={record.payload} />
       </td>
       <td>
         {record.flags.length === 0
@@ -278,11 +279,12 @@ function BatchList({ fetchKey }: { fetchKey: number }) {
       {batches.length === 0 ? (
         <EmptyState title="No import batches yet." />
       ) : (
-        <ul>
+        <ul className="cs-import-batches">
           {batches.map((b) => (
             <li key={b.id}>
               <button
                 type="button"
+                className="cs-btn"
                 onClick={() => setSelected(b.id)}
                 aria-pressed={selected === b.id}
               >
@@ -307,15 +309,13 @@ export function ImportReview() {
   const [reloadKey, setReloadKey] = useState(0);
   return (
     <div>
-      <h1>Extraction review</h1>
-      <p>
-        Imported fields are proposals — ambiguity stays visible and
-        nothing is accepted automatically.
-      </p>
-      <ImportTrigger onDone={() => setReloadKey((k) => k + 1)} />
+      <PageHeader eyebrow="Sources & imports" title="Extraction review" description="Compare each extracted value with its source. Imported fields are proposals — ambiguity stays visible and nothing is accepted automatically." />
+      <Panel title="Import a stored source" description="Use the artifact identifier of a source already committed to the local vault. Processing runs in quarantine."><ImportTrigger onDone={() => setReloadKey((k) => k + 1)} /></Panel>
+      <div className="cs-import-review">
       <Suspense fallback={<LoadingState label="loading batches…" />}>
         <BatchList fetchKey={reloadKey} />
       </Suspense>
+      </div>
     </div>
   );
 }

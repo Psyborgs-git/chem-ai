@@ -6,16 +6,21 @@ export function TextField({
   label,
   hint,
   error,
+  id: providedId,
+  className,
+  "aria-describedby": existingDescription,
+  "aria-invalid": existingInvalid,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   hint?: string;
   error?: string;
 }) {
-  const id = useId();
+  const generatedId = useId();
+  const id = providedId ?? generatedId;
   const hintId = `${id}-hint`;
   const errId = `${id}-error`;
-  const describedBy = [hint ? hintId : null, error ? errId : null]
+  const describedBy = [existingDescription, hint ? hintId : null, error ? errId : null]
     .filter(Boolean)
     .join(" ");
   return (
@@ -26,9 +31,9 @@ export function TextField({
       <input
         id={id}
         {...props}
-        aria-invalid={error ? true : undefined}
+        aria-invalid={error ? true : existingInvalid}
         aria-describedby={describedBy || undefined}
-        className="cs-input"
+        className={`cs-input ${className ?? ""}`.trim()}
       />
       {hint && (
         <p id={hintId} className="cs-field__hint">

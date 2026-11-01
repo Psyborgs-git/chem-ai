@@ -44,5 +44,7 @@ export STUDIO_ALLOWED_ORIGINS="http://127.0.0.1:4173,http://127.0.0.1:8790,http:
 # short stream bound so reconnect/resume cycles happen within the test
 # budget — a real disconnect is exercised, not emulated timing luck
 export STUDIO_EVENT_MAX_SECONDS=2
+export STUDIO_VAULT_ROOT="$PWD/.runtime/e2e-vault"
+export STUDIO_DOWNLOADS_ROOT="$PWD/.runtime/e2e-downloads"
 exec env STUDIO_DATABASE_URL="$DB_URL" uv run uvicorn \
   "studio.api.app:create_app" --factory --host 127.0.0.1 --port 8790

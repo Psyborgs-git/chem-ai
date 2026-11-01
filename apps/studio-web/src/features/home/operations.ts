@@ -6,6 +6,7 @@ import { graphql } from "react-relay";
  * second server-state cache. */
 export const WorkspaceHomeQuery = graphql`
   query homeWorkspaceQuery {
+    projects(first: 50) { edges { node { id name } } }
     recent: tasks(first: 8) {
       edges {
         node {

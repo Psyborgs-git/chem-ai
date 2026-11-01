@@ -4,6 +4,8 @@ import { useFragment, useMutation } from "react-relay";
 import { Badge } from "../../components/atoms/Badge";
 import { Button } from "../../components/atoms/Button";
 import { TextField } from "../../components/atoms/TextField";
+import { FeatureSurface } from "../../components/layout/StudioLayout";
+import { CampaignDefinitionEditor } from "./CampaignDefinitionEditor";
 import { EmptyState } from "../../components/states/states";
 import { CampaignCommandMutation, CreateCampaignMutation, OptimizationFragment } from "./operations";
 import type { OptimizationPanel_task$key } from "../../__generated__/OptimizationPanel_task.graphql";
@@ -68,6 +70,10 @@ export function OptimizationPanel({ taskRef }: { taskRef: OptimizationPanel_task
     try {
       parsed = JSON.parse(definition);
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
+      const context = (parsed as Record<string, unknown>).context;
+      if (context && typeof context === "object" && Object.entries(context).some(([key, value]) => !key.trim() || typeof value !== "string" || !value.trim())) {
+        setMessage("Complete every context key and value before freezing the campaign."); return;
+      }
     } catch { setMessage("Provide a campaign definition JSON object. No parameters or results are invented."); return; }
     setMessage("");
     create({ variables: { input: { taskId: task.id, definition: parsed, idempotencyKey: retryKey(creation, parsed) } },
@@ -92,10 +98,10 @@ export function OptimizationPanel({ taskRef }: { taskRef: OptimizationPanel_task
     onError: () => setMessage("Request outcome unknown. Retry unchanged inputs with the same key, or reload to inspect the saved campaign."), });
   }
 
-  return <div>
+  return <FeatureSurface title="Experiment optimization" description="Define a bounded search space, request local suggestions and connect reviewed observations to the exact reserved experiment."><div className="cs-optimization-surface">
     <p>Local experiment planning only. Scientific reviewer + model-manager permissions are required to freeze a definition. Recommendations require the optimization profile and network-denied worker.</p>
     <p>No lab execution, experiment approval, superiority claim, or artificial zero outcomes. Unsupported hybrid, cardinality, and batch-wide constraints are rejected.</p>
-    <label>Campaign definition JSON<textarea aria-label="Campaign definition JSON" rows={10} value={definition} onChange={e => setDefinition(e.target.value)} /></label>
+    <CampaignDefinitionEditor value={definition} onChange={setDefinition} />
     <Button onClick={submitDefinition} disabled={busy || !definition.trim()}>Freeze campaign definition</Button>
     <TextField label="Recommendation batch (1–16)" inputMode="numeric" value={batch} onChange={e => setBatch(e.target.value)} />
     <TextField label="Reviewed measurement Relay ID" value={measurement} onChange={e => setMeasurement(e.target.value)} />
@@ -132,5 +138,5 @@ export function OptimizationPanel({ taskRef }: { taskRef: OptimizationPanel_task
         </div>
       </section>;
     })}
-  </div>;
+  </div></FeatureSurface>;
 }

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 
+import { MoleculeLoader } from "../motion/MoleculeLoader";
+import { ChemistryArt } from "../layout/ChemistryArt";
 import { Button } from "../atoms/Button";
 
 /** Shared screen states (§22.4). Every data screen renders exactly
@@ -9,7 +11,7 @@ import { Button } from "../atoms/Button";
 export function LoadingState({ label }: { label: string }) {
   return (
     <div className="cs-state cs-state--loading" role="status" aria-live="polite">
-      <span aria-hidden="true" className="cs-state__spinner" />
+      <MoleculeLoader size={44} />
       {label}
     </div>
   );
@@ -24,6 +26,7 @@ export function EmptyState({
 }) {
   return (
     <div className="cs-state cs-state--empty" role="status" aria-live="polite">
+      <ChemistryArt kind={/calculation|molecule|run/i.test(title) ? "molecule" : /experiment|plan|lab/i.test(title) ? "experiment" : /project|task|research/i.test(title) ? "research" : "sources"} className="cs-state__art" />
       <p className="cs-state__title">{title}</p>
       {action}
     </div>

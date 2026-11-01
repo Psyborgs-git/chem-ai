@@ -1,14 +1,16 @@
 # Chemprop engine adapter (CS-0604)
 
 A narrow, versioned adapter over Chemprop 2.3.1 for molecular-property
-regression. The adapter runs **only** inside the pinned, network-denied
+regression or binary classification. The adapter runs inside the pinned, network-denied
 worker image (`workers/optimization/property_models/chemprop/`); torch,
 lightning and chemprop are never imported by the core profile.
 
 ## What it is
 
 - `TrainSpec` → a directed message-passing (`mpnn-dmpnn`) regression
-  **ensemble** trained on exactly the rows supplied. Splitting is the
+  **ensemble** trained on exactly the rows supplied. `task_type` defaults to
+  regression; binary classification requires both 0 and 1 training labels and
+  emits probabilities without target normalization. Splitting is the
   caller's job (`domain/learning/splits.py`); the engine never
   re-splits and held-out labels cannot enter the contract
   (`PredictRow` has no label field).
@@ -21,7 +23,7 @@ lightning and chemprop are never imported by the core profile.
 
 ## What it deliberately refuses
 
-- Classification, multi-target, reaction/multicomponent models,
+- Multiclass classification, multi-target, reaction/multicomponent models,
   hyperparameter search, pretrained-model loading — all outside the
   declared contract and rejected by validation (`extra="forbid"` +
   literal pins).

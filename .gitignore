@@ -14,6 +14,7 @@ apps/studio-web/src/__generated__/
 
 # Local runtime state (vault/DB stay OUT of the repo - handoff 4.4)
 .local/
+.runtime/
 *.log
 
 # OS
@@ -28,3 +29,7 @@ playwright-report/
 tests/e2e/test-results/
 tests/e2e/playwright-report/
 apps/studio-web/test-results/
+
+# Generated native compiler output and schemas
+apps/studio-web/src-tauri/target/
+apps/studio-web/src-tauri/gen/

@@ -1,0 +1,9 @@
+export type NotebookFolder = { id: string; name: string; parentId: string | null; revision: number };
+export type Notebook = { id: string; title: string; folderId: string | null; revision: number; aiEnabled?: boolean; trainingEnabled?: boolean };
+export type NotebookContent = { markdown?: string; latex?: string; smiles?: string; ingredients?: { name: string; amount: string | number; unit: string }[]; steps?: string[]; variables?: Record<string, string | number> };
+export type NotebookCitation = { sourceId?: string; url?: string; title?: string; locator?: Record<string, unknown>; archiveStatus?: string };
+export type NotebookPage = { id: string; notebookId: string; title: string; kind: string; content: NotebookContent; citations?: NotebookCitation[]; revision: number; updatedAt?: string; deletedAt?: string | null };
+export type PageRevision = { id: string; revision: number; title: string; content: NotebookContent; citations?: NotebookCitation[]; createdAt?: string };
+export type ResearchMemory = { id: string; title: string; body: string; sourceRefs?: { kind: string; id: string; revision?: number }[]; stale?: boolean; status?: string };
+export type ResearchSource = { id: string; title: string; url?: string; sourceUrl?: string; mediaType?: string; checksum?: string; checksumSha256?: string; createdAt?: string; citation?: Record<string, unknown>; downloadPath?: string; originalName?: string; byteSize?: number; text?: string; metadata?: Record<string, unknown> };
+export type Library = { folders: NotebookFolder[]; notebooks: Notebook[]; pages: NotebookPage[]; memory: ResearchMemory[]; sources: ResearchSource[]; downloadsRoot: string; ownerKey?: string; trash?: NotebookPage[] };

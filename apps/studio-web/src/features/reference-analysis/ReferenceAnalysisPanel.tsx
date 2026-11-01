@@ -1,3 +1,4 @@
+import { FeatureSurface } from "../../components/layout/StudioLayout";
 import { useRef, useState } from "react";
 import { useFragment, useMutation } from "react-relay";
 
@@ -115,6 +116,14 @@ export function ReferenceAnalysisPanel({ taskRef }: { taskRef: ReferenceAnalysis
   const task = useFragment(ReferenceAnalysisFragment, taskRef);
   const [artifactId, setArtifactId] = useState("");
   const [spec, setSpec] = useState("");
+  const [method, setMethod] = useState<string>("infrared");
+  const [seriesLabel, setSeriesLabel] = useState("");
+  const [xUnit, setXUnit] = useState("");
+  const [yUnit, setYUnit] = useState("");
+  const [sampleLabel, setSampleLabel] = useState("");
+  const [preparation, setPreparation] = useState("");
+  const [vendor, setVendor] = useState("");
+  const [instrumentModel, setInstrumentModel] = useState("");
   const [leftId, setLeftId] = useState("");
   const [rightId, setRightId] = useState("");
   const [algorithm, setAlgorithm] = useState<string>("cosine");
@@ -142,7 +151,12 @@ export function ReferenceAnalysisPanel({ taskRef }: { taskRef: ReferenceAnalysis
   function submitIngest() {
     let parsed: unknown;
     try {
-      parsed = JSON.parse(spec);
+      parsed = spec.trim() ? JSON.parse(spec) : {
+        method, ...(seriesLabel.trim() ? { label: seriesLabel.trim() } : {}),
+        x_unit: xUnit.trim(), y_unit: yUnit.trim(),
+        sample: { label: sampleLabel.trim(), ...(preparation.trim() ? { preparation: preparation.trim() } : {}) },
+        instrument: { ...(vendor.trim() ? { vendor: vendor.trim() } : {}), ...(instrumentModel.trim() ? { model: instrumentModel.trim() } : {}) },
+      };
       if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error();
     } catch {
       setMessage("Provide an ingest spec JSON object (method, units, sample, instrument/context). Nothing is invented.");
@@ -195,7 +209,7 @@ export function ReferenceAnalysisPanel({ taskRef }: { taskRef: ReferenceAnalysis
   }
 
   return (
-    <div>
+    <FeatureSurface title="Reference analysis" description="Keep source exports, processing methods and scoped comparisons together. Similarity does not establish identity.">
       <p>
         Reference comparison of analytical exports (§16.5). Processing is separate from
         interpretation and identity: every value carries its transform version and a
@@ -206,13 +220,25 @@ export function ReferenceAnalysisPanel({ taskRef }: { taskRef: ReferenceAnalysis
         {" "}— anything else ingests as raw-only with interpretation <Badge tone="warning">unsupported</Badge>.
       </p>
 
-      <h4>Ingest a raw export</h4>
+      <section className="cs-analysis-ingest"><h4>Ingest a raw export</h4>
+      <p className="cs-field__hint">Declare the recorded method and units. Values are never inferred from a filename or sample name.</p>
       <TextField label="Raw export artifact id (uuid)" value={artifactId} onChange={(e) => setArtifactId(e.target.value)} />
-      <label>
+      <div className="cs-form-grid">
+        <TextField label="Series label (optional)" value={seriesLabel} onChange={(e) => setSeriesLabel(e.target.value)} />
+        <label className="cs-field"><span className="cs-field__label">Analytical method</span><select className="cs-select" value={method} onChange={(e) => setMethod(e.target.value)}>{METHODS.map((m) => <option key={m} value={m}>{m.replaceAll("_", " ")}</option>)}</select></label>
+        <TextField label="X-axis unit" hint="As recorded in the source, e.g. 1/CM or nm" value={xUnit} onChange={(e) => setXUnit(e.target.value)} />
+        <TextField label="Y-axis unit" hint="As recorded in the source, e.g. TRANSMITTANCE" value={yUnit} onChange={(e) => setYUnit(e.target.value)} />
+        <TextField label="Sample label" value={sampleLabel} onChange={(e) => setSampleLabel(e.target.value)} />
+        <TextField label="Sample preparation (optional)" value={preparation} onChange={(e) => setPreparation(e.target.value)} />
+        <TextField label="Instrument vendor (optional)" value={vendor} onChange={(e) => setVendor(e.target.value)} />
+        <TextField label="Instrument model (optional)" value={instrumentModel} onChange={(e) => setInstrumentModel(e.target.value)} />
+      </div>
+      <details className="cs-technical"><summary>Advanced ingest configuration</summary><p className="cs-field__hint">A supplied JSON object replaces the structured fields above. Use it for calibration and named preprocessing steps.</p><label>
         Ingest spec JSON (method ∈ {METHODS.join("/")})
         <textarea aria-label="Ingest spec JSON" rows={8} value={spec} onChange={(e) => setSpec(e.target.value)} />
-      </label>
-      <Button onClick={submitIngest} disabled={busy || !spec.trim() || !artifactId.trim()}>Ingest series</Button>
+      </label></details>
+      <Button onClick={submitIngest} disabled={busy || !artifactId.trim() || (!spec.trim() && (!xUnit.trim() || !yUnit.trim() || !sampleLabel.trim()))}>Ingest series</Button>
+      </section>
 
       <h4>Series ({task.analyticalSeries.length})</h4>
       {task.analyticalSeries.length === 0 && (
@@ -237,7 +263,7 @@ export function ReferenceAnalysisPanel({ taskRef }: { taskRef: ReferenceAnalysis
         </div>
       )}
 
-      <h4>Compare two processed series</h4>
+      <section className="cs-analysis-compare"><h4>Compare two processed series</h4><div className="cs-form-grid">
       <label>
         Left series
         <select aria-label="Left series" value={leftId} onChange={(e) => setLeftId(e.target.value)}>
@@ -261,14 +287,16 @@ export function ReferenceAnalysisPanel({ taskRef }: { taskRef: ReferenceAnalysis
       </label>
       <TextField label="Range min (x unit, optional)" inputMode="decimal" value={rangeMin} onChange={(e) => setRangeMin(e.target.value)} />
       <TextField label="Range max (x unit, optional)" inputMode="decimal" value={rangeMax} onChange={(e) => setRangeMax(e.target.value)} />
+      </div>
       <Button onClick={submitCompare} disabled={busy || processed.length < 2}>Compute scoped similarity</Button>
       {processed.length < 2 && <p role="note">at least two processed series are required for a comparison.</p>}
+      </section>
       {message && <p role="status">{message}</p>}
 
       <h4>Comparisons ({task.analyticalComparisons.length})</h4>
       {task.analyticalComparisons.map((c) => (
         <ComparisonCard key={c.id} manifest={c.manifest as ComparisonManifest} labels={labels} />
       ))}
-    </div>
+    </FeatureSurface>
   );
 }

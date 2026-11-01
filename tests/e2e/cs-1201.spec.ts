@@ -47,7 +47,7 @@ test.describe("CS-1201 ui gap fixes", () => {
     await expect(page.getByText("Page not found.")).toHaveCount(0);
     await expect(page.getByRole("article", { name: "serving pointer" })).toBeVisible();
     await expect(page.getByRole("button", { name: "register release" })).toBeVisible();
-    await expect(page.getByText("session pins")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "session pins", exact: true })).toBeVisible();
 
     // the restored link is live — /materials renders the registry
     await materialsLink.click();

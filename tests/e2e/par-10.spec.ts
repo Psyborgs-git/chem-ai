@@ -1,3 +1,4 @@
+import { openResearchStream, openCreationDetails, openCriteriaEditor, openProjectCreator, openRegistryCreator, openTaskCreator, openTaskTool } from "./ux-helpers";
 import {
   expect,
   request,
@@ -78,16 +79,18 @@ async function signInViaUi(page: Page) {
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible({
     timeout: 15000,
   });
-  await expect(page.getByText(`Signed in as ${OWNER.display}`)).toBeVisible();
+  await expect(page.getByRole("banner").locator(".cs-shell__session")).toContainText(OWNER.display);
 }
 
 async function createProjectViaUi(page: Page, slug: string, name: string) {
   await page.goto("/projects");
+  await openProjectCreator(page);
+  await openCreationDetails(page, "create project");
   await page.getByLabel("project slug").fill(slug);
   await page.getByLabel("project name").fill(name);
   await page.getByRole("button", { name: "Create project" }).click();
   await expect(page).toHaveURL(/\/projects\//);
-  await expect(page.getByRole("heading", { name: "Project" })).toBeVisible();
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 }
 
 async function registerIdentity(
@@ -96,6 +99,7 @@ async function registerIdentity(
   scheme: string,
   value: string,
 ) {
+  await openRegistryCreator(page, "register material identity", "Add a material");
   const form = page.locator('form[aria-label="register material identity"]');
   await form.getByLabel("name").fill(name);
   await form.getByLabel(/scheme/).fill(scheme);
@@ -250,6 +254,7 @@ async function freezeContractViaUi(
   metric: { label: string; id: string; operator: string; target: string },
   opts: { unknowns?: string[]; resolveUnknownsOnFreeze?: boolean } = {},
 ) {
+  await openCriteriaEditor(page);
   const contract = page.locator('[aria-label="success contract editor"]');
   await expect(contract).toBeVisible();
   for (const u of opts.unknowns ?? []) {
@@ -266,6 +271,7 @@ async function freezeContractViaUi(
   await contract.getByRole("button", { name: "save draft" }).click();
   await expect(page.locator("[data-save-state='saved']")).toBeVisible();
   await page.reload();
+  await openCriteriaEditor(page);
   const editor2 = page.locator('[aria-label="success contract editor"]');
   await expect(editor2.getByLabel("metric id").first()).toHaveValue(
     metric.id,
@@ -303,14 +309,21 @@ async function approvePlanViaUi(
 ) {
   await page
     .locator('nav[aria-label="task sections"]')
-    .getByRole("link", { name: "experiments" })
+    .getByRole("link", { name: "Experiments" })
     .click();
   const planForm = page.locator('section[aria-label="new experiment plan"]');
+  await planForm.getByText("Name, samples and notes", { exact: true }).click();
   await planForm.getByLabel("plan title").fill(opts.title);
+  if (await planForm.getByRole("button", { name: "Change candidate", exact: true }).isVisible()) {
+    await planForm.getByRole("button", { name: "Change candidate", exact: true }).click();
+  }
   await planForm
     .getByRole("listbox")
     .getByRole("button", { name: opts.candidatePick })
     .click();
+  if (await planForm.getByRole("button", { name: "Change success criteria", exact: true }).isVisible()) {
+    await planForm.getByRole("button", { name: "Change success criteria", exact: true }).click();
+  }
   await planForm
     .getByRole("listbox")
     .getByRole("button", { name: opts.contractPick })
@@ -320,7 +333,7 @@ async function approvePlanViaUi(
   await planForm
     .getByLabel("acceptance criteria (optional)")
     .fill("fixture acceptance");
-  await planForm.getByRole("button", { name: "create plan" }).click();
+  await planForm.getByRole("button", { name: "Save draft plan" }).click();
   const card = page.locator(".cs-plan").filter({ hasText: opts.title });
   await expect(card.locator(".cs-badge")).toHaveText("draft", {
     timeout: 15000,
@@ -351,7 +364,7 @@ async function recordAcceptedMeasurementViaUi(
 ) {
   await page
     .locator('nav[aria-label="section views"]')
-    .getByRole("link", { name: "results" })
+    .getByRole("link", { name: "Results" })
     .click();
   const ready = page
     .locator('ul[aria-label="approved plans ready to execute"] li')
@@ -370,19 +383,13 @@ async function recordAcceptedMeasurementViaUi(
   await batch.getByRole("button", { name: "add sample" }).click();
   const sample = batch.locator("li[data-sample-id]");
   const mform = sample.locator('details[data-field="measurement-form"]');
-  await mform.locator("summary").click();
+  await mform.locator("summary").first().click();
+  await mform.locator('[data-field="measurement-context"] > summary').click();
   await mform.getByLabel("method").fill(opts.method);
-  await mform.getByLabel(/contract metric id/).fill(opts.metric);
+  await mform.getByRole("combobox", { name: "What did you measure?", exact: true }).selectOption(opts.metric);
   await mform.getByLabel("repeat type").selectOption("independent_batch");
-  await mform
-    .locator('textarea[aria-label="measurement value (JSON)"]')
-    .fill(
-      JSON.stringify({
-        kind: "numeric",
-        value: opts.value,
-        unit: "dimensionless",
-      }),
-    );
+  await mform.getByLabel("Measured value", { exact: true }).fill(opts.value);
+  await mform.getByLabel("Measurement unit", { exact: true }).fill("dimensionless");
   await mform.getByRole("button", { name: "record" }).click();
   const measurement = sample.locator("li[data-measurement-id]");
   await expect(measurement).toBeVisible({ timeout: 15000 });
@@ -397,11 +404,11 @@ async function gotoCloseout(page: Page, taskUrl: string) {
   await page.goto(taskUrl);
   await page
     .locator('nav[aria-label="task sections"]')
-    .getByRole("link", { name: "decisions" })
+    .getByRole("link", { name: "Review" })
     .click();
   await page
     .locator('nav[aria-label="section views"]')
-    .getByRole("link", { name: "closeout" })
+    .getByRole("link", { name: "Review & decide" })
     .click();
   await expect(page.locator('[data-field="evaluation-report"]')).toBeVisible({
     timeout: 15000,
@@ -453,6 +460,7 @@ test.describe("PAR-10 acceptance journeys", () => {
     await page
       .getByRole("button", { name: "formulation families" })
       .click();
+    await openRegistryCreator(page, "create formulation family", "New formulation family");
     const familyForm = page.locator(
       'form[aria-label="create formulation family"]',
     );
@@ -492,8 +500,10 @@ test.describe("PAR-10 acceptance journeys", () => {
     await page
       .getByRole("link", { name: `PAR-10 improve ${RUN}` })
       .click();
+    await openTaskCreator(page);
     const taskForm = page.locator('form[aria-label="create task"]');
     await taskForm.getByLabel("task title").fill(`${RUN} improve task`);
+    await taskForm.getByRole("radio", { name: "Improve", exact: true }).check();
     await taskForm
       .getByRole("combobox", { name: "baseline formulation revision" })
       .fill(`${RUN} base coat`);
@@ -641,6 +651,7 @@ test.describe("PAR-10 acceptance journeys", () => {
     // reference product — composition knowledge stays "unknown"
     await page.goto("/materials");
     await page.getByRole("button", { name: "reference products" }).click();
+    await openRegistryCreator(page, "register reference product", "Add a reference product");
     const pform = page.locator('form[aria-label="register reference product"]');
     await pform.getByLabel("product name").fill(`${RUN} ref-coat`);
     await pform.getByLabel("supplier (optional)").fill("fixture supplier");
@@ -663,9 +674,10 @@ test.describe("PAR-10 acceptance journeys", () => {
     await page
       .getByRole("link", { name: `PAR-10 match ${RUN}` })
       .click();
+    await openTaskCreator(page);
     const taskForm = page.locator('form[aria-label="create task"]');
     await taskForm.getByLabel("task title").fill(`${RUN} match task`);
-    await taskForm.locator("#mode").selectOption("match_reference");
+    await taskForm.getByRole("radio", { name: "Match", exact: true }).check();
     await taskForm
       .getByRole("combobox", { name: "reference product" })
       .fill(`${RUN} ref-coat`);
@@ -675,9 +687,8 @@ test.describe("PAR-10 acceptance journeys", () => {
         name: new RegExp(`${RUN} ref-coat .* knowledge: unknown`),
       })
       .click();
-    await taskForm
-      .locator("#match-scope")
-      .selectOption("functional_and_analytical");
+    await openCreationDetails(page, "create task");
+    await taskForm.getByLabel("What should match?").selectOption("functional_and_analytical");
     await taskForm
       .getByRole("button", { name: /Create task/ })
       .click();
@@ -707,26 +718,8 @@ test.describe("PAR-10 acceptance journeys", () => {
     const artA = await uploadFixtureArtifact(token, `${RUN}-a.csv`, csvA);
     const artB = await uploadFixtureArtifact(token, `${RUN}-b.csv`, csvB);
 
-    await page
-      .locator('nav[aria-label="task sections"]')
-      .getByRole("link", { name: "advanced" })
-      .click();
-    await page
-      .locator('nav[aria-label="section views"]')
-      .getByRole("link", { name: "analysis" })
-      .click();
+    await openTaskTool(page, "analysis");
 
-    const ingestSpec = (label: string, sample: string) =>
-      JSON.stringify({
-        schema_version: "1",
-        method: "infrared",
-        label,
-        x_unit: "cm-1",
-        y_unit: "absorbance",
-        instrument: { vendor: "fixture", model: "fx-1" },
-        sample: { label: sample },
-        preprocessing: [],
-      });
     for (const [art, label, sample] of [
       [artA, `${RUN} series A`, "sample-a"],
       [artB, `${RUN} series B`, "sample-b"],
@@ -734,9 +727,13 @@ test.describe("PAR-10 acceptance journeys", () => {
       await page
         .getByLabel("Raw export artifact id (uuid)")
         .fill(art);
-      await page
-        .locator('textarea[aria-label="Ingest spec JSON"]')
-        .fill(ingestSpec(label, sample));
+      await page.getByLabel("Series label (optional)").fill(label);
+      await page.getByLabel("Analytical method").selectOption("infrared");
+      await page.getByLabel("X-axis unit").fill("cm-1");
+      await page.getByLabel("Y-axis unit").fill("absorbance");
+      await page.getByLabel("Sample label", { exact: true }).fill(sample);
+      await page.getByLabel("Instrument vendor (optional)").fill("fixture");
+      await page.getByLabel("Instrument model (optional)").fill("fx-1");
       await page.getByRole("button", { name: "Ingest series" }).click();
       await expect(
         page.getByText(/Series recorded\./),
@@ -781,7 +778,7 @@ test.describe("PAR-10 acceptance journeys", () => {
     const claimId = claim.data.evidence.claimCreate.claim.id as string;
     await page
       .locator('nav[aria-label="task sections"]')
-      .getByRole("link", { name: "evidence" })
+      .getByRole("link", { name: "Sources" })
       .click();
     const claimCard = page.locator(`article[data-claim-id="${claimId}"]`);
     await expect(claimCard).toHaveAttribute("data-status", "proposed");
@@ -861,12 +858,14 @@ test.describe("PAR-10 acceptance journeys", () => {
     await page
       .getByRole("link", { name: `PAR-10 discover ${RUN}` })
       .click();
+    await openTaskCreator(page);
     const taskForm = page.locator('form[aria-label="create task"]');
     await taskForm.getByLabel("task title").fill(`${RUN} discover task`);
-    await taskForm.locator("#mode").selectOption("discover");
-    await taskForm.locator("#target-kind").selectOption("formulation");
+    await taskForm.getByRole("radio", { name: "Explore", exact: true }).check();
+    await taskForm.getByLabel("What are you exploring?").selectOption("formulation");
+    await openCreationDetails(page, "create task");
     await taskForm
-      .getByLabel("objective", { exact: true })
+      .getByLabel("Research goal (optional)")
       .fill("find a low-VOC binder");
     await taskForm
       .getByRole("button", { name: /Create task/ })
@@ -886,7 +885,7 @@ test.describe("PAR-10 acceptance journeys", () => {
     await expect(
       page.getByRole("button", { name: "end active session" }),
     ).toBeVisible({ timeout: 15000 });
-    await page.locator("summary", { hasText: "stream" }).click();
+    await openResearchStream(page);
     const composer = page.locator('form[aria-label="research composer"]');
     await composer
       .getByLabel("ask the research agent")
@@ -975,14 +974,7 @@ test.describe("PAR-10 acceptance journeys", () => {
 
     // engine/model-dependent capability stays reported as unavailable —
     // the models registry is honestly empty, never a validation claim
-    await page
-      .locator('nav[aria-label="task sections"]')
-      .getByRole("link", { name: "advanced" })
-      .click();
-    await page
-      .locator('nav[aria-label="section views"]')
-      .getByRole("link", { name: "models" })
-      .click();
+    await openTaskTool(page, "models");
     await expect(
       page.getByText("No model releases registered yet."),
     ).toBeVisible();

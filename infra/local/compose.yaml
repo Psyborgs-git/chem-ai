@@ -3,6 +3,22 @@
 # Usage: docker compose -f infra/local/compose.yaml up -d postgres
 
 services:
+  research-search:
+    image: docker.io/searxng/searxng@sha256:f4aa660c54d062dedb268be84e821ea24e39f48c7a496af8dd02cc9eedb93847
+    profiles: [research]
+    ports:
+      - "127.0.0.1:8088:8080"
+    volumes:
+      - ../../.runtime/research-search:/etc/searxng
+    environment:
+      SEARXNG_BASE_URL: http://127.0.0.1:8088/
+    mem_limit: 512m
+    pids_limit: 128
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "5m"
+        max-file: "2"
   postgres:
     image: postgres:16.10-alpine
     container_name: chem-studio-postgres

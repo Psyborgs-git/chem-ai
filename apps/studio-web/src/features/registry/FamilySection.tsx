@@ -507,6 +507,7 @@ export function FormulationFamiliesSection() {
         role="searchbox"
         autoComplete="off"
       />
+      <details className="cs-create-disclosure"><summary>New formulation family</summary><FamilyCreateForm onCreated={() => setFetchKey((k) => k + 1)} /></details>
       <Suspense fallback={<LoadingState label="loading families…" />}>
         <FamilyList
           search={search}
@@ -515,7 +516,6 @@ export function FormulationFamiliesSection() {
           onSelect={setSelected}
         />
       </Suspense>
-      <FamilyCreateForm onCreated={() => setFetchKey((k) => k + 1)} />
       {selected && <FamilyDetail key={selected.id} family={selected} />}
     </section>
   );

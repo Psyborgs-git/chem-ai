@@ -1,0 +1,90 @@
+.cs-notebook-workspace { display:grid; grid-template-columns:250px minmax(0,1fr); border:1px solid var(--border); border-radius:14px; background:var(--surface); overflow:hidden; min-height:650px; }
+.cs-notebook-index { padding:1.2rem; border-right:1px solid var(--border); background:var(--surface-raised); min-width:0; }
+.cs-notebook-index .cs-field { margin-bottom:1rem; }
+.cs-notebook-list,.cs-notebook-page-list { display:grid; gap:.25rem; margin:.8rem 0 1.2rem; }
+.cs-notebook-list button,.cs-notebook-page-list button { background:transparent; border:0; text-align:left; padding:.65rem .6rem; min-height:40px; color:var(--text); font:inherit; font-size:.8rem; border-radius:6px; cursor:pointer; overflow-wrap:anywhere; }
+.cs-notebook-list button { display:flex; gap:.55rem; align-items:center; }
+.cs-notebook-page-list button { display:grid; gap:.2rem; }
+.cs-notebook-page-list small { color:var(--text-muted); font-size:.62rem; }
+.cs-notebook-list button:hover,.cs-notebook-page-list button:hover { background:var(--surface-sunken); }
+.cs-notebook-list button.is-selected,.cs-notebook-page-list button.is-selected { background:var(--art-mint); color:var(--art-teal); font-weight:600; }
+.cs-notebook-index-heading { display:flex; align-items:center; justify-content:space-between; gap:.4rem; margin:1.5rem 0 .7rem; }
+.cs-notebook-index-heading h2 { font-size:.85rem; margin:0; }
+.cs-new-page { display:grid; gap:.5rem; margin-bottom:1.5rem; }
+.cs-notebook-editor { padding:1.6rem; min-width:0; }
+.cs-notebook-toolbar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; margin-bottom:1.5rem; }
+.cs-notebook-toolbar .cs-kicker { margin:0 auto 0 0; }
+.cs-notebook-toolbar .cs-btn { font-size:.7rem; padding:.4rem .6rem; }
+.cs-notebook-title { font-size:1.3rem; font-weight:600; letter-spacing:-.02em; }
+.cs-notebook-editor .cs-field { margin-bottom:1.2rem; display:grid; gap:.4rem; }
+.cs-mono { font-family:var(--font-mono); }
+.cs-notebook-body textarea { min-height:380px; resize:vertical; line-height:1.8; font-size:.85rem; }
+.cs-notebook-prose { font-size:.86rem; line-height:1.8; overflow-wrap:anywhere; }
+.cs-notebook-prose > :first-child { margin-top:0; }
+.cs-notebook-prose > :last-child { margin-bottom:0; }
+.cs-notebook-prose pre { overflow:auto; padding:1rem; border-radius:8px; background:var(--surface-raised); font-size:.75rem; }
+.cs-notebook-prose code { font-size:.9em; }
+.cs-notebook-prose blockquote { border-left:3px solid var(--art-teal); margin-left:0; padding-left:1rem; color:var(--text-muted); }
+.cs-notebook-prose table,.cs-notebook-preview table { border-collapse:collapse; width:100%; margin:1rem 0; }
+.cs-notebook-prose td,.cs-notebook-prose th,.cs-notebook-preview td,.cs-notebook-preview th { padding:.6rem; border:1px solid var(--border); text-align:left; }
+.cs-notebook-prose img { max-width:100%; }
+.cs-notebook-prose .katex-display { overflow-x:auto; overflow-y:hidden; padding:.4rem; }
+.cs-notebook-preview { min-height:380px; padding:1rem .3rem; }
+.cs-notebook-history { margin-top:1rem; padding:1rem; border:1px solid var(--border); border-radius:8px; }
+.cs-notebook-history > div { display:flex; gap:1rem; justify-content:space-between; align-items:center; margin:.5rem 0; font-size:.75rem; }
+.cs-notebook-structure { display:flex; align-items:center; gap:1rem; padding:1rem; border:1px solid var(--border); border-radius:10px; margin-bottom:1rem; }
+.cs-notebook-structure img { max-width:60%; width:260px; background:white; border-radius:8px; }
+.cs-notebook-structure code { display:block; margin-top:.5rem; overflow-wrap:anywhere; }
+.cs-recipe-row { display:grid; grid-template-columns:minmax(100px,2fr) minmax(60px,1fr) minmax(50px,1fr) 30px; gap:.4rem; margin-bottom:.5rem; }
+.cs-recipe-editor { margin-bottom:1.5rem; }
+.cs-recipe-editor > .cs-field { margin-top:1rem; }
+.cs-notebook-settings { border-top:1px solid var(--border); padding:.8rem 0; margin:.5rem 0; font-size:.75rem; }
+.cs-notebook-settings summary { cursor:pointer; font-weight:600; margin-bottom:.6rem; }
+.cs-notebook-settings .cs-checkbox { margin:.7rem 0; }
+.cs-notebook-settings form { margin-bottom:1rem; }
+.cs-notebook-citations { margin-top:1.5rem; border-top:1px solid var(--border); padding-top:1rem; }
+.cs-notebook-citations h3 { font-size:.9rem; }
+.cs-notebook-citations > ol { padding-left:1.4rem; }
+.cs-notebook-citations li { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; padding:.7rem 0; font-size:.76rem; }
+.cs-notebook-citations li > div { flex:1; min-width:120px; }
+.cs-notebook-citations li small { display:block; color:var(--text-muted); margin-top:.35rem; }
+.cs-citation-attach { display:flex; align-items:start; flex-wrap:wrap; gap:.6rem; }
+.cs-citation-attach > .cs-field { flex:1; min-width:150px; }
+.cs-citation-attach > .cs-btn { margin-top:1.25rem; }
+.cs-notebook-source-review { padding:1rem; border:1px solid var(--border); border-radius:8px; background:var(--surface-raised); max-height:500px; overflow:auto; }
+.cs-notebook-source-review header { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.cs-notebook-source-review > code { display:block; font-size:.65rem; overflow-wrap:anywhere; margin:.6rem 0; }
+.cs-notebook-trash-confirm { margin-top:1rem; padding:1rem; border:1px solid var(--border); border-radius:8px; background:var(--surface-raised); font-size:.8rem; }
+.cs-inline-create { display:flex; gap:.7rem; align-items:end; padding:1rem; border:1px solid var(--border); border-radius:10px; margin-bottom:1rem; }
+.cs-inline-create .cs-field { flex:1; }
+.cs-workspace-error,.cs-workspace-notice { padding:.8rem 1rem; border:1px solid var(--border); border-radius:8px; background:var(--surface-raised); font-size:.8rem; overflow-wrap:anywhere; }
+.cs-workspace-error { color:var(--status-error,var(--text)); border-color:var(--status-error,var(--border)); }
+.cs-notebook-empty-symbol { font-size:3rem; color:var(--art-teal); margin-bottom:1rem; }
+.cs-library-tabs { display:flex; gap:1.5rem; border-bottom:1px solid var(--border); margin-bottom:1.7rem; overflow:auto; }
+.cs-library-tabs a { padding:.7rem .1rem; text-decoration:none; color:var(--text-muted); font-size:.83rem; white-space:nowrap; }
+.cs-library-tabs a[aria-current=page] { color:var(--accent); border-bottom:2px solid var(--accent); font-weight:600; }
+.cs-research-discovery { margin-bottom:2rem; }
+.cs-research-search { display:grid; grid-template-columns:minmax(0,1fr) 170px auto; align-items:end; gap:.8rem; }
+.cs-research-url { display:flex; align-items:end; gap:.8rem; margin-top:1rem; }
+.cs-research-url .cs-field { flex:1; }
+.cs-source-search-results { display:grid; gap:.8rem; margin-top:1.5rem; }
+.cs-source-result { display:flex; align-items:start; gap:1rem; padding:1rem; border:1px solid var(--border); border-radius:10px; background:var(--surface); }
+.cs-source-result > div { flex:1; min-width:0; }
+.cs-source-result h2,.cs-source-card h2 { font-size:.95rem; margin:0 0 .6rem; line-height:1.5; }
+.cs-source-result p { font-size:.78rem; color:var(--text-muted); }
+.cs-source-result a,.cs-source-result code { display:block; font-size:.7rem; margin-top:.5rem; overflow-wrap:anywhere; }
+.cs-source-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:1rem; }
+.cs-source-card { padding:1.25rem; border:1px solid var(--border); background:var(--surface); border-radius:12px; min-width:0; }
+.cs-source-card h2 button { background:none; padding:0; border:0; color:var(--text); font:inherit; text-align:left; cursor:pointer; }
+.cs-source-card h2 button:hover { color:var(--accent); }
+.cs-source-card p { color:var(--text-muted); font-size:.7rem; overflow-wrap:anywhere; }
+.cs-source-card .cs-btn { font-size:.7rem; }
+.cs-source-detail { margin-top:1.5rem; }
+.cs-memory-layout { display:grid; grid-template-columns:minmax(250px,.8fr) minmax(0,1.4fr); gap:1.4rem; align-items:start; }
+.cs-memory-layout .cs-field { display:grid; gap:.4rem; margin-bottom:1rem; }
+.cs-memory-list { display:grid; gap:1rem; }
+.cs-memory-list article > header { display:flex; gap:.5rem; align-items:center; justify-content:space-between; }
+.cs-memory-list article h2 { font-size:.95rem; }
+.cs-library-page .cs-section-heading .cs-input { max-width:280px; }
+@media(max-width:1000px) { .cs-notebook-workspace { grid-template-columns:210px minmax(0,1fr); } .cs-notebook-editor { padding:1rem; } .cs-research-search { grid-template-columns:minmax(0,1fr) 150px; } .cs-research-search > .cs-btn { grid-column:1/-1; } }
+@media(max-width:700px) { .cs-notebook-workspace,.cs-memory-layout { grid-template-columns:minmax(0,1fr); } .cs-notebook-index { border-right:0; border-bottom:1px solid var(--border); } .cs-notebook-list,.cs-notebook-page-list { max-height:180px; overflow:auto; } .cs-notebook-toolbar { gap:.3rem; } .cs-research-url,.cs-source-result,.cs-inline-create { flex-wrap:wrap; } .cs-research-url .cs-field { flex-basis:100%; } .cs-notebook-structure { flex-direction:column; } .cs-notebook-structure img { max-width:100%; } }

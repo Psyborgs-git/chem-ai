@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "../../../components/layout/StudioLayout";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
 import { Badge } from "../../../components/atoms/Badge";
@@ -778,8 +779,8 @@ export function ExportReviewPanel({ proposalId }: { proposalId: string }) {
   }
 
   return (
-    <div data-proposal-id={view.proposal.id}>
-      <h1>export payload review</h1>
+    <div className="cs-review-layout" data-proposal-id={view.proposal.id}>
+      <PageHeader eyebrow="Disclosure review" title="Export payload review" description="Review the exact transformed payload, recipient and residual risk. Approval binds this manifest and digest; preparing a proposal never sends data." />
       {actionErrors.length > 0 ? <p role="alert">{actionErrors.join("; ")}</p> : null}
       <TradeoffBanner />
       <ProposalCard proposal={view.proposal} />

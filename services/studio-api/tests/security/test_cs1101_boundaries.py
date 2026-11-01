@@ -619,9 +619,12 @@ class TestSessionEdges:
 
 
 class TestEgressWholeRepo:
-    """AT-1101-1: the no-egress contract covers EVERY runtime tree, not
-    just services/studio-api/src. The single reviewed exception is the
-    inference worker's loopback urllib client."""
+    """Network clients remain confined to the reviewed transport boundaries.
+
+    Explicit provider selection, public research fetching and authenticated
+    self-hosted workers extend the original loopback-only inference profile.
+    Other domain services and tool handlers must not create network clients.
+    """
 
     OUTBOUND_MODULES = (
         "httpx",
@@ -632,9 +635,15 @@ class TestEgressWholeRepo:
         "smtplib",
         "ftplib",
     )
-    # Loopback-bound urllib client to the local llama.cpp container —
-    # reviewed, documented, hardcoded 127.0.0.1 base_url.
-    ALLOWED: ClassVar[set[str]] = {"workers/inference/runtime.py"}
+    ALLOWED: ClassVar[set[str]] = {
+        "workers/inference/runtime.py",  # Fixed loopback llama.cpp endpoint.
+        # Selected provider: pinned DNS, no redirects/proxy, secure key storage.
+        "services/studio-api/src/studio/application/inference/runtime.py",
+        # Public resource DNS/redirect validation, bounded bytes and time.
+        "services/studio-api/src/studio/domain/library/research.py",
+        # Authenticated configured Studio origin; no redirects/environment proxy.
+        "workers/training/workspace_worker.py",
+    }
     IMPORT_RE = re.compile(r"^\s*(?:from|import)\s+([\w.]+)")
 
     @pytest.mark.parametrize("tree", ["services/studio-api/src", "workers", "infra"])
@@ -654,7 +663,7 @@ class TestEgressWholeRepo:
         assert offenders == []
 
     def test_inference_client_is_loopback_bound(self) -> None:
-        """The one network client must keep its hardcoded loopback
+        """The llama.cpp network client must keep its hardcoded loopback
         base — if a future change parameterizes it, this fails."""
         src = (ROOT / "workers/inference/runtime.py").read_text()
         assert 'f"http://127.0.0.1:{host_port}"' in src

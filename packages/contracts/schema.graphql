@@ -302,6 +302,13 @@ type DecisionEdge {
   node: Decision!
 }
 
+input DescribeStructureInput {
+  taskId: ID!
+  smiles: String!
+  idempotencyKey: String!
+  clientMutationId: String = null
+}
+
 type DomainErrorPayload {
   code: String!
   message: String!
@@ -682,6 +689,76 @@ type ImportsMutation {
   recordPromote(input: PromoteRecordInput!): EvidenceClaimResult!
 }
 
+type InferenceCredentialCleanupResult {
+  pending: Boolean!
+  errors: [DomainErrorPayload!]!
+}
+
+type InferenceProvider {
+  id: ID!
+  revision: Int!
+  name: String!
+  kind: String!
+  baseUrl: String!
+  model: String!
+  apiStyle: String!
+  enabled: Boolean!
+  supportsTools: Boolean!
+  hasApiKey: Boolean!
+  lastTestStatus: String!
+  lastTestDetail: String
+  lastTestAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input InferenceProviderDeleteInput {
+  id: ID!
+  expectedRevision: Int!
+  clientMutationId: String = null
+}
+
+type InferenceProviderDeleteResult {
+  deleted: Boolean!
+  credentialCleanupPending: Boolean!
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+type InferenceProviderResult {
+  provider: InferenceProvider
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
+input InferenceProviderSaveInput {
+  name: String!
+  kind: String!
+  baseUrl: String!
+  model: String!
+  apiStyle: String! = "chat_completions"
+  enabled: Boolean! = false
+  supportsTools: Boolean! = true
+  id: ID = null
+  expectedRevision: Int = null
+  apiKey: String = null
+  clearApiKey: Boolean! = false
+  clientMutationId: String = null
+}
+
+input InferenceProviderTestInput {
+  id: ID!
+  clientMutationId: String = null
+}
+
+type InferenceProviderTestResult {
+  provider: InferenceProvider
+  status: String!
+  detail: String!
+  errors: [DomainErrorPayload!]!
+  clientMutationId: String
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
 """
@@ -1034,6 +1111,14 @@ input ModelReleaseRollbackInput {
 }
 
 type Mutation {
+  notebookCreate(title: String!, folderId: ID = null): JSON!
+  notebookPageCreate(input: JSON!): JSON!
+  notebookPageUpdate(id: ID!, input: JSON!): JSON!
+  privateAgentThreadCreate(input: JSON!): JSON!
+  privateAgentRunStart(threadId: ID!, input: JSON!): JSON!
+  privateLearningDatasetImport(input: JSON!): JSON!
+  privateLearningJobStart(input: JSON!): JSON!
+  providers: ProviderMutation!
   projectCreate(input: ProjectCreateInput!): ProjectResult!
   taskCreate(input: TaskCreateInput!): TaskCreateResult!
   taskTransition(input: TaskTransitionInput!): TaskResult!
@@ -1150,6 +1235,45 @@ input PlanUpdateInput {
   clientMutationId: String = null
 }
 
+type PrivateAgentInfo {
+  threads: [JSON!]!
+  providers: [JSON!]!
+  policy: JSON!
+}
+
+type PrivateLearningInfo {
+  datasets: [JSON!]!
+  models: [JSON!]!
+  jobs: [JSON!]!
+}
+
+type PrivateLibraryInfo {
+  folders: [JSON!]!
+  notebooks: [PrivateNotebookInfo!]!
+  pages: [PrivatePageInfo!]!
+  memory: [JSON!]!
+  downloads: [JSON!]!
+}
+
+type PrivateNotebookInfo {
+  id: ID!
+  title: String!
+  folderId: ID
+  revision: Int!
+  aiEnabled: Boolean!
+  trainingEnabled: Boolean!
+}
+
+type PrivatePageInfo {
+  id: ID!
+  notebookId: ID!
+  title: String!
+  kind: String!
+  revision: Int!
+  content: JSON!
+  citations: [JSON!]!
+}
+
 type ProcessRevision implements Node {
   """The Globally Unique ID of this object"""
   id: ID!
@@ -1198,6 +1322,7 @@ type ProfileCapabilities {
   training: CapabilityStatus!
   design: CapabilityStatus!
   synthesis: CapabilityStatus!
+  rdkit: CapabilityStatus!
 }
 
 type Project implements Node {
@@ -1281,11 +1406,25 @@ input PromotionPromoteInput {
   clientMutationId: String = null
 }
 
+type ProviderMutation {
+  cleanupCredentials: InferenceCredentialCleanupResult!
+  save(input: InferenceProviderSaveInput!): InferenceProviderResult!
+  delete(input: InferenceProviderDeleteInput!): InferenceProviderDeleteResult!
+  test(input: InferenceProviderTestInput!): InferenceProviderTestResult!
+}
+
 type Query {
+  privateLibrary: PrivateLibraryInfo!
+  privateAgent: PrivateAgentInfo!
+  privateAgentRun(id: ID!): JSON!
+  privateLearning: PrivateLearningInfo!
   node(
     """The ID of the object."""
     id: ID!
   ): Node
+  inferenceCredentialCleanupPending: Boolean!
+  inferenceProviders: [InferenceProvider!]!
+  canManageInferenceProviders: Boolean!
   nodes(ids: [ID!]!): [Node]!
   viewer: User!
   workspace: Workspace!
@@ -1355,6 +1494,13 @@ input QuestionRaiseInput {
 input QuestionResolveInput {
   questionId: ID!
   resolution: String!
+  clientMutationId: String = null
+}
+
+input QuickDescribeStructureInput {
+  smiles: String!
+  idempotencyKey: String!
+  projectId: ID = null
   clientMutationId: String = null
 }
 
@@ -1483,6 +1629,7 @@ input ReviewRecordInput {
 type Run implements Node {
   """The Globally Unique ID of this object"""
   id: ID!
+  taskId: ID
   kind: String!
   status: String!
   attemptCount: Int!
@@ -1494,6 +1641,7 @@ type Run implements Node {
   deadlineAt: DateTime
   error: JSON
   resultSummary: JSON
+  inputSummary: JSON
   attempts: [RunAttempt!]!
 }
 
@@ -1547,6 +1695,8 @@ type RunResult {
 }
 
 type RunsMutation {
+  quickDescribeStructure(input: QuickDescribeStructureInput!): RunResult!
+  describeStructure(input: DescribeStructureInput!): RunResult!
   request(input: RunRequestInput!): RunResult!
   requestCancel(input: RunCancelInput!): RunResult!
   requestFallback(input: RunFallbackInput!): FallbackResult!
@@ -1685,9 +1835,9 @@ type TaskConnection {
 }
 
 input TaskCreateInput {
-  projectId: ID!
   title: String!
   mode: String!
+  projectId: ID = null
   objective: String = null
   targetKind: String = null
   modeInputs: JSON = null
@@ -1841,6 +1991,9 @@ input TurnRequestInput {
   sessionId: ID!
   content: String!
   turnId: String!
+  providerId: ID = null
+  providerRevision: Int = null
+  allowProviderDataTransfer: Boolean! = false
   idempotencyKey: String = null
   clientMutationId: String = null
 }

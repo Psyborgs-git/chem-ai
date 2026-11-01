@@ -34,6 +34,13 @@ export const ProjectCreateMutation = graphql`
 
 export const ProjectTasksQuery = graphql`
   query tasksProjectTasksQuery($projectId: ID!) {
+    node(id: $projectId) {
+      __typename
+      ... on Project {
+        id
+        name
+      }
+    }
     projectTasks(projectId: $projectId, first: 50) {
       edges {
         node {
@@ -78,6 +85,7 @@ export const TaskDetailQuery = graphql`
           id
           revision
           status
+          payload
           createdAt
         }
       }

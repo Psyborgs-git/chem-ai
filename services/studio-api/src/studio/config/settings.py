@@ -35,6 +35,10 @@ class Settings:
             Path.home() / ".local" / "share" / "chemistry-studio" / "vault"
         ).resolve()
     )
+    # Native shell only: serve the built UI from the API's loopback origin.
+    # Remains off for development and ordinary API deployments.
+    desktop_frontend_dir: Path | None = None
+    desktop_build_id: str | None = None
     # Upload/archive limits enforced while streaming and at commit.
     artifact_max_bytes: int = 512 * 1024 * 1024
     artifact_max_archive_members: int = 10_000
@@ -68,11 +72,14 @@ class Settings:
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     origins = _env("STUDIO_ALLOWED_ORIGINS")
+    desktop_frontend_dir = _env("STUDIO_DESKTOP_FRONTEND_DIR")
     return Settings(
         bind_host=_env("STUDIO_BIND_HOST", "127.0.0.1") or "127.0.0.1",
         port=int(_env("STUDIO_PORT", "8787") or "8787"),
         database_url=_env("STUDIO_DATABASE_URL") or Settings.database_url,
         vault_root=Path(_env("STUDIO_VAULT_ROOT") or str(Settings().vault_root)).resolve(),
+        desktop_frontend_dir=Path(desktop_frontend_dir) if desktop_frontend_dir else None,
+        desktop_build_id=_env("STUDIO_DESKTOP_BUILD_ID"),
         artifact_max_bytes=int(
             _env("STUDIO_ARTIFACT_MAX_BYTES", str(Settings.artifact_max_bytes))
             or str(Settings.artifact_max_bytes)

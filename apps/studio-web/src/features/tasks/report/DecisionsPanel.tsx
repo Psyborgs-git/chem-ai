@@ -1,3 +1,4 @@
+import { FeatureSurface } from "../../../components/layout/StudioLayout";
 import { Suspense, useState } from "react";
 import { useLazyLoadQuery, usePaginationFragment } from "react-relay";
 
@@ -43,7 +44,7 @@ function DecisionsBody({ taskId }: { taskId: string }) {
   }
   return (
     <>
-      <ol data-field="decision-log">
+      <ol className="cs-decision-list" data-field="decision-log">
         {edges.map(({ node }) => {
         const payload = (node.payload ?? {}) as Json;
         const packet = (payload.packet ?? null) as Json | null;
@@ -150,8 +151,10 @@ function DecisionsBody({ taskId }: { taskId: string }) {
  * signed under — a later contract revision never rewrites them. */
 export function DecisionsPanel({ taskId }: { taskId: string }) {
   return (
+    <FeatureSurface title="Decision history" description="A traceable record of human decisions and the exact contract and evidence each decision bound.">
     <Suspense fallback={<LoadingState label="loading decisions…" />}>
       <DecisionsBody taskId={taskId} />
     </Suspense>
+    </FeatureSurface>
   );
 }

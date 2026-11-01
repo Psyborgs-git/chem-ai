@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
 import { Badge } from "../../../components/atoms/Badge";
 import { Button } from "../../../components/atoms/Button";
 import { TextField } from "../../../components/atoms/TextField";
 import { EmptyState } from "../../../components/states/states";
+import { ChemistryArt } from "../../../components/layout/ChemistryArt";
+import { Link } from "react-router";
+import { rawUuid } from "../../../relay/network";
 import {
   CandidateRevisionPicker,
   ContractRevisionPicker,
+  type Picked,
 } from "../../registry/pickers";
 import {
   PacketExportMutation,
@@ -22,6 +26,7 @@ import type { labPlansPlanCreateMutation } from "../../../__generated__/labPlans
 import type { labPlansPlanReviewMutation } from "../../../__generated__/labPlansPlanReviewMutation.graphql";
 import type { labPlansPlanSubmitMutation } from "../../../__generated__/labPlansPlanSubmitMutation.graphql";
 import type { labPlansTaskPlansQuery } from "../../../__generated__/labPlansTaskPlansQuery.graphql";
+import "../lab-workflow.css";
 
 type PlanNode = NonNullable<
   labPlansTaskPlansQuery["response"]["taskPlans"]["edges"][number]["node"]
@@ -46,9 +51,13 @@ const MANUAL_LABEL =
 function PlanCard({
   plan,
   onChanged,
+  candidateLabel,
+  contractLabel,
 }: {
   plan: PlanNode;
   onChanged: () => void;
+  candidateLabel: string;
+  contractLabel: string;
 }) {
   const [submit, submitting] =
     useMutation<labPlansPlanSubmitMutation>(PlanSubmitMutation);
@@ -113,7 +122,12 @@ function PlanCard({
         <strong>{plan.title}</strong>{" "}
         <Badge tone={STATUS_TONE[plan.status] ?? "neutral"}>{plan.status}</Badge>
       </p>
-      <dl>
+      <dl className="cs-lab-plan-summary">
+        <div><dt>Test method</dt><dd>{String(payload.method || "Not specified")}</dd></div>
+        <div><dt>Candidate</dt><dd>{candidateLabel}</dd></div>
+        <div><dt>Success criteria</dt><dd>{contractLabel}</dd></div>
+      </dl>
+      <details className="cs-technical"><summary>Plan record details</summary><dl>
         <dt>content digest</dt>
         <dd>
           <code>{plan.contentDigest.slice(0, 16)}…</code>
@@ -132,7 +146,7 @@ function PlanCard({
         </dd>
         <dt>method</dt>
         <dd data-field="method">{String(payload.method ?? "—")}</dd>
-      </dl>
+      </dl></details>
       {blockers.length > 0 && (
         <ul aria-label="blockers" className="cs-plan__blockers">
           {blockers.map((b, i) => (
@@ -210,7 +224,7 @@ function PlanCard({
 /** Structured plan form (§14.1, PAR-07): bound revisions are picked by
  * name — candidate revision, contract revision, optional process
  * revision — never a uuid typed by hand. */
-function PlanCreateForm({
+export function PlanCreateForm({
   taskId,
   onCreated,
 }: {
@@ -219,9 +233,10 @@ function PlanCreateForm({
 }) {
   const [commit, pending] =
     useMutation<labPlansPlanCreateMutation>(PlanCreateMutation);
+  const submitting = useRef(false);
   const [title, setTitle] = useState("");
-  const [candidateRevisionId, setCandidateRevisionId] = useState("");
-  const [contractRevisionId, setContractRevisionId] = useState("");
+  const [candidate, setCandidate] = useState<Picked | null>(null);
+  const [contract, setContract] = useState<Picked | null>(null);
   const [method, setMethod] = useState("");
   const [batches, setBatches] = useState("1");
   const [acceptanceCriteria, setAcceptanceCriteria] = useState("");
@@ -230,11 +245,13 @@ function PlanCreateForm({
   const [error, setError] = useState<string | null>(null);
 
   const create = () => {
+    if (pending || submitting.current || !method.trim()) return;
+    submitting.current = true;
     setError(null);
     const batchCount = Math.max(1, Number.parseInt(batches, 10) || 1);
     const payload = {
-      ...(candidateRevisionId ? { candidateRevisionId } : {}),
-      ...(contractRevisionId ? { contractRevisionId } : {}),
+      ...(candidate ? { candidateRevisionId: candidate.uuid } : {}),
+      ...(contract ? { contractRevisionId: contract.uuid } : {}),
       method,
       samplePlan: Array.from({ length: batchCount }, (_, i) => ({
         batch: String.fromCharCode(65 + i),
@@ -245,15 +262,14 @@ function PlanCreateForm({
       ...(resourceNeeds ? { resourceNeeds } : {}),
     };
     commit({
-      variables: { input: { taskId, title, payload } },
+      variables: { input: { taskId, title: title.trim() || `${Array.from(method.trim()).slice(0, 289).join("")} experiment`, payload } },
       onCompleted: (res) => {
+        submitting.current = false;
         const errs = res.lab?.planCreate.errors;
         if (errs && errs.length > 0) {
           setError(errs.map((e) => `${e.code}: ${e.message}`).join("; "));
         } else {
           setTitle("");
-          setCandidateRevisionId("");
-          setContractRevisionId("");
           setMethod("");
           setAcceptanceCriteria("");
           setHazardNotes("");
@@ -261,36 +277,50 @@ function PlanCreateForm({
           onCreated();
         }
       },
-      onError: (e) => setError(e.message),
+      onError: (e) => { submitting.current = false; setError(e.message); },
     });
   };
 
   return (
     <section aria-label="new experiment plan">
-      <h3>new experiment plan</h3>
-      <TextField
-        label="plan title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-      />
-      <fieldset>
-        <legend>bound revisions</legend>
+      <header className="cs-lab-step-heading"><div><p className="cs-eyebrow">Plan an experiment</p><h3>How will you test this candidate?</h3><p>Choose what you are testing, then describe the method. The plan stays a draft until a person reviews it.</p></div><ChemistryArt kind="experiment" /></header>
+      <div className="cs-plan-bindings">
+        <div className="cs-lab-binding">
+          {candidate && <div className="cs-lab-binding__summary"><span>Candidate to test</span><strong>{candidate.label}</strong><Button variant="ghost" onClick={() => setCandidate(null)}>Change candidate</Button></div>}
+          <div hidden={candidate !== null}>
         <CandidateRevisionPicker
           taskId={taskId}
-          onPick={(p) => setCandidateRevisionId(p.uuid)}
+          label="Candidate to test"
+          selectedId={candidate?.uuid ?? null}
+          onClear={() => setCandidate(null)}
+          onPick={setCandidate}
+          autoSelectSingle
         />
+          </div>
+        </div>
+        <div className="cs-lab-binding">
+          {contract && <div className="cs-lab-binding__summary"><span>Agreed success criteria</span><strong>{contract.label}</strong><Button variant="ghost" onClick={() => setContract(null)}>Change success criteria</Button></div>}
+          <div hidden={contract !== null}>
         <ContractRevisionPicker
           taskId={taskId}
-          onPick={(p) => setContractRevisionId(p.uuid)}
+          label="Agreed success criteria"
+          selectedId={contract?.uuid ?? null}
+          onClear={() => setContract(null)}
+          onPick={setContract}
+          autoSelectSingle
         />
-      </fieldset>
+          </div>
+        </div>
+      </div>
+      {(!candidate || !contract) && <p className="cs-field__hint">{!candidate && !contract ? "No candidate or success criteria selected." : !candidate ? "No candidate selected." : "No success criteria selected."} You can save a draft now, <Link to={`/tasks/${encodeURIComponent(taskId)}/candidates`}>review candidates</Link> or <Link to={`/tasks/${encodeURIComponent(taskId)}/overview`}>define the success criteria</Link>. Unresolved review blockers must be addressed before approval.</p>}
       <TextField
-        label="method"
-        hint="what the manual experiment does, in operator terms"
+        label="Test method"
+        hint="Describe the test a qualified operator will carry out."
         value={method}
         onChange={(e) => setMethod(e.target.value)}
       />
+      <details className="cs-lab-plan-options"><summary>Name, samples and notes</summary>
+      <TextField label="plan title (optional)" hint="Leave blank to name this plan after its method." value={title} onChange={(e) => setTitle(e.target.value)} />
       <TextField
         label="batch count"
         inputMode="numeric"
@@ -312,6 +342,7 @@ function PlanCreateForm({
         value={resourceNeeds}
         onChange={(e) => setResourceNeeds(e.target.value)}
       />
+      </details>
       {error && (
         <p role="alert" className="cs-field__error">
           {error}
@@ -319,10 +350,10 @@ function PlanCreateForm({
       )}
       <Button
         type="button"
-        disabled={pending || !title.trim() || !method.trim()}
+        disabled={pending || !method.trim()}
         onClick={create}
       >
-        create plan
+        Save draft plan
       </Button>
     </section>
   );
@@ -341,16 +372,20 @@ export function PlansPanel({ taskId }: { taskId: string }) {
   );
   const bump = () => setFetchKey((k) => k + 1);
   const plans = data.taskPlans.edges.map((e) => e.node).filter((n) => n != null);
+  const candidates = (data.taskCandidateRevisions?.edges ?? []).map((edge) => edge.node);
+  const contracts = (data.taskContractRevisions?.edges ?? []).map((edge) => edge.node);
 
   return (
     <section aria-label="experiment plans">
-      <h2>experiment plans</h2>
+      <h2>Experiment plans</h2>
       {plans.length === 0 ? (
         <EmptyState title="no plans yet — create one below." />
       ) : (
         <ul aria-label="plans">
           {plans.map((p) => (
-            <PlanCard key={p.id} plan={p} onChanged={bump} />
+            <PlanCard key={p.id} plan={p} onChanged={bump}
+              candidateLabel={(() => { const match = candidates.find((candidate) => rawUuid(candidate.id) === String((p.payload as Payload | null)?.candidateRevisionId)); return match ? `${match.hypothesis || match.entityKind} · revision ${match.revision}` : "No candidate selected"; })()}
+              contractLabel={(() => { const match = contracts.find((contract) => rawUuid(contract.id) === String((p.payload as Payload | null)?.contractRevisionId)); return match ? `Agreed criteria · revision ${match.revision}` : "No success criteria selected"; })()} />
           ))}
         </ul>
       )}

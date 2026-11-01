@@ -1,3 +1,4 @@
+import { openProjectCreator, openTaskCreator, openCreationDetails } from "./ux-helpers";
 import { expect, test } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 
@@ -52,7 +53,7 @@ test("fresh install → bootstrap, sign-in, project + task in each mode, sign-ou
   await page.getByLabel("confirm password").fill("e2e-password-10");
   await page.getByRole("button", { name: "Create owner account" }).click();
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
-  await expect(page.getByText("Signed in as E2E Owner")).toBeVisible();
+  await expect(page.getByRole("banner").locator(".cs-shell__session")).toContainText("E2E Owner");
 
   // ── 2. sign out via the shell control → sign-in surface
   await page.getByRole("button", { name: "Sign out" }).click();
@@ -89,24 +90,27 @@ test("fresh install → bootstrap, sign-in, project + task in each mode, sign-ou
   await expect(page).toHaveURL(/\/projects/);
 
   // ── 6. create a project through the UI (create → select is one step)
+  await openProjectCreator(page);
+  await openCreationDetails(page, "create project");
   await page.getByLabel("project slug").fill("par06-proj");
   await page.getByLabel("project name").fill("PAR-06 Project");
   await page.getByRole("button", { name: "Create project" }).click();
   await expect(page).toHaveURL(/\/projects\//);
   await expect(
-    page.getByRole("heading", { name: "Project" }),
+    page.getByRole("heading", { name: "PAR-06 Project", exact: true }),
   ).toBeVisible();
   const projectPath = new URL(page.url()).pathname;
 
   // ── 7. one task in each mode the create form offers
   const modes = [
-    { title: "improve run", label: "improve an existing formulation" },
-    { title: "match run", label: "match a reference product" },
-    { title: "discover run", label: "discover something new" },
+    { title: "improve run", label: "Improve" },
+    { title: "match run", label: "Match" },
+    { title: "discover run", label: "Explore" },
   ];
   for (const m of modes) {
+    await openTaskCreator(page);
     await page.getByLabel("task title").fill(m.title);
-    await page.getByLabel("research mode").selectOption({ label: m.label });
+    await page.getByRole("radio", { name: m.label, exact: true }).check();
     await page
       .getByRole("button", { name: /Create task/ })
       .click();

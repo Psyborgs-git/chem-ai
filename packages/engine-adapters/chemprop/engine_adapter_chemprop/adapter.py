@@ -49,7 +49,23 @@ def _finite_label(raw: Decimal, row_id: str) -> float:
     return value
 
 
-def _trainer(max_epochs: int) -> Any:
+def _execution_device(device: str) -> str:
+    import torch
+
+    cuda = bool(torch.cuda.is_available())
+    mps = bool(torch.backends.mps.is_available())
+    if device == "auto":
+        return "cuda" if cuda else ("mps" if mps else "cpu")
+    if device == "cuda" and not cuda:
+        raise EngineFailure("ENGINE_UNAVAILABLE", "CUDA was selected but is unavailable")
+    if device == "mps" and not mps:
+        raise EngineFailure("ENGINE_UNAVAILABLE", "MPS was selected but is unavailable")
+    if device not in {"cpu", "cuda", "mps"}:
+        raise EngineFailure("ENGINE_UNSUPPORTED_INPUT", "Unsupported Chemprop execution device")
+    return device
+
+
+def _trainer(max_epochs: int, device: str = "cpu") -> Any:
     from lightning import pytorch as pl
 
     return pl.Trainer(
@@ -58,7 +74,7 @@ def _trainer(max_epochs: int) -> Any:
         enable_model_summary=False,
         enable_progress_bar=False,
         max_epochs=max_epochs,
-        accelerator="cpu",
+        accelerator=_execution_device(device),
         devices=1,
         num_sanity_val_steps=0,
     )
@@ -97,7 +113,7 @@ class ChempropAdapter:
                     f"row {r.row_id} could not be featurized; nothing was dropped or imputed",
                 ) from e
         dset = data.MoleculeDataset(points, featurizer)
-        scaler = dset.normalize_targets()
+        scaler = dset.normalize_targets() if spec.task_type == "regression" else None
         loader = data.build_dataloader(
             dset,
             batch_size=min(spec.batch_size, len(spec.rows)),
@@ -105,18 +121,27 @@ class ChempropAdapter:
             seed=spec.seed,
             shuffle=True,
         )
-        out_transform = nn.UnscaleTransform.from_standard_scaler(scaler)
+        out_transform = (
+            nn.UnscaleTransform.from_standard_scaler(scaler) if scaler is not None else None
+        )
         files: dict[str, bytes] = {}
         for i in range(spec.ensemble_size):
             pl.seed_everything(spec.seed + i, workers=True)
+            predictor = (
+                nn.RegressionFFN(input_dim=spec.hidden_dim, output_transform=out_transform)
+                if spec.task_type == "regression"
+                else nn.BinaryClassificationFFN(input_dim=spec.hidden_dim)
+            )
             mpnn = models.MPNN(
                 nn.BondMessagePassing(d_h=spec.hidden_dim, depth=spec.depth),
                 nn.MeanAggregation(),
-                nn.RegressionFFN(input_dim=spec.hidden_dim, output_transform=out_transform),
-                batch_norm=True,
+                predictor,
+                batch_norm=False,
             )
             try:
-                _trainer(spec.max_epochs).fit(mpnn, loader)
+                _trainer(spec.max_epochs, spec.device).fit(mpnn, loader)
+            except EngineFailure:
+                raise
             except Exception as e:
                 raise EngineFailure(
                     "ENGINE_UNAVAILABLE", "Chemprop training failed; no artifact produced"
@@ -126,10 +151,16 @@ class ChempropAdapter:
             with open(name, "rb") as f:
                 files[name] = f.read()
         files["manifest.json"] = json.dumps(
-            {"spec_digest": spec.digest(), "scope": spec.scope.model_dump(mode="json")}
+            {
+                "spec_digest": spec.digest(),
+                "scope": spec.scope.model_dump(mode="json"),
+                "task_type": spec.task_type,
+            }
         ).encode()
         result = TrainResult(
             status="trained",
+            task_type=spec.task_type,
+            device=_execution_device(spec.device),
             model_files=sorted(files),
             model_digest=model_file_digest(spec.digest(), files),
             trained_rows=len(spec.rows),
@@ -154,11 +185,18 @@ class ChempropAdapter:
                 "model artifact set has no lineage manifest; provenance is required",
             )
         try:
-            spec_digest = json.loads(manifest_raw)["spec_digest"]
+            manifest = json.loads(manifest_raw)
+            spec_digest = manifest["spec_digest"]
         except (ValueError, KeyError, TypeError) as e:
             raise EngineFailure(
                 "ENGINE_UNSUPPORTED_INPUT", "artifact manifest is unreadable"
             ) from e
+        if manifest.get("task_type", "regression") != spec.task_type or manifest.get(
+            "scope"
+        ) != spec.scope.model_dump(mode="json"):
+            raise EngineFailure(
+                "ENGINE_UNSUPPORTED_INPUT", "Prediction task/scope does not match the trained model"
+            )
         recomputed = model_file_digest(spec_digest, model_files)
         if recomputed != spec.model_digest:
             raise EngineFailure(
@@ -195,7 +233,7 @@ class ChempropAdapter:
                     "model artifact could not be loaded; no fallback prediction invented",
                 ) from e
             with torch.inference_mode():
-                batches = _trainer(0).predict(mpnn, loader)
+                batches = _trainer(0, spec.device).predict(mpnn, loader)
             flat = [float(v) for b in batches for v in b.reshape(-1).tolist()]
             if len(flat) != len(points):
                 raise EngineFailure(
@@ -209,6 +247,10 @@ class ChempropAdapter:
             members = [run[j] for run in member_runs]
             raw.append({"row_id": rid, "value": sum(members) / len(members), "members": members})
         accepted, rejects = validate_predictions(keep_ids, raw, len(member_runs))
+        if spec.task_type == "classification" and any(
+            not 0 <= item["value"] <= 1 for item in accepted
+        ):
+            raise EngineFailure("ENGINE_UNAVAILABLE", "Classifier emitted invalid probabilities")
         rejected["invalid"] += rejects["invalid"]
         rejected["duplicate"] += rejects["duplicate"]
         predictions = [
@@ -222,6 +264,8 @@ class ChempropAdapter:
         ]
         return PredictResult(
             status="predicted" if len(predictions) == len(spec.rows) else "partial",
+            task_type=spec.task_type,
+            device=_execution_device(spec.device),
             predictions=predictions,
             rejected=rejected,
             model_digest=spec.model_digest,

@@ -14,6 +14,11 @@ export default defineConfig({
   outputDir: "../../test-results",
   use: {
     baseURL: "http://127.0.0.1:4173",
+    screenshot: "only-on-failure",
+    trace: "retain-on-failure",
+    ...(process.env.STUDIO_BROWSER_EXECUTABLE_PATH
+      ? { launchOptions: { executablePath: process.env.STUDIO_BROWSER_EXECUTABLE_PATH } }
+      : {}),
   },
   webServer: [
     {

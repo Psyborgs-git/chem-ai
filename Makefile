@@ -30,10 +30,7 @@ bootstrap: ## Install locked deps (core profile only; no models, no licenses)
 
 .PHONY: dev
 dev: ## Start postgres + API (loopback) + web dev server
-	$(COMPOSE) up -d postgres
-	$(UV) run --group dev uvicorn studio.api.app:create_app \
-	  --factory --host 127.0.0.1 --port 8787 --reload & \
-	$(PNPM) --filter studio-web dev
+	bash infra/local/dev.sh
 
 .PHONY: db-up
 db-up: ## Start local postgres container
@@ -110,6 +107,11 @@ test-e2e: ## Browser journeys (Playwright; reports blocker if absent)
 	  echo "BLOCKED: playwright suite not installed (P02+); no result claimed"; \
 	  exit 2; \
 	fi
+
+.PHONY: test-dev-server
+test-dev-server: ## Verify Vite denies private runtime/vault file URLs
+	$(PNPM) --filter studio-web exec playwright test \
+	  --config ../../tests/dev-web/playwright.config.ts
 
 .PHONY: test-engines
 test-engines: ## Engine adapter tests; explicit unavailability is honest

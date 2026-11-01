@@ -8,6 +8,8 @@ export const TaskRunsQuery = graphql`
           id
           kind
           status
+          taskId
+          inputSummary
           attemptCount
           maxAttempts
           queuedAt
@@ -26,6 +28,72 @@ export const TaskRunsQuery = graphql`
             finishedAt
             error
           }
+        }
+      }
+    }
+  }
+`;
+
+export const CalculationCapabilityQuery = graphql`
+  query runsCalculationCapabilityQuery {
+    engineCapabilities {
+      rdkit { status detail }
+    }
+  }
+`;
+
+export const DescribeStructureMutation = graphql`
+  mutation runsDescribeStructureMutation($input: DescribeStructureInput!) {
+    runs {
+      describeStructure(input: $input) {
+        run {
+          id
+          taskId
+          kind
+          status
+          attemptCount
+          maxAttempts
+          queuedAt
+          startedAt
+          finishedAt
+          error
+          inputSummary
+          resultSummary
+        }
+        errors { code message fieldPath }
+      }
+    }
+  }
+`;
+
+export const RunDetailQuery = graphql`
+  query runsDetailQuery($runId: ID!) {
+    node(id: $runId) {
+      __typename
+      ... on Run {
+        id
+        taskId
+        kind
+        status
+        attemptCount
+        maxAttempts
+        queuedAt
+        startedAt
+        finishedAt
+        cancelRequestedAt
+        deadlineAt
+        error
+        inputSummary
+        resultSummary
+        attempts {
+          id
+          status
+          queue
+          workerId
+          attemptNumber
+          startedAt
+          finishedAt
+          error
         }
       }
     }

@@ -17,12 +17,13 @@ from enum import Enum
 from typing import Any, cast
 
 import strawberry
-from chem_studio_policy.capabilities import CAP_READ_PROJECT, CAP_REQUEST_COMPUTE
+from chem_studio_policy.capabilities import CAP_EDIT_TASK, CAP_READ_PROJECT, CAP_REQUEST_COMPUTE
 from fastapi import Request
 from sqlalchemy import String as SaString
 from sqlalchemy import cast as sa_cast
 from sqlalchemy import or_, select
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.concurrency import run_in_threadpool
 from strawberry import relay
 from strawberry.extensions import SchemaExtension
 from strawberry.fastapi import GraphQLRouter
@@ -70,12 +71,14 @@ from studio.api.graphql.types import (
     User,
     Workspace,
 )
+from studio.api.graphql.workspace import WorkspaceMutations, WorkspaceQueries
 from studio.application.idempotency import run_idempotent
 from studio.config.settings import Settings
 from studio.domain.candidates.service import CandidateService
 from studio.domain.evidence.claims import ClaimService
 from studio.domain.evidence.imports import ImportService
 from studio.domain.evidence.revocation import RevocationService
+from studio.domain.inference.providers import ProviderService
 from studio.domain.lab.measurements import LabMeasurementService
 from studio.domain.lab.plans import LabPlanService
 from studio.domain.learning.datasets import DatasetService
@@ -89,6 +92,7 @@ from studio.domain.projects.service import ProjectService
 from studio.domain.runs.admission import AdmissionService
 from studio.domain.runs.feasibility import FeasibilityService
 from studio.domain.runs.queue import RunService
+from studio.domain.runs.structures import StructureRunService
 from studio.domain.tasks.evaluation import TaskEvaluationService
 from studio.domain.tasks.memory import TaskMemoryService
 from studio.domain.tasks.report import TaskReportService
@@ -117,6 +121,9 @@ from studio.persistence.models import (
 )
 from studio.persistence.models import (
     ImportBatch as BatchRow,
+)
+from studio.persistence.models import (
+    InferenceProvider as InferenceProviderRow,
 )
 from studio.persistence.models import (
     LabBatch as LabBatchRow,
@@ -434,6 +441,7 @@ class ProfileCapabilities:
     training: CapabilityStatus
     design: CapabilityStatus
     synthesis: CapabilityStatus
+    rdkit: CapabilityStatus
 
 
 @strawberry.type
@@ -462,9 +470,9 @@ class DomainErrorPayload:
 
 @strawberry.input
 class TaskCreateInput:
-    project_id: relay.GlobalID
     title: str
     mode: str
+    project_id: relay.GlobalID | None = None
     objective: str | None = None
     target_kind: str | None = None
     mode_inputs: JSON | None = None
@@ -726,8 +734,242 @@ class TurnRequestInput:
     # still in flight because it already knows the id. Also doubles
     # as the idempotency anchor for the request itself.
     turn_id: str
+    provider_id: strawberry.ID | None = None
+    provider_revision: int | None = None
+    allow_provider_data_transfer: bool = False
     idempotency_key: str | None = None
     client_mutation_id: str | None = None
+
+
+@strawberry.input
+class InferenceProviderSaveInput:
+    name: str
+    kind: str
+    base_url: str
+    model: str
+    api_style: str = "chat_completions"
+    enabled: bool = False
+    supports_tools: bool = True
+    id: strawberry.ID | None = None
+    expected_revision: int | None = None
+    api_key: str | None = None
+    clear_api_key: bool = False
+    client_mutation_id: str | None = None
+
+    def __repr__(self) -> str:
+        return "InferenceProviderSaveInput(write-only credential omitted)"
+
+
+@strawberry.input
+class InferenceProviderDeleteInput:
+    id: strawberry.ID
+    expected_revision: int
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class InferenceProviderTestInput:
+    id: strawberry.ID
+    client_mutation_id: str | None = None
+
+
+@strawberry.type(name="InferenceProvider")
+class InferenceProviderInfo:
+    id: strawberry.ID
+    revision: int
+    name: str
+    kind: str
+    base_url: str
+    model: str
+    api_style: str
+    enabled: bool
+    supports_tools: bool
+    has_api_key: bool
+    last_test_status: str
+    last_test_detail: str | None
+    last_test_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+    @staticmethod
+    def from_row(row: InferenceProviderRow) -> InferenceProviderInfo:
+        return InferenceProviderInfo(
+            id=strawberry.ID(str(row.id)),
+            revision=row.version,
+            name=row.name,
+            kind=row.kind,
+            base_url=row.base_url,
+            model=row.model,
+            api_style=row.api_style,
+            enabled=row.enabled,
+            supports_tools=row.supports_tools,
+            has_api_key=row.credential_ref is not None,
+            last_test_status=row.last_test_status,
+            last_test_detail=row.last_test_detail,
+            last_test_at=row.last_test_at,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+        )
+
+
+@strawberry.type
+class InferenceProviderResult:
+    provider: InferenceProviderInfo | None
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class InferenceProviderDeleteResult:
+    deleted: bool
+    credential_cleanup_pending: bool
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class InferenceProviderTestResult:
+    provider: InferenceProviderInfo | None
+    status: str
+    detail: str
+    errors: list[DomainErrorPayload]
+    client_mutation_id: str | None
+
+
+@strawberry.type
+class InferenceCredentialCleanupResult:
+    pending: bool
+    errors: list[DomainErrorPayload]
+
+
+def _provider_uuid(value: strawberry.ID) -> uuid.UUID:
+    try:
+        return uuid.UUID(str(value))
+    except ValueError:
+        raise DomainError(ErrorCode.VALIDATION, "provider id must be a UUID") from None
+
+
+@strawberry.type
+class ProviderMutation:
+    @strawberry.mutation
+    def cleanup_credentials(self, info: strawberry.Info) -> InferenceCredentialCleanupResult:
+        gql = gql_ctx(info)
+        try:
+            pending = ProviderService(gql.db, gql.service_ctx()).cleanup_credentials()
+            return InferenceCredentialCleanupResult(pending=pending, errors=[])
+        except (DomainError, SQLAlchemyError) as exc:
+            gql.db.rollback()
+            error = (
+                exc
+                if isinstance(exc, DomainError)
+                else DomainError(
+                    ErrorCode.CONFLICT,
+                    "credential cleanup could not be completed; retry after unlocking Keychain",
+                )
+            )
+            return InferenceCredentialCleanupResult(pending=True, errors=[_err_payload(error)])
+
+    @strawberry.mutation
+    def save(
+        self, info: strawberry.Info, input: InferenceProviderSaveInput
+    ) -> InferenceProviderResult:
+        gql = gql_ctx(info)
+        try:
+            # Deliberately no generic idempotency/audit payload containing a
+            # write-only API key. Metadata uses revision compare-and-swap.
+            row = ProviderService(gql.db, gql.service_ctx()).save(
+                provider_id=_provider_uuid(input.id) if input.id else None,
+                expected_revision=input.expected_revision,
+                name=input.name,
+                kind=input.kind,
+                base_url=input.base_url,
+                model=input.model,
+                api_style=input.api_style,
+                enabled=input.enabled,
+                supports_tools=input.supports_tools,
+                api_key=input.api_key,
+                clear_api_key=input.clear_api_key,
+                client_mutation_id=input.client_mutation_id,
+            )
+            return InferenceProviderResult(
+                provider=InferenceProviderInfo.from_row(row),
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except (DomainError, SQLAlchemyError) as exc:
+            gql.db.rollback()
+            error = (
+                exc
+                if isinstance(exc, DomainError)
+                else DomainError(
+                    ErrorCode.CONFLICT, "provider settings could not be committed; reload and retry"
+                )
+            )
+            return InferenceProviderResult(
+                provider=None,
+                errors=[_err_payload(error)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def delete(
+        self, info: strawberry.Info, input: InferenceProviderDeleteInput
+    ) -> InferenceProviderDeleteResult:
+        gql = gql_ctx(info)
+        try:
+            pending = ProviderService(gql.db, gql.service_ctx()).delete(
+                _provider_uuid(input.id), input.expected_revision
+            )
+            return InferenceProviderDeleteResult(
+                deleted=True,
+                credential_cleanup_pending=pending,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except (DomainError, SQLAlchemyError) as exc:
+            gql.db.rollback()
+            error = (
+                exc
+                if isinstance(exc, DomainError)
+                else DomainError(
+                    ErrorCode.CONFLICT, "provider could not be removed; reload and retry"
+                )
+            )
+            return InferenceProviderDeleteResult(
+                deleted=False,
+                credential_cleanup_pending=False,
+                errors=[_err_payload(error)],
+                client_mutation_id=input.client_mutation_id,
+            )
+
+    @strawberry.mutation
+    def test(
+        self, info: strawberry.Info, input: InferenceProviderTestInput
+    ) -> InferenceProviderTestResult:
+        gql = gql_ctx(info)
+        try:
+            row = ProviderService(gql.db, gql.service_ctx()).test(_provider_uuid(input.id))
+            return InferenceProviderTestResult(
+                provider=InferenceProviderInfo.from_row(row),
+                status=row.last_test_status,
+                detail=row.last_test_detail or "",
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except (DomainError, SQLAlchemyError) as exc:
+            gql.db.rollback()
+            error = (
+                exc
+                if isinstance(exc, DomainError)
+                else DomainError(ErrorCode.CONFLICT, "provider probe could not be recorded; retry")
+            )
+            return InferenceProviderTestResult(
+                provider=None,
+                status="failed",
+                detail=error.message,
+                errors=[_err_payload(error)],
+                client_mutation_id=input.client_mutation_id,
+            )
 
 
 @strawberry.input
@@ -1059,7 +1301,26 @@ class DomainErrorExtensions(SchemaExtension):
 
 
 @strawberry.type
-class Query:
+class Query(WorkspaceQueries):
+    @strawberry.field
+    def inference_credential_cleanup_pending(self, info: strawberry.Info) -> bool:
+        gql = gql_ctx(info)
+        service = ProviderService(gql.db, gql.service_ctx())
+        return service.cleanup_pending() if service.can_manage() else False
+
+    @strawberry.field
+    def inference_providers(self, info: strawberry.Info) -> list[InferenceProviderInfo]:
+        gql = gql_ctx(info)
+        return [
+            InferenceProviderInfo.from_row(row)
+            for row in ProviderService(gql.db, gql.service_ctx()).list()
+        ]
+
+    @strawberry.field
+    def can_manage_inference_providers(self, info: strawberry.Info) -> bool:
+        gql = gql_ctx(info)
+        return ProviderService(gql.db, gql.service_ctx()).can_manage()
+
     node: relay.Node | None = relay.node()
 
     @strawberry.field
@@ -1175,9 +1436,7 @@ class Query:
         ctx = gql.service_ctx()
         ctx.require(CAP_READ_PROJECT)
         reject_backward(before, last)
-        sig = scope_signature(
-            "tasks", ctx.workspace_id, workflow_state or "*", "created_at|id"
-        )
+        sig = scope_signature("tasks", ctx.workspace_id, workflow_state or "*", "created_at|id")
         args = page_args(first, after, kind="tasks", sig=sig)
         stmt = select(TaskRow).where(TaskRow.workspace_id == ctx.workspace_id)
         if workflow_state is not None:
@@ -2151,7 +2410,9 @@ class Query:
     @strawberry.field
     def engine_capabilities(self, info: strawberry.Info) -> ProfileCapabilities:
         gql = gql_ctx(info)
-        profiles = collect_capabilities(gql.settings)["profiles"]
+        capabilities = collect_capabilities(gql.settings)
+        profiles = capabilities["profiles"]
+        rdkit = capabilities["engines"]["rdkit"]
         return ProfileCapabilities(
             core=_cap(profiles["core"]),
             local_ai=_cap(profiles["local_ai"]),
@@ -2161,6 +2422,10 @@ class Query:
             training=_cap(profiles["training"]),
             design=_cap(profiles["design"]),
             synthesis=_cap(profiles["synthesis"]),
+            rdkit=CapabilityStatus(
+                status=rdkit["status"],
+                detail=f"{rdkit['detail']}; version {rdkit.get('version') or 'unavailable'}",
+            ),
         )
 
     @strawberry.field
@@ -2367,7 +2632,11 @@ def _gid_uuid(gid: relay.GlobalID, type_name: str, field: str) -> uuid.UUID:
 
 
 @strawberry.type
-class Mutation:
+class Mutation(WorkspaceMutations):
+    @strawberry.mutation
+    def providers(self) -> ProviderMutation:
+        return ProviderMutation()
+
     @strawberry.mutation
     def project_create(self, info: strawberry.Info, input: ProjectCreateInput) -> ProjectResult:
         gql = gql_ctx(info)
@@ -2417,9 +2686,15 @@ class Mutation:
         try:
             ctx = gql.service_ctx()
             svc = TaskService(gql.db, ctx)
-            p_uuid = _gid_uuid(input.project_id, "Project", "projectId")
+            p_uuid = (
+                _gid_uuid(input.project_id, "Project", "projectId")
+                if input.project_id is not None
+                else None
+            )
+            ctx.require(CAP_READ_PROJECT, p_uuid)
+            ctx.require(CAP_EDIT_TASK, p_uuid)
             command_payload = {
-                "projectId": str(p_uuid),
+                "projectId": str(p_uuid) if p_uuid is not None else None,
                 "title": input.title,
                 "mode": input.mode,
                 "objective": input.objective,
@@ -2428,8 +2703,21 @@ class Mutation:
             }
 
             def _do() -> dict[str, str]:
+                project_id = p_uuid
+                if project_id is None:
+                    project_id = ProjectService(gql.db, ctx).research_inbox().id
+                elif (
+                    gql.db.execute(
+                        select(ProjectRow).where(
+                            ProjectRow.id == project_id,
+                            ProjectRow.workspace_id == ctx.workspace_id,
+                        )
+                    ).scalar_one_or_none()
+                    is None
+                ):
+                    raise not_found("project")
                 task = svc.create(
-                    project_id=p_uuid,
+                    project_id=project_id,
                     title=input.title,
                     mode=input.mode,
                     objective=input.objective,
@@ -4752,6 +5040,22 @@ class RunRequestInput:
 
 
 @strawberry.input
+class DescribeStructureInput:
+    task_id: relay.GlobalID
+    smiles: str
+    idempotency_key: str
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
+class QuickDescribeStructureInput:
+    smiles: str
+    idempotency_key: str
+    project_id: relay.GlobalID | None = None
+    client_mutation_id: str | None = None
+
+
+@strawberry.input
 class RunCancelInput:
     run_id: relay.GlobalID
     client_mutation_id: str | None = None
@@ -4788,6 +5092,71 @@ class FallbackResult:
 
 @strawberry.type
 class RunsMutation:
+    @strawberry.mutation
+    async def quick_describe_structure(
+        self, info: strawberry.Info, input: QuickDescribeStructureInput
+    ) -> RunResult:
+        gql = gql_ctx(info)
+        try:
+            ctx = gql.service_ctx()
+            ctx.require(CAP_REQUEST_COMPUTE)
+            project_id = (
+                _gid_uuid(input.project_id, "Project", "projectId") if input.project_id else None
+            )
+            service = StructureRunService(gql.request.app.state.session_factory, gql.settings)
+            run_id = await run_in_threadpool(
+                service.quick_describe,
+                ctx.workspace_id,
+                ctx.principal_id,
+                ctx.auth_session_id,
+                input.smiles,
+                input.idempotency_key,
+                project_id,
+            )
+            row = gql.db.get(RunRow, run_id)
+            return RunResult(
+                run=RunNode.from_row(row) if row else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return RunResult(
+                run=None, errors=[_err_payload(exc)], client_mutation_id=input.client_mutation_id
+            )
+
+    @strawberry.mutation
+    async def describe_structure(
+        self, info: strawberry.Info, input: DescribeStructureInput
+    ) -> RunResult:
+        gql = gql_ctx(info)
+        try:
+            task_id = _gid_uuid(input.task_id, "Task", "taskId")
+            ctx = gql.service_ctx()
+            ctx.require(CAP_REQUEST_COMPUTE, task_id)
+            # Each worker owns its sessions. The engine never blocks the ASGI loop.
+            service = StructureRunService(gql.request.app.state.session_factory, gql.settings)
+            run_id = await run_in_threadpool(
+                service.describe,
+                ctx.workspace_id,
+                ctx.principal_id,
+                ctx.auth_session_id,
+                task_id,
+                input.smiles,
+                input.idempotency_key,
+            )
+            row = gql.db.get(RunRow, run_id)
+            return RunResult(
+                run=RunNode.from_row(row) if row else None,
+                errors=[],
+                client_mutation_id=input.client_mutation_id,
+            )
+        except DomainError as exc:
+            gql.db.rollback()
+            return RunResult(
+                run=None, errors=[_err_payload(exc)], client_mutation_id=input.client_mutation_id
+            )
+
     @strawberry.mutation
     def request(self, info: strawberry.Info, input: RunRequestInput) -> RunResult:
         gql = gql_ctx(info)
@@ -5169,61 +5538,30 @@ class ResearchMutation:
             )
 
     @strawberry.mutation
-    def turn_request(
+    async def turn_request(
         self, info: strawberry.Info, input: TurnRequestInput
     ) -> TurnRequestResult:
-        """Run one agent turn for the session (§10.2, PAR-08).
-
-        The user message persists first — it is durable even when no
-        model runtime is running. The turn then executes synchronously
-        inside the turn budget; a ``turn_cancel`` marker posted by a
-        separate request is observed between tool-loop iterations and
-        ends the turn as ``cancelled``. ``model_unavailable`` is an
-        honest outcome, never a fabricated reply."""
+        """Run one explicitly routed, bounded research turn off the ASGI loop."""
         gql = gql_ctx(info)
         try:
-            s_uuid = _gid_uuid(input.session_id, "ResearchSession", "sessionId")
+            from studio.application.agent_tools.requests import run_research_turn
+
+            ctx = gql.service_ctx()
             turn_id = input.turn_id.strip()
-            payload = {"sessionId": str(s_uuid), "content": input.content, "turnId": turn_id}
-
-            def cancel_check() -> bool:
-                row = (
-                    gql.db.query(SessionMessageRow.id)
-                    .filter(
-                        SessionMessageRow.session_id == s_uuid,
-                        SessionMessageRow.workspace_id == gql.service_ctx().workspace_id,
-                        SessionMessageRow.kind == "message",
-                        SessionMessageRow.refs["turn_cancel"].astext == turn_id,
-                    )
-                    .first()
-                )
-                return row is not None
-
-            def _do() -> dict[str, Any]:
-                from studio.application.agent_tools import AgentTurnRunner
-
-                outcome = AgentTurnRunner(gql.db, gql.service_ctx()).run_turn(
-                    s_uuid,
-                    input.content,
-                    turn_id=turn_id,
-                    cancel_check=cancel_check,
-                )
-                final_id = outcome.final_message_id
-                return {
-                    "finishedReason": outcome.finished_reason,
-                    "finalMessageId": str(final_id) if final_id else None,
-                    "toolCalls": outcome.tool_calls,
-                    "detail": outcome.detail,
-                }
-
-            result = _mutate(
-                gql,
-                key=input.idempotency_key or f"turn:{turn_id}",
-                operation="research.turn_request",
-                payload=payload,
-                fn=_do,
+            result = await run_in_threadpool(
+                run_research_turn,
+                gql.request.app.state.session_factory,
+                workspace_id=ctx.workspace_id,
+                principal_id=ctx.principal_id,
+                auth_session_id=ctx.auth_session_id,
+                session_id=_gid_uuid(input.session_id, "ResearchSession", "sessionId"),
+                content=input.content,
+                turn_id=turn_id,
+                idempotency_key=input.idempotency_key,
+                provider_id=_provider_uuid(input.provider_id) if input.provider_id else None,
+                provider_revision=input.provider_revision,
+                allow_provider_data_transfer=input.allow_provider_data_transfer,
             )
-            gql.db.commit()
             final = result.get("finalMessageId")
             row = gql.db.get(SessionMessageRow, uuid.UUID(final)) if final else None
             return TurnRequestResult(
@@ -5235,15 +5573,23 @@ class ResearchMutation:
                 errors=[],
                 client_mutation_id=input.client_mutation_id,
             )
-        except DomainError as exc:
+        except (DomainError, SQLAlchemyError) as exc:
             gql.db.rollback()
+            error = (
+                exc
+                if isinstance(exc, DomainError)
+                else DomainError(
+                    ErrorCode.CONFLICT,
+                    "research turn could not be committed; retry with the same turn id",
+                )
+            )
             return TurnRequestResult(
                 turn_id=None,
                 finished_reason=None,
                 final_message=None,
                 tool_calls=0,
                 detail=None,
-                errors=[_err_payload(exc)],
+                errors=[_err_payload(error)],
                 client_mutation_id=input.client_mutation_id,
             )
 
@@ -6093,9 +6439,7 @@ class LabMeasurementsMutation:
 
             def _do() -> dict[str, str]:
                 if input.withdraw:
-                    row = svc.withdraw_applicability(
-                        m_uuid, candidate_revision_id=c_uuid
-                    )
+                    row = svc.withdraw_applicability(m_uuid, candidate_revision_id=c_uuid)
                 else:
                     row = svc.record_applicability(
                         m_uuid,

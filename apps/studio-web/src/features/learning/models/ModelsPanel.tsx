@@ -1,3 +1,4 @@
+import { FeatureSurface } from "../../../components/layout/StudioLayout";
 import { Suspense, useState } from "react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
@@ -426,7 +427,7 @@ export function ModelsPanel({ taskId }: { taskId: string | null }) {
     });
 
   return (
-    <div>
+    <FeatureSurface title="Releases & serving" description="Inspect each release, its evaluation state and the serving pointer. Promotion remains a reviewed action.">
       <p>
         registered releases carry full lineage — dataset snapshot →
         training run → adapter → release — plus the adapter's recorded
@@ -448,6 +449,7 @@ export function ModelsPanel({ taskId }: { taskId: string | null }) {
           doRegister();
         }}
       >
+        <h3>Register a model release</h3>
         <TextField
           label="release name"
           value={name}
@@ -488,6 +490,6 @@ export function ModelsPanel({ taskId }: { taskId: string | null }) {
           setNotice={(m) => setNotice("pins", m)}
         />
       </Suspense>
-    </div>
+    </FeatureSurface>
   );
 }

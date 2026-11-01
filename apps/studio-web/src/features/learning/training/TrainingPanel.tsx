@@ -1,3 +1,4 @@
+import { FeatureSurface, TechnicalDetails } from "../../../components/layout/StudioLayout";
 import { Suspense, useState } from "react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
@@ -236,11 +237,12 @@ function RunCard({ run, onChanged }: { run: TrainingRun; onChanged: () => void }
             <>
               {" "}
               · last:{" "}
-              <code>{JSON.stringify(telemetry.tail[telemetry.tail.length - 1])}</code>
+              <span>telemetry sample recorded</span>
             </>
           ) : null}
         </p>
       )}
+      {telemetry.tail?.length ? <TechnicalDetails value={telemetry.tail} label="Inspect recorded telemetry samples" /> : null}
       {checkpoints.length > 0 && (
         <p>
           checkpoints:{" "}
@@ -445,13 +447,13 @@ export function TrainingPanel({ taskId }: { taskId: string | null }) {
     });
 
   return (
-    <div>
+    <FeatureSurface title="Training runs" description="Configure a run from an eligible frozen snapshot. Review capability, limits and telemetry before release.">
       <p>
         local SFT runs train a pico-GPT fixture base with LoRA inside an
         isolated container — dataset manifests, approvals, eligibility gates
         and resume provenance are first-class. fixture-only data is never
         scientific validation; <code>completed</code> artifacts exist but are
-        not deployable — promotion stays gated behind CS-0803 evaluation.
+        not deployable — promotion stays gated behind independent evaluation.
       </p>
       <form
         onSubmit={(e) => {
@@ -459,6 +461,7 @@ export function TrainingPanel({ taskId }: { taskId: string | null }) {
           doCreate();
         }}
       >
+        <h3>New training run</h3>
         <TextField
           label="run name"
           value={name}
@@ -488,6 +491,6 @@ export function TrainingPanel({ taskId }: { taskId: string | null }) {
           onChanged={() => setRefreshKey((k) => k + 1)}
         />
       </Suspense>
-    </div>
+    </FeatureSurface>
   );
 }

@@ -1,3 +1,4 @@
+import { FeatureSurface } from "../../../components/layout/StudioLayout";
 import { Suspense, useState } from "react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
@@ -42,7 +43,7 @@ type Report = {
 function Matrix({ title, cells }: { title: string; cells?: Record<string, number> }) {
   const entries = Object.entries(cells ?? {});
   return (
-    <div>
+    <div className="cs-quality-matrix">
       <h4>{title}</h4>
       {entries.length === 0 ? (
         <small>no data</small>
@@ -79,7 +80,7 @@ function Report({ report }: { report: Report }) {
     ["training excluded", report.training_excluded],
   ];
   return (
-    <div>
+    <div className="cs-quality-report">
       <h4>counts</h4>
       <ul aria-label="import counts">
         {counts
@@ -201,8 +202,10 @@ function QualityInner() {
 
 export function QualityPanel() {
   return (
+    <FeatureSurface title="Source quality & revocation" description="Inspect coverage and extraction findings before recording a source revocation and its downstream impact.">
     <Suspense fallback={<LoadingState label="loading quality report…" />}>
       <QualityInner />
     </Suspense>
+    </FeatureSurface>
   );
 }

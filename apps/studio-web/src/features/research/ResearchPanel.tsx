@@ -1,3 +1,4 @@
+import { FeatureSurface } from "../../components/layout/StudioLayout";
 import { Suspense, useState } from "react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 
@@ -10,17 +11,14 @@ import {
   SessionEndMutation,
   SessionStartMutation,
   TaskSessionsQuery,
-  TurnCancelMutation,
-  TurnRequestMutation,
 } from "./operations";
 import { SessionStream } from "./SessionStream";
+import { ResearchComposer } from "./ResearchComposer";
 
 import type { researchQuestionRaiseMutation } from "../../__generated__/researchQuestionRaiseMutation.graphql";
 import type { researchSessionEndMutation } from "../../__generated__/researchSessionEndMutation.graphql";
 import type { researchSessionStartMutation } from "../../__generated__/researchSessionStartMutation.graphql";
 import type { researchTaskSessionsQuery } from "../../__generated__/researchTaskSessionsQuery.graphql";
-import type { researchTurnCancelMutation } from "../../__generated__/researchTurnCancelMutation.graphql";
-import type { researchTurnRequestMutation } from "../../__generated__/researchTurnRequestMutation.graphql";
 
 type ManifestItem = {
   kind?: string;
@@ -88,107 +86,6 @@ function ManifestView({
   );
 }
 
-type ComposerNotice = { tone: "info" | "warning" | "danger"; text: string };
-
-/** Composer for one active session (§10.2, PAR-08): the question is
- * persisted transactionally with the requested turn; the outcome is
- * surfaced honestly — an unavailable model is a state, never a
- * fabricated reply. The client mints the turn id so an in-flight turn
- * can still be cancelled. */
-function Composer({ sessionId }: { sessionId: string }) {
-  const [turnRequest, requesting] = useMutation<researchTurnRequestMutation>(
-    TurnRequestMutation,
-  );
-  const [turnCancel, cancelling] = useMutation<researchTurnCancelMutation>(
-    TurnCancelMutation,
-  );
-  const [draft, setDraft] = useState("");
-  const [notice, setNotice] = useState<ComposerNotice | null>(null);
-  const [inflightTurn, setInflightTurn] = useState<string | null>(null);
-  const [cancelSent, setCancelSent] = useState(false);
-
-  const send = () => {
-    const content = draft.trim();
-    if (!content || requesting) return;
-    const turnId = crypto.randomUUID();
-    setInflightTurn(turnId);
-    setCancelSent(false);
-    setNotice(null);
-    turnRequest({
-      variables: { input: { sessionId, content, turnId } },
-      onCompleted: (r) => {
-        setInflightTurn(null);
-        const res = r.research.turnRequest;
-        if (res.errors.length) {
-          setNotice({
-            tone: "danger",
-            text: res.errors.map((e) => e.message).join("; "),
-          });
-          return;
-        }
-        if (res.finishedReason === "model_unavailable") {
-          setNotice({
-            tone: "warning",
-            text: `model unavailable — ${res.detail ?? "no local runtime"}; the question is recorded and manual work is unaffected`,
-          });
-        } else if (res.finishedReason === "cancelled") {
-          setNotice({ tone: "info", text: "turn cancelled" });
-        } else if (res.finishedReason !== "final") {
-          setNotice({
-            tone: "warning",
-            text: `turn ended: ${res.finishedReason}${res.detail ? ` — ${res.detail}` : ""}`,
-          });
-        }
-        setDraft("");
-      },
-      onError: (e) => {
-        setInflightTurn(null);
-        setNotice({ tone: "danger", text: e.message });
-      },
-    });
-  };
-
-  const cancel = () => {
-    if (!inflightTurn || cancelSent) return;
-    setCancelSent(true);
-    turnCancel({
-      variables: { input: { sessionId, turnId: inflightTurn } },
-      onError: (e) => setNotice({ tone: "danger", text: e.message }),
-    });
-  };
-
-  return (
-    <form
-      aria-label="research composer"
-      onSubmit={(e) => {
-        e.preventDefault();
-        send();
-      }}
-    >
-      <TextField
-        label="ask the research agent"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        disabled={requesting}
-      />
-      {requesting ? (
-        <Button type="button" onClick={cancel} disabled={cancelling || cancelSent}>
-          {cancelSent ? "cancel requested…" : "cancel turn"}
-        </Button>
-      ) : (
-        <Button type="submit" disabled={!draft.trim()}>
-          send
-        </Button>
-      )}
-      {notice && (
-        <p role={notice.tone === "danger" ? "alert" : "status"}>
-          <Badge tone={notice.tone}>{notice.text}</Badge>
-        </p>
-      )}
-    </form>
-  );
-}
-
 function Sessions({ taskId }: { taskId: string }) {
   const [fetchKey, setFetchKey] = useState(0);
   const data = useLazyLoadQuery<researchTaskSessionsQuery>(
@@ -212,7 +109,7 @@ function Sessions({ taskId }: { taskId: string }) {
   const active = sessions.find((s) => s.status === "active");
 
   return (
-    <div>
+    <div className="cs-research-workspace">
       <p>
         {!active ? (
           <Button
@@ -267,10 +164,10 @@ function Sessions({ taskId }: { taskId: string }) {
               <Badge tone={s.status === "active" ? "success" : "neutral"}>{s.status}</Badge>
               {s.endSnapshot != null && <small> snapshot recorded at end</small>}
               {s.startManifest && <ManifestView manifest={s.startManifest} />}
-              <details>
+              <details open={s.status === "active"}>
                 <summary>stream</summary>
                 <SessionStream sessionId={s.id} />
-                {s.status === "active" && <Composer sessionId={s.id} />}
+                {s.status === "active" && <ResearchComposer sessionId={s.id} providers={data.inferenceProviders} onProvidersChanged={() => setFetchKey((key) => key + 1)} />}
               </details>
             </li>
           ))}
@@ -351,8 +248,10 @@ function Sessions({ taskId }: { taskId: string }) {
  * canonical state. */
 export function ResearchPanel({ taskId }: { taskId: string }) {
   return (
+    <FeatureSurface title="Research memory" description="Continue a session with its pinned context, track open questions and review derived summaries.">
     <Suspense fallback={<LoadingState label="loading research memory…" />}>
       <Sessions taskId={taskId} />
     </Suspense>
+    </FeatureSurface>
   );
 }

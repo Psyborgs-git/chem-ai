@@ -1,3 +1,4 @@
+import { FeatureSurface } from "../../components/layout/StudioLayout";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { ConnectionHandler } from "relay-runtime";
 import { useLazyLoadQuery, useMutation, usePaginationFragment } from "react-relay";
@@ -14,7 +15,7 @@ import {
   MaterialIdentityPicker,
 } from "../registry/pickers";
 import { RevisionDiff } from "../registry/RevisionDiff";
-import { taskUrl } from "../tasks/TaskWorkspace";
+import { taskUrl } from "../tasks/navigation";
 import {
   CandidateCreateMutation,
   CandidateReviewMutation,
@@ -351,7 +352,7 @@ function ProposeForm({
   taskId: string;
   onProposed: () => void;
 }) {
-  const [commit] = useMutation<candidatesCreateMutation>(CandidateCreateMutation);
+  const [commit, proposing] = useMutation<candidatesCreateMutation>(CandidateCreateMutation);
   const [hypothesis, setHypothesis] = useState("");
   const [kind, setKind] = useState("formulation");
   const [entityRevisionId, setEntityRevisionId] = useState("");
@@ -364,6 +365,7 @@ function ProposeForm({
       aria-label="propose candidate"
       onSubmit={(e) => {
         e.preventDefault();
+        if (proposing) return;
         setFeedback(null);
         commit({
           variables: {
@@ -447,6 +449,8 @@ function ProposeForm({
       {kind === "formulation" ? (
         <FormulationRevisionPicker
           label="entity revision"
+          selectedId={entityRevisionId}
+          onClear={() => { setEntityRevisionId(""); setEntityLabel(null); }}
           hint="search by family name — binds the exact formulation revision"
           onPick={(p) => {
             setEntityRevisionId(p.uuid);
@@ -456,6 +460,8 @@ function ProposeForm({
       ) : (
         <MaterialIdentityPicker
           label={`${kind} identity`}
+          selectedId={entityRevisionId}
+          onClear={() => { setEntityRevisionId(""); setEntityLabel(null); }}
           hint="bind a registered material identity by name or identifier"
           onPick={(p) => {
             setEntityRevisionId(p.uuid);
@@ -468,7 +474,7 @@ function ProposeForm({
           bound to: {entityLabel}
         </p>
       )}
-      <Button type="submit">Propose candidate (creates a draft revision)</Button>
+      <Button type="submit" disabled={proposing}>Propose candidate (creates a draft revision)</Button>
       {feedback && <p role="status">{feedback}</p>}
     </form>
   );
@@ -477,7 +483,7 @@ function ProposeForm({
 export function CandidatePanel({ taskId }: { taskId: string }) {
   const refreshRef = useRef<(() => void) | null>(null);
   return (
-    <div>
+    <FeatureSurface title="Candidate workspace" description="Compare hypotheses and immutable revisions, then submit a candidate for scientific review.">
       <ProposeForm
         taskId={taskId}
         onProposed={() => refreshRef.current?.()}
@@ -490,6 +496,6 @@ export function CandidatePanel({ taskId }: { taskId: string }) {
           }}
         />
       </Suspense>
-    </div>
+    </FeatureSurface>
   );
 }

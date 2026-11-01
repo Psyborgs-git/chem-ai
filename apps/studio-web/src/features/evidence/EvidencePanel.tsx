@@ -2,6 +2,7 @@
  * claims, inferred suggestions and measured outcomes stay visibly
  * distinct. Contradiction links keep both sides on screen. */
 import { Suspense, useState } from "react";
+import { PageHeader, StructuredData, TechnicalDetails } from "../../components/layout/StudioLayout";
 import { Link } from "react-router";
 import { useLazyLoadQuery, useMutation, usePaginationFragment } from "react-relay";
 
@@ -81,11 +82,9 @@ function ClaimCard({ claim }: { claim: ClaimNode }) {
   const [review, inFlight] =
     useMutation<evidenceClaimReviewMutation>(ClaimReviewMutation);
   const [error, setError] = useState<string | null>(null);
-  const subject = JSON.stringify(claim.subject);
-  const statement = JSON.stringify(claim.statement);
   return (
-    <article data-claim-id={claim.id} data-status={claim.status}>
-      <header>
+    <article className="cs-evidence-card" data-claim-id={claim.id} data-status={claim.status}>
+      <header className="cs-evidence-card__header">
         <EvidenceTypeLabel kind={KIND_EVIDENCE[claim.kind] ?? "unknown"} />{" "}
         <strong>{KIND_LABEL[claim.kind] ?? claim.kind}</strong>{" "}
         <Badge
@@ -100,9 +99,7 @@ function ClaimCard({ claim }: { claim: ClaimNode }) {
           {claim.status}
         </Badge>
       </header>
-      <p>
-        <code>{subject}</code> → <code>{statement}</code>
-      </p>
+      <div className="cs-evidence-card__body"><section><h3>Subject</h3><StructuredData value={claim.subject} /></section><section><h3>Statement</h3><StructuredData value={claim.statement} /></section></div>
       {claim.locator && (
         /* AT-0302-3: citation surfaces the exact page/cell locator */
         <SourceCitation
@@ -113,9 +110,7 @@ function ClaimCard({ claim }: { claim: ClaimNode }) {
         />
       )}
       {claim.conditions && (
-        <p>
-          conditions: <code>{JSON.stringify(claim.conditions)}</code>
-        </p>
+        <section><h3>Conditions</h3><StructuredData value={claim.conditions} /></section>
       )}
       {claim.status === "proposed" && (
         <p>
@@ -151,6 +146,7 @@ function ClaimCard({ claim }: { claim: ClaimNode }) {
       <Suspense fallback={null}>
         <ClaimLinks claimId={claim.id} />
       </Suspense>
+      <TechnicalDetails value={{ subject: claim.subject, statement: claim.statement, conditions: claim.conditions }} label="Inspect exact claim data" />
     </article>
   );
 }
@@ -189,17 +185,10 @@ function Claims() {
   );
 }
 
-export function EvidencePanel() {
+export function EvidencePanel({ embedded = false }: { embedded?: boolean }) {
   return (
     <div>
-      <h1>Evidence</h1>
-      <p>
-        Document claims, inferred suggestions and measured outcomes are
-        distinct — contradictions stay visible, never silently resolved.
-      </p>
-      <p>
-        <Link to="/evidence/quality">Data quality &amp; revocation</Link>
-      </p>
+      <PageHeader level={embedded ? 2 : 1} eyebrow="Research record" title="Evidence" description="Document claims, inferred suggestions and measured outcomes are distinct — contradictions stay visible, never silently resolved." actions={<Link className="cs-btn" to="/evidence/quality">Data quality &amp; revocation</Link>} />
       <Suspense fallback={<LoadingState label="loading claims…" />}>
         <Claims />
       </Suspense>

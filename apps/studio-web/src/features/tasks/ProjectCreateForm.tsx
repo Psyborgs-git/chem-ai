@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation } from "react-relay";
 import { useNavigate } from "react-router";
 
@@ -18,24 +18,30 @@ export function ProjectCreateForm() {
   const [commit, inFlight] = useMutation<tasksProjectCreateMutation>(
     ProjectCreateMutation,
   );
-  const [slug, setSlug] = useState("");
+  const [customSlug, setCustomSlug] = useState("");
+  const slugSuffix = useRef(crypto.randomUUID().slice(0, 6));
+  const submitting = useRef(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<
     readonly { code: string; message: string }[]
   >([]);
 
+  const generatedSlug = `${name.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "project"}-${slugSuffix.current}`;
   const submit = () => {
+    if (inFlight || submitting.current || !name.trim()) return;
+    submitting.current = true;
     setErrors([]);
     commit({
       variables: {
         input: {
-          slug,
+          slug: customSlug.trim() || generatedSlug,
           name,
           description: description || undefined,
         },
       },
       onCompleted: (resp) => {
+        submitting.current = false;
         const errs = resp.projectCreate.errors;
         if (errs.length > 0) {
           setErrors(errs);
@@ -47,47 +53,22 @@ export function ProjectCreateForm() {
           );
         }
       },
-      onError: (e) =>
-        setErrors([{ code: "NETWORK", message: `not saved: ${e.message}` }]),
+      onError: (e) => {
+        submitting.current = false;
+        setErrors([{ code: "NETWORK", message: `not saved: ${e.message}` }]);
+      },
     });
   };
 
   return (
-    <form
-      aria-label="create project"
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-    >
-      <TextField
-        label="project slug"
-        hint="short lowercase id, e.g. solvent-study"
-        value={slug}
-        onChange={(e) => setSlug(e.target.value)}
-        required
-      />
-      <TextField
-        label="project name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-      />
-      <TextField
-        label="description (optional)"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      {errors.map((e) => (
-        <InlineFinding
-          key={`${e.code}:${e.message}`}
-          severity="error"
-          message={e.message}
-        />
-      ))}
-      <Button variant="primary" type="submit" disabled={inFlight}>
-        {inFlight ? "Creating…" : "Create project"}
-      </Button>
+    <form aria-label="create project" aria-busy={inFlight} className="cs-project-create" onSubmit={(event) => { event.preventDefault(); submit(); }}>
+      <TextField label="project name" hint="A name for the research you want to keep together." value={name} onChange={(event) => setName(event.target.value)} required autoFocus disabled={inFlight} />
+      <details className="cs-create-details"><summary>Details <span>Optional</span></summary>
+        <TextField label="description (optional)" value={description} onChange={(event) => setDescription(event.target.value)} disabled={inFlight} />
+        <TextField label="project slug" hint={`Generated automatically: ${generatedSlug}. Set a custom identifier only if you need one.`} value={customSlug} onChange={(event) => setCustomSlug(event.target.value)} disabled={inFlight} />
+      </details>
+      {errors.map((error) => <InlineFinding key={`${error.code}:${error.message}`} severity="error" message={error.message} />)}
+      <div className="cs-create-footer"><p>Add tasks and evidence as your research develops.</p><Button variant="primary" type="submit" disabled={inFlight || !name.trim()}>{inFlight ? "Creating…" : "Create project"}</Button></div>
     </form>
   );
 }

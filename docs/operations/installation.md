@@ -28,6 +28,9 @@ the core profile. Bootstrap never downloads models or accepts licenses
 ```bash
 git clone <authorized-repo-url> chem-ai && cd chem-ai
 git checkout main            # or the release tag being qualified
+export UV_CACHE_DIR="$PWD/.runtime/uv-cache"
+export UV_PYTHON_INSTALL_DIR="$PWD/.runtime/python"
+export STUDIO_VAULT_ROOT="$PWD/.runtime/vault"
 uv sync --python 3.12 --group dev --frozen
 pnpm install --frozen-lockfile
 ```
@@ -102,7 +105,13 @@ pnpm --filter studio-web dev    # vite dev server on http://127.0.0.1:5173
 
 Expected: vite prints `Local: http://127.0.0.1:5173/`; `/api` and
 `/graphql` proxy to `127.0.0.1:8787` (vite config). Open the URL in a
-browser; the app shows **"Not signed in"** until §7 creates a session.
+browser. A fresh installation shows **Set up Chemistry Studio**; an
+existing installation shows the sign-in form.
+
+After installing dependencies, `make dev` starts PostgreSQL, waits for
+readiness, applies migrations, and runs both loopback servers. It keeps
+the installed native RDKit profile and uses ignored `.runtime/` vault
+and cache directories. Stop it with Ctrl-C; the database container stays available.
 
 For a production-like build (what e2e uses):
 
@@ -128,9 +137,13 @@ where wheels exist.
 
 ## 7. First sign-in (owner bootstrap)
 
-The SPA has no sign-up form: the first owner is created once over HTTP,
-then the endpoint refuses (verified — a second call returns a
-domain error).
+Use **Set up Chemistry Studio** in the browser to choose a login, display
+name, and password of at least ten characters. Creating the first owner
+signs in immediately. Subsequent visits use **Sign in**; session expiry
+keeps the intended destination. The setup form and endpoint close once
+an owner exists.
+
+The equivalent HTTP bootstrap is available for scripted setup:
 
 ```bash
 curl -s -c /tmp/studio.cookies -X POST http://127.0.0.1:8787/api/auth/setup \
@@ -150,7 +163,8 @@ curl -s -c /tmp/studio.cookies -X POST http://127.0.0.1:8787/api/auth/login \
   -d '{"login":"owner","password":"<same>"}'
 ```
 
-In the browser (dev server origin): devtools console →
+The browser sign-in form is the normal login path. For transport debugging,
+the equivalent request from the dev-server origin is:
 
 ```js
 fetch("/api/auth/login", {method:"POST",
@@ -182,16 +196,14 @@ pnpm --filter studio-web exec playwright install chromium
 make test-e2e         # real API subprocess + vite preview + chromium
 ```
 
-Known defect (reported in CS-1104, not yet fixed): on a **fresh**
-`studio_e2e` database the full suite reports 21 passed / 3 failed —
-the three `at-1103` accessibility specs sign in as `e2e-1103-owner`,
-but whichever spec runs first creates the owner as `e2e-owner` and
-`/api/auth/setup` refuses a second owner, so at-1103's login 401s.
-The at-1103 spec passes standalone
-(`pnpm --filter studio-web exec playwright test at-1103`), and every
-core-workflow journey (at-0504 project→closeout, at-0501/0502 lab
-records, etc.) passes in the full run. This is a test-isolation bug
-in `tests/e2e/at-1103-helpers.ts`, not an app defect.
+The accessibility helpers now use the same `e2e-owner` account as the
+other browser suites. A fresh full-suite run is the acceptance gate;
+standalone success does not replace that check. Browser tests use the
+separate `studio_e2e` database, never the development `studio` database.
+
+For an installed system Chromium, set `STUDIO_BROWSER_EXECUTABLE_PATH`
+to its executable; otherwise Playwright uses its downloaded Chromium.
+Failure screenshots and retained traces are written under `test-results/`.
 
 Honestly-reporting targets (exit non-zero with a reason, never a fake
 pass):
@@ -206,7 +218,31 @@ make train-smoke  # → BLOCKED without --extra training + hardware (U08/U13)
 make eval-smoke   # fixture eval harness; non-scientific by design
 ```
 
-## 9. Running entirely without a local model (§26.3)
+## 9. Local molecular calculations
+
+On Apple Silicon, the locked engines extra includes a native RDKit wheel:
+
+```bash
+uv sync --python 3.12 --group dev --extra engines --frozen
+make dev
+```
+
+Create a project and a discover task with target kind **molecule**. Choose
+**Run calculation**, enter `CCO`, and select **Calculate properties**.
+The real ethanol result should show formula `C2H6O`, molecular weight
+approximately `46.069`, one hydrogen-bond donor, one acceptor, and three
+heavy atoms. Open the saved result and reload it to verify persistence.
+An invalid structure produces a saved failed run with the engine's typed
+error and no fabricated descriptors.
+
+Calculation inputs are immutable checksum-verified vault artifacts. Runs
+retain the actual engine version, method, execution profile and elapsed
+time. Requests are task-scoped and idempotent; execution is bounded to
+60 seconds, with one attempt and resource admission. Computed descriptors
+do not satisfy required laboratory measurements. Closed and cancelled
+tasks retain their results and reject new calculations.
+
+## 10. Running entirely without a local model (§26.3)
 
 Nothing in §2–§8 requires the llama.cpp model container. With no
 `chem-models` volume and no inference image, `capabilities` reports the
@@ -214,12 +250,13 @@ local-AI lane `unavailable`/`model_unavailable`, agent runs degrade to
 manual workflow, and every records/review/closeout path stays usable —
 that is a design requirement of the pilot, exercised in AT-0405-3.
 
-## 10. Uninstall / reset
+## 11. Uninstall / reset
 
 ```bash
 docker compose -f infra/local/compose.yaml down -v   # drops dev DB volume
 rm -rf .venv node_modules apps/studio-web/node_modules
 rm -rf ~/.local/share/chemistry-studio/vault          # artifact blobs
+rm -rf .runtime/vault                              # make dev's local vault
 ```
 
 ## Privacy concerns

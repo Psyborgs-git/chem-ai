@@ -1,3 +1,4 @@
+import { openCriteriaEditor, openTaskTool } from "./ux-helpers";
 import { expect, test } from "@playwright/test";
 
 import { decodeGlobalId, gql, signIn } from "./at-1103-helpers";
@@ -40,6 +41,7 @@ test.describe("PAR-01 contract editor ↔ evaluator parity", () => {
     const taskId = await seedTask(token);
 
     await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
+    await openCriteriaEditor(page);
     const editor = page.locator('[aria-label="success contract editor"]');
     await expect(editor).toBeVisible();
     await expect(editor.getByText("no contract yet")).toBeVisible();
@@ -60,6 +62,7 @@ test.describe("PAR-01 contract editor ↔ evaluator parity", () => {
     // reload — the stored draft hydrates; nothing reverts to the old
     // hard-coded blank 'viscosity / Pa_s' row
     await page.reload();
+    await openCriteriaEditor(page);
     const editor2 = page.locator('[aria-label="success contract editor"]');
     await expect(editor2.getByLabel("metric label").first()).toHaveValue(
       "viscosity",
@@ -81,6 +84,13 @@ test.describe("PAR-01 contract editor ↔ evaluator parity", () => {
     await expect(
       editor2.locator(".cs-contract__identity").getByText("frozen"),
     ).toBeVisible();
+    // Saving/freezing updates the parent checkpoint as soon as the server
+    // acknowledges it, without requiring a reload of the task workspace.
+    await expect(page.getByRole("list", { name: "Research path" })).toContainText("Criteria frozen");
+    await page.getByRole("button", { name: "Back to overview", exact: true }).click();
+    const summary = page.getByRole("region", { name: "Success criteria summary" });
+    await expect(summary.getByText("viscosity", { exact: true })).toBeVisible();
+    await expect(summary.getByText("≥ 500 mPa·s", { exact: true })).toBeVisible();
 
     const report = await gql(
       token,
@@ -173,6 +183,7 @@ test.describe("PAR-01 contract editor ↔ evaluator parity", () => {
     const taskId = await seedTask(token);
 
     await page.goto(`/tasks/${encodeURIComponent(taskId)}`);
+    await openCriteriaEditor(page);
     const editor = page.locator('[aria-label="success contract editor"]');
     await expect(editor).toBeVisible();
 
@@ -193,17 +204,14 @@ test.describe("PAR-01 contract editor ↔ evaluator parity", () => {
     const sections = page.locator('nav[aria-label="task sections"]');
     // runs lives under the advanced group (PAR-09 progressive
     // disclosure) — leaving overview still unmounts the editor
-    await sections.getByRole("link", { name: "advanced" }).click();
-    await page
-      .locator('nav[aria-label="section views"]')
-      .getByRole("link", { name: "runs" })
-      .click();
+    await openTaskTool(page, "runs");
     await expect(
       page.locator('[aria-label="success contract editor"]'),
     ).toHaveCount(0);
 
     // back to overview — the unsaved form is restored, not lost
     await sections.getByRole("link", { name: "overview" }).click();
+    await openCriteriaEditor(page);
     const editorBack = page.locator('[aria-label="success contract editor"]');
     await expect(
       editorBack.getByLabel("metric label").first(),

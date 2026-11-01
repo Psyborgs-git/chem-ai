@@ -12,6 +12,8 @@ explicit skip — never a simulated pass.
 
 from __future__ import annotations
 
+from xml.etree import ElementTree
+
 import pytest
 
 from engine_adapter_rdkit import EngineError, RDKitAdapter, StructuralResult
@@ -48,12 +50,36 @@ class TestBenignMolecule:
         assert result.engine_version and result.engine_version.count(".") >= 2
         assert result.evidence_type == "descriptor"  # structural, not lab
         assert result.method == "rdkit-descriptors/v1"
+        assert result.depiction_svg
+        # The XML is generated here by RDKit from the fixed CCO test input.
+        root = ElementTree.fromstring(result.depiction_svg)  # noqa: S314
+        assert root.tag == "{http://www.w3.org/2000/svg}svg"
+        assert root.findall(".//{http://www.w3.org/2000/svg}path")
+        assert result.depiction_error is None
 
     def test_capability_reports_real_version(self, adapter: RDKitAdapter) -> None:
         info = adapter.capability()
         assert info.available
         assert info.version is not None
         assert info.engine_id == "rdkit"
+
+    def test_drawing_failure_preserves_actual_descriptors(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        pytest.importorskip("rdkit")
+        from rdkit.Chem.Draw import rdMolDraw2D
+
+        from engine_adapter_rdkit.worker import run
+
+        def cannot_draw(*args, **kwargs):
+            raise RuntimeError("drawing unavailable")
+
+        monkeypatch.setattr(rdMolDraw2D, "MolDraw2DSVG", cannot_draw)
+        result = run({"smiles": "CCO"})
+        assert result["ok"] is True
+        assert result["structure"]["depiction_svg"] is None
+        assert result["structure"]["depiction_error"]
+        assert 45 < result["descriptors"]["mw"] < 47
 
 
 class TestInvalidValence:

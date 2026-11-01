@@ -141,6 +141,8 @@ function IngredientRow({
       />
       <MaterialIdentityPicker
         label={`link material for ${row.name || "ingredient"}`}
+        selectedId={row.materialId}
+        onClear={() => onChange({ ...row, materialId: null, materialLabel: null })}
         onPick={onPickMaterial}
       />
       <DecimalField

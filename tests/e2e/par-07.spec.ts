@@ -1,3 +1,4 @@
+import { openTaskCreator, openRegistryCreator } from "./ux-helpers";
 import { expect, test } from "@playwright/test";
 
 import { gql, signIn } from "./at-1103-helpers";
@@ -33,6 +34,7 @@ async function registerIdentity(
   scheme: string,
   value: string,
 ) {
+  await openRegistryCreator(page, "register material identity", "Add a material");
   const form = page.locator('form[aria-label="register material identity"]');
   await form.getByLabel("name").fill(name);
   await form.getByLabel(/scheme/).fill(scheme);
@@ -88,6 +90,7 @@ test.describe("PAR-07 materials/formulation/candidate real workflows", () => {
     await page
       .getByRole("button", { name: "formulation families" })
       .click();
+    await openRegistryCreator(page, "create formulation family", "New formulation family");
     const familyForm = page.locator(
       'form[aria-label="create formulation family"]',
     );
@@ -137,8 +140,10 @@ test.describe("PAR-07 materials/formulation/candidate real workflows", () => {
     await page
       .getByRole("link", { name: `PAR-07 ${RUN}` })
       .click();
+    await openTaskCreator(page);
     const taskForm = page.locator('form[aria-label="create task"]');
     await taskForm.getByLabel("task title").fill(`${RUN} improve task`);
+    await taskForm.getByRole("radio", { name: "Improve", exact: true }).check();
     await taskForm
       .getByRole("combobox", { name: "baseline formulation revision" })
       .fill(`${RUN} base coat`);
@@ -150,7 +155,7 @@ test.describe("PAR-07 materials/formulation/candidate real workflows", () => {
       .click();
     await taskForm.getByLabel("variation scope").fill("solvent system");
     await taskForm
-      .getByRole("button", { name: "Create task (saves a draft)" })
+      .getByRole("button", { name: "Create task" })
       .click();
     await page.waitForURL(/\/tasks\//);
     const taskUrl = page.url();
@@ -258,7 +263,11 @@ test.describe("PAR-07 materials/formulation/candidate real workflows", () => {
       .selectOption({ label: `${RUN} improve task` });
 
     const planForm = page.locator('section[aria-label="new experiment plan"]');
+    await planForm.getByText("Name, samples and notes", { exact: true }).click();
     await planForm.getByLabel("plan title").fill(`${RUN} lab confirmation`);
+    if (await planForm.getByRole("button", { name: "Change candidate", exact: true }).isVisible()) {
+      await planForm.getByRole("button", { name: "Change candidate", exact: true }).click();
+    }
     await planForm
       .getByRole("listbox")
       .getByRole("button", {
@@ -270,7 +279,7 @@ test.describe("PAR-07 materials/formulation/candidate real workflows", () => {
     await planForm
       .getByLabel("acceptance criteria (optional)")
       .fill("film forms at ambient cure");
-    await planForm.getByRole("button", { name: "create plan" }).click();
+    await planForm.getByRole("button", { name: "Save draft plan" }).click();
 
     const card = page.locator(".cs-plan");
     await expect(card).toHaveCount(1);
