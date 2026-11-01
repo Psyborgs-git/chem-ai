@@ -1,4 +1,4 @@
-import { openTaskCreator, openRegistryCreator } from "./ux-helpers";
+import { selectVisibleOption, openTaskCreator, openRegistryCreator } from "./ux-helpers";
 import { expect, test } from "@playwright/test";
 
 import { gql, signIn } from "./at-1103-helpers";
@@ -116,9 +116,8 @@ test.describe("PAR-07 materials/formulation/candidate real workflows", () => {
     await editor.getByRole("button", { name: "add ingredient" }).click();
     await fillIngredient(editor, 1, `${RUN} resin`, `${RUN} resin`, "30", "binder");
     await editor.getByLabel("declared total").fill("100");
-    await editor
-      .getByLabel("completeness")
-      .selectOption("complete");
+    await selectVisibleOption(page, editor
+      .getByLabel("completeness"), "complete");
     await editor
       .getByRole("button", { name: "save formulation draft" })
       .click();
@@ -257,10 +256,9 @@ test.describe("PAR-07 materials/formulation/candidate real workflows", () => {
 
     // --- 7. link the accepted revision into a manual experiment plan ---
     await page.goto("/lab");
-    await page.locator("#lab-project").selectOption({ label: `PAR-07 ${RUN}` });
-    await page
-      .locator("#lab-task")
-      .selectOption({ label: `${RUN} improve task` });
+    await selectVisibleOption(page, page.locator("#lab-project"), { label: `PAR-07 ${RUN}` });
+    await selectVisibleOption(page, page
+      .locator("#lab-task"), { label: `${RUN} improve task` });
 
     const planForm = page.locator('section[aria-label="new experiment plan"]');
     await planForm.getByText("Name, samples and notes", { exact: true }).click();

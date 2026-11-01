@@ -63,9 +63,15 @@ test("local RDKit: invalid SMILES persists a failed run without descriptors", as
   await page.getByRole("button", { name: "Calculate properties", exact: true }).click();
   await expect(page.getByRole("link", { name: "Open saved result" })).toBeVisible({ timeout: 30_000 });
   await page.getByRole("link", { name: "Open saved result" }).click();
-  await expect(page.getByRole("alert")).toContainText("PARSE_FAILED");
-  await expect(page.locator('[data-field="molecular-formula"]')).toHaveCount(0);
+  await expect(page).toHaveURL(/\/runs\//);
+  const savedRun = page.getByRole("article", { name: "Molecular calculation", exact: true });
+  // The task can show the same error in Latest calculation and Run history
+  // while the detail route loads. Assert the saved record after it mounts.
+  await expect(savedRun).toBeVisible();
+  await expect(savedRun.getByRole("alert")).toContainText("PARSE_FAILED");
+  await expect(savedRun.locator('[data-field="molecular-formula"]')).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole("alert")).toContainText("PARSE_FAILED");
-  await expect(page.getByText("No completed calculation result is available.")).toBeVisible();
+  await expect(savedRun.getByRole("alert")).toContainText("PARSE_FAILED");
+  await expect(savedRun.locator('[data-field="molecular-formula"]')).toHaveCount(0);
+  await expect(savedRun.getByText("No completed calculation result is available.")).toBeVisible();
 });

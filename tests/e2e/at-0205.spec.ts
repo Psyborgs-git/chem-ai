@@ -1,3 +1,4 @@
+import { selectVisibleOption } from "./ux-helpers";
 import { expect, test } from "@playwright/test";
 
 /** AT-0205-1 — keyboard-only quantity + unit editing in a real
@@ -21,8 +22,8 @@ test("keyboard-only quantity editing is accessible", async ({ page }) => {
 
   await page.keyboard.press("Tab");
   await expect(unitField).toBeFocused();
-  await unitField.selectOption("mass_percent");
-  await expect(unitField).toHaveValue("mass_percent");
+  await selectVisibleOption(page, unitField, { label: "mass_percent" }, { keyboard: true });
+  await expect(unitField).toHaveText("mass_percent");
 
   // domain-mirrored validation surfaces as an alert tied to the field
   await page.keyboard.press("Tab"); // leave the select

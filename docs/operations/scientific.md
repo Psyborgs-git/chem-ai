@@ -1,120 +1,93 @@
-# Runbook — scientific workflows (plans, executions, measurements, closeout, science adapters)
+# Scientific workflow operations
 
-Audience: lab operators, scientific reviewers, researchers.
-Prerequisites: `installation.md` complete; capabilities needed per step
-are listed — grants are managed in `admin.md`.
+Researchers, lab operators, and scientific reviewers use task contracts,
+versioned candidates, approved plans, manual results, and evaluator-derived
+closeout. Follow [experiments and evidence](../usage/experiments-and-evidence.md)
+for the screen-by-screen workflow. This guide explains operational gates and
+how to diagnose blocked scientific actions.
 
-**Honesty contract:** every artifact below can carry fixture-only data.
-A `supported_success` closure means the software gate passed — it is
-*never* a scientific validation claim (`scientificStatus` stays
-`not_validated` until real authorized data + review exist).
+A supported software closeout or successfully executed calculation is not an
+automatic scientific validation claim. Inspect data provenance, method, units,
+uncertainty, source rights, and real review evidence.
 
-## 1. Experiment plans (immutable) — `/lab` → plans
+## Contracts and candidate revisions
 
-- **Create:** `labPlansPlanCreateMutation` — the plan's `method` is an
-  explicit requirements text; unknown equipment/methods are a stated
-  blocker, never matched to an invented device catalog (U05).
-- **Review/approve:** `labPlansPlanSubmitMutation` →
-  `labPlansPlanReviewMutation` — requires `approve_experiment`;
-  agents are excluded by the capability ceiling
-  (`effective_grants` strips approval capabilities for agent
-  principals — adversarially tested in CS-1101).
-- **Packet export:** `labPlansPacketExportMutation` → JSON packet
-  labelled MANUAL with approval provenance. No PDF/print pipeline.
-- **Evidence:** `docs/execution/tickets/CS-0501.md`, e2e
-  `at-0501.spec.ts`.
+Choose a task mode and target kind, record baseline/reference requirements, and
+freeze a complete success contract before approval-dependent work. Required
+metrics need explicit identity, unit, method, and acceptance criteria. Unknown
+inputs remain unresolved; a functional match cannot infer a reference recipe
+or material identity.
 
-## 2. Executions, samples, measurements — `/lab` → results
+Candidate edits create revisions. Approvals bind exact revisions/digests; when
+inputs change, rereview the current version instead of reusing an older approval.
+Registry materials/products and task candidates have distinct identities and
+lineage. See [materials and candidates](../usage/materials-and-candidates.md).
 
-- `labResultsExecutionOpenMutation` → `labResultsSampleAddMutation`
-  → `labResultsBatchAddMutation` → `labResultsMeasurementRecordMutation`
-  → `labResultsExecutionCloseMutation`. Executions are **manual
-  records** — there is no instrument-control endpoint; the MANUAL
-  EXECUTION label is visible on the page.
-- **Measurement review:** `labResultsMeasurementReviewMutation`
-  requires `review_measurement` (human; agent/viewer get FORBIDDEN —
-  security-tested).
-- **Corrections:** `labResultsMeasurementAmendMutation` creates an
-  immutable *amendment* — the original value is never edited in place;
-  the amendment chain is visible with reason+value. Applicability is
-  set via `labResultsMeasurementApplicabilityMutation`.
-- **Unit safety:** conversions run against an explicit whitelist;
-  unlisted units return `inconclusive` — mass↔volume requires a
-  density path; absolute-temperature conversion is deliberately
-  excluded. No silent conversion ever happens.
-- **Evidence:** `docs/execution/tickets/CS-0502.md`, e2e
-  `at-0502.spec.ts`.
+## Experiment plans and manual execution
 
-## 3. Task closeout (evaluator)
+Create a task-bound plan with explicit method and requirements, submit it, and
+obtain review from an authorized human with `approve_experiment`. Agents cannot
+approve experiments. An approved manual packet retains its provenance; the
+application's packet export is JSON rather than a delivered PDF/print system.
 
-- Task tab **closeout** → `tasksCloseoutTransitionMutation` to
-  `awaiting_review` → human `tasksCloseoutCloseMutation`.
-- The stored packet is **evaluator-derived** — a client-supplied
-  packet is accepted for compat but never becomes the bound record.
-- Gate order (§12.2): contract frozen + non-empty required metrics +
-  hard constraints evaluated (`metric`, `ingredient_absent`; unknown
-  kinds → `not_evaluated` → block) + reviewed applicable measurements
-  → `supported_success` eligible. Anything unproven refuses honestly.
-- **Evidence:** `docs/execution/tickets/CS-0503.md`, e2e
-  `at-0503.spec.ts`, journey evidence `docs/execution/pilot/journeys.md`.
+Open an execution against the selected plan, add samples/batches, record the
+actual observations, and close the execution. These are manual laboratory
+records. No instrument-control API or invented equipment catalog exists.
+Unspecified equipment/method details remain a blocker for real execution.
 
-## 4. Optimization campaigns — task tab `optimization`
+Measurements preserve original values, units, conditions, sample lineage, and
+review state. Human measurement review uses `review_measurement`. Correct an
+observation by adding an amendment with a reason; do not replace historical
+values. Applicability decisions are separate from whether the measurement was
+recorded or reviewed.
 
-- Server-side profile gate: API must run with
-  `STUDIO_PROFILE_OPTIMIZATION=1`; the pinned BayBE image
-  `chem-studio-baybe:0.15.0-v1` must exist (`model-ops.md` §2).
-  Without either, `recommend` fails `ENGINE_UNAVAILABLE` — closed,
-  honest.
-- Create campaign via `optimizationCreateCampaignMutation` with the
-  campaign **`spec` object only** (see
-  `fixtures/synthetic/optimization-campaign.json` — pass its `spec`
-  sub-object, not the file envelope). Spec `target` must match a
-  frozen contract metric on id+unit+method+`numeric`.
-- Independent constraint checks re-verify every proposal (CS-0603):
-  a constraint the engine dropped is rejected by review, never
-  carried silently.
-- **Evidence:** `docs/execution/tickets/CS-0603.md`; smoke evidence
-  `engine_smoke_passed` — fixture-only, not scientific validation.
+## Unit handling and closeout
 
-## 5. Science adapters (profile-gated, isolated containers)
+Conversions use an explicit whitelist. Missing/unsupported conversions produce
+inconclusive checks. Mass/volume conversion requires a valid density path;
+absolute-temperature conversion is not silently inferred.
 
-| Lane | Profile flag | Image (build in `model-ops.md`) | Status |
-|---|---|---|---|
-| RDKit descriptors | engines extra / container | `chem-studio-rdkit:2026.3.6` | live (container); `descriptor` evidence class only |
-| Quantum (QCEngine/xtb templates) | `STUDIO_PROFILE_QUANTUM=1` | `chem-studio-qcengine:0.51.0-v1` | `available_tested` for xtb template; missing parameters → typed `blocked` |
-| Materials/thermo (UNIFAC-LLE screen) | `STUDIO_PROFILE_MATERIALS=1` | `chem-studio-materials:0.6.1-v1` | fixture_only synthetic screen; task-justified |
-| Analytical ingest (jcamp-dx/csv-xy) | core | `workers/chemistry` analytical service | fixture; scoped similarity, never identity claims |
-| Molecular design (REINVENT) | `STUDIO_PROFILE_DESIGN=1` | `chem-studio-reinvent:4.8-v1` | adapter verified; heavy image — engine_smoke evidence |
-| Retrosynthesis (AiZynthFinder) | `STUDIO_PROFILE_SYNTHESIS=1` | `chem-studio-aizynthfinder:4.4.1-v1` | adapter verified; needs ≥8 GiB container envelope |
+At closeout, move the task to review and inspect the server-derived evaluation
+packet. Supported success requires its frozen contract, required metrics,
+evaluated hard constraints, and applicable reviewed measurement evidence.
+Unknown check kinds remain `not_evaluated` and block success. A client-supplied
+packet cannot override the evaluator's bound record. Human review finalizes the
+closure against the exact contract revision.
 
-- All adapters run under the §13.3 isolation profile (`--network
-  none`, read-only rootfs, non-root, bounded resources) and report
-  typed JSON `{code,message}` failures. Missing image →
-  `ENGINE_UNAVAILABLE`, never a faked result.
-- Analytical/reference-analysis UI: task tab **reference analysis**
-  (`referenceAnalysisIngestMutation` + `referenceAnalysisCompareMutation`)
-  — a functional/spectral match says nothing about composition or
-  identity; the UI asserts this negatively (journey B).
+When closeout is blocked, resolve the reported scientific/evidence gap. Do not
+weaken the contract solely to manufacture a passing result.
 
-## 6. What this lane will NOT do
+## Calculations and optional adapters
 
-- No recipe/identity inference from a functional match (§11.3).
-- No equipment control — executions are human records.
-- No scientific-success auto-close — a human reviewer closes, and the
-  closure packet is bound to its contract revision permanently.
-- Unknown material identity/parameters block the calculation — nothing
-  fabricates force-field or structure inputs (§28).
+| Lane | Prerequisites and interpretation |
+|---|---|
+| SMILES descriptors | Native RDKit or pinned descriptor image; computed structural descriptors, not a laboratory measurement |
+| Optimization | Explicit optimization profile and BayBE image; campaign target must match a frozen metric's ID/unit/method/type |
+| Quantum | Quantum profile and pinned QCEngine/xtb image; missing parameters block execution |
+| Materials/thermo | Materials profile and pinned thermo image; constrained screening with declared assumptions |
+| Analytical ingest/comparison | Supported JCAMP-DX or CSV-XY records; similarity is scoped and does not establish composition or identity |
+| Molecular design/retrosynthesis | Explicit profile and pinned REINVENT/AiZynthFinder runtime/model assets; proposals require independent review |
+| Polymer atomistic pilot | Separate RadonPy/LAMMPS environment, explicit repeat/end caps, and bounded protocol; output remains computational |
 
-## Failure symptoms
+See [engine operations](model-ops.md) for image builds and isolation, and
+[polymer simulations](polymer-simulation.md) for pilot eligibility and resumption.
+Input/engine failures must produce typed blocked/failed states rather than
+invented parameters or successful-looking outputs.
 
-| Symptom | Cause | Recovery |
-|---|---|---|
-| `ENGINE_UNAVAILABLE` | image absent or profile flag off | `model-ops.md` §2 build; restart API with flag |
-| closure blocked `not_evaluated` | unknown check kind / missing measurements | review measurements first; don't weaken the contract to pass |
-| plan rejected at review | capability missing | `approve_experiment` grant — `admin.md` §2 |
-| amendment rejected | concurrent review / applicability | reload — amendments are append-only |
+Optimization campaign input is its `spec` object, not an entire fixture-file
+envelope. Independent checks review engine proposals against the frozen
+constraints. A recommendation is not an approved experiment.
 
-## Evidence location
+## Operational checks
 
-`docs/execution/tickets/CS-0501…CS-0504.md`, `CS-0404.md`,
-`CS-0603.md`, `CS-0701…CS-0703.md`, `CS-0903.md`.
+Confirm the capability, exact task/revision, profile, runtime/image version,
+resource budget, and persisted engine error before retrying. Closed/cancelled
+tasks retain results but reject new calculations. Local calculation execution
+is bounded and idempotent; a retry with changed inputs needs a new intended
+operation rather than an identifier collision.
+
+Science adapter fixtures and native pilot evidence are historical execution
+records under `docs/execution` and `docs/research`. They must not be relabeled as
+qualified material properties or physical laboratory outcomes. The generated
+[interface reference](../reference/README.md) identifies current operation names
+and inputs without duplicating the complete schema here.

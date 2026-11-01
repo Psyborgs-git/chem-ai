@@ -3,27 +3,45 @@ import { MemoryRouter } from "react-router";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSidebar } from "./AgentSidebar";
-const state = vi.hoisted(() => ({ refresh: vi.fn(), post: vi.fn(), request: vi.fn(), providers: [] as unknown[], history: null as any, search: null as any, thread: null as any, threadStatus: null as number | null, lastHistoryPath: "" }));
+const state = vi.hoisted(() => ({ refresh: vi.fn(), post: vi.fn(), request: vi.fn(), providers: [] as unknown[], localModels: [] as unknown[], history: null as any, search: null as any, thread: null as any, threadStatus: null as number | null, lastHistoryPath: "" }));
 const provider = { id: "provider-one", revision: 1, name: "Research provider", baseUrl: "https://example.org/v1", enabled: true, local: false, models: [{ id: "child-one", modelId: "research-model", label: "Research model", roles: ["planner"], enabled: true, supportsTools: true }] };
 const thread = { id: "thread-one", title: "Silk research", updatedAt: "2026-11-01T10:00:00Z", messages: [{ id: "user", runId: "run", role: "user", kind: "message", content: "Find sources about silk", refs: {} }, { id: "call", runId: "run", role: "assistant", kind: "tool_call", content: '{"arguments":{"query":"silk"}}', refs: { tool: "search_resources", toolCallId: "search-one" } }, { id: "result", runId: "run", role: "tool", kind: "tool_result", content: '{"ok":true,"data":{"results":[{"title":"Silk paper"}]}}', refs: { tool: "search_resources", toolCallId: "search-one" } }, { id: "answer", runId: "run", role: "assistant", kind: "message", content: "I saved the relevant source.", refs: {} }], runs: [{ id: "run", status: "completed", providerId: "provider-one", modelId: "research-model", role: "researcher" }] };
 const summary = { id: thread.id, title: thread.title, updatedAt: thread.updatedAt, messageCount: 2, lastMessagePreview: "I saved the relevant source.", lastRunStatus: "completed" };
-const empty: unknown[] = [];
 vi.mock("../../relay/network", () => ({ rawUuid: (value: string) => value, workspaceRequest: state.request }));
 vi.mock("../workspace/useWorkspace", () => ({ post: state.post, messageOf: (error: Error) => error.message, useWorkspace: (path: string | null) => {
   let data: unknown = null, errorStatus: number | null = null;
   if (path === "/api/agent-workspace/providers") data = state.providers;
   else if (path?.startsWith("/api/agent-workspace/threads?")) { state.lastHistoryPath = path; data = new URL(path, "http://localhost").searchParams.get("q") ? state.search : state.history; }
   else if (path?.startsWith("/api/agent-workspace/threads/")) { data = state.thread?.id === path.split("/").at(-1) ? state.thread : null; errorStatus = state.threadStatus; }
-  else if (path === "/api/learning-workspace/models") data = empty;
+  else if (path === "/api/learning-workspace/models") data = state.localModels;
   return { data, refresh: state.refresh, error: errorStatus ? "Chat request failed" : null, errorStatus, loading: false };
 } }));
 vi.mock("../notebooks/MarkdownPreview", () => ({ MarkdownPreview: ({ content }: { content: string }) => <div>{content}</div> }));
-beforeEach(() => { localStorage.clear(); state.providers = [provider]; state.history = { threads: [summary], nextOffset: null, query: "", ownerScope: "workspace:alice" }; state.search = { threads: [], nextOffset: null, query: "needle", ownerScope: "workspace:alice" }; state.thread = thread; state.threadStatus = null; state.refresh.mockReset().mockResolvedValue(undefined); state.post.mockReset().mockImplementation(async (path: string) => path === "/api/agent-workspace/threads" ? { id: "new-thread", title: "New chat" } : {}); state.request.mockReset(); vi.stubGlobal("matchMedia", () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })); Element.prototype.scrollIntoView = vi.fn(); });
+beforeEach(() => { localStorage.clear(); state.providers = [provider]; state.localModels = []; state.history = { threads: [summary], nextOffset: null, query: "", ownerScope: "workspace:alice" }; state.search = { threads: [], nextOffset: null, query: "needle", ownerScope: "workspace:alice" }; state.thread = thread; state.threadStatus = null; state.refresh.mockReset().mockResolvedValue(undefined); state.post.mockReset().mockImplementation(async (path: string) => path === "/api/agent-workspace/threads" ? { id: "new-thread", title: "New chat" } : {}); state.request.mockReset(); vi.stubGlobal("matchMedia", () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })); Element.prototype.scrollIntoView = vi.fn(); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 function mount() { return render(<MemoryRouter><AgentSidebar /></MemoryRouter>); }
 function openPanel() { fireEvent.click(screen.getByRole("button", { name: "Open research agent" })); }
 function openSaved() { openPanel(); fireEvent.click(screen.getByRole("button", { name: "Open chat: Silk research" })); }
 describe("familiar agent chat", () => {
+  it("sends the selected LoRA asset without falling back to the previous HTTP model", async () => {
+    state.localModels = [{ id: "trained-adapter", name: "Example LoRA", backend: "mlx", details: { state: "ready", adapterPath: "example-adapter" } }];
+    mount(); openSaved();
+    await userEvent.click(screen.getByRole("combobox", { name: "Agent model" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Local · Example LoRA" }));
+    expect(screen.getByRole("combobox", { name: "Agent model" })).toHaveTextContent("Local · Example LoRA");
+    fireEvent.change(screen.getByLabelText("Message research agent"), { target: { value: "Explain a formulation with a simple analogy" } });
+    fireEvent.submit(screen.getByLabelText("Message research agent").closest("form")!);
+    await waitFor(() => expect(state.post).toHaveBeenCalledWith("/api/agent-workspace/threads/thread-one/runs", expect.objectContaining({ localModelId: "trained-adapter", providerId: undefined, modelId: undefined })));
+  });
+  it("offers the beginner handbook without needing a model or sending a chat request", () => {
+    state.providers = [];
+    mount(); openPanel(); fireEvent.click(screen.getByRole("button", { name: /New chat/ }));
+    const guide = screen.getByRole("link", { name: "New to chemistry? Start here" });
+    expect(guide).toHaveAttribute("href", "/help/usage/chemistry-basics");
+    fireEvent.click(guide);
+    expect(screen.getByRole("button", { name: "Open research agent" })).toHaveAttribute("aria-expanded", "false");
+    expect(state.post).not.toHaveBeenCalled();
+  });
   it("makes history and New chat visible, then defaults a new chat to the configured model", async () => {
     mount(); openPanel();
     expect(screen.getByRole("region", { name: "Chat history" })).toBeVisible();

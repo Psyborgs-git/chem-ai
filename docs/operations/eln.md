@@ -1,8 +1,7 @@
 # External ELN bridge (eLabFTW) — ownership and operation
 
-**Status: optional integration, fixture-level only. Live sync is
-deferred (U16 decision); no eLabFTW instance URL or credentials were
-ever provisioned, configured, or called in this release.**
+**Status: standalone optional adapter with fixture-level verification. The
+shipped Studio profile has no configured live eLabFTW connector or sync service.**
 
 ## 1. Ownership model (handoff §14.3)
 
@@ -71,16 +70,17 @@ local evidence intact and the remote honestly marked
 
 ## 4. What is NOT delivered
 
-- No live eLabFTW call has ever been made. `HttpElnTransport` is real
-  code (stdlib urllib, documented v2 API: `Authorization: <key>`,
-  GET/POST/PATCH under `/api/v2/`), but it is exercised by **no test**
-  and is labelled unverified.
+- The HTTP transport is implemented with stdlib urllib and the eLabFTW v2
+  contract (`Authorization: <key>`, GET/POST/PATCH under `/api/v2/`). Fixture
+  adapter coverage does not qualify a live instance, its TLS, permissions, or
+  actual retention/conflict behavior. Verify those against the intended instance
+  as part of a separately authorized integration.
 - No Studio DB persistence for links yet — `export_state()` serializes
   the registry for a caller to persist; a domain-side storage ticket
   would own that.
-- No connector UI exists in `apps/studio-web` (the nav's `/settings`
-  target has no route — recorded gap). A future settings surface must
-  render `capability()` verbatim.
+- No ELN connector UI exists. The current `/settings/providers` route manages
+  inference providers; it does not configure eLabFTW. A future ELN surface must
+  preserve the adapter's honest configured/enabled/probed states.
 - No attachments/uploads transfer, no webhooks, no bulk import.
 
 ## 5. Path to live (requires a separate decision)
@@ -91,3 +91,13 @@ explicit decision on record ownership, sync direction, and conflict
 handling, (c) `STUDIO_ELN_ENABLED=1` set deliberately, and (d) live
 verification against the real instance — fixture-green is not a live
 claim.
+
+## Operational boundary
+
+The stock application does not wire this standalone adapter into its API or
+persist link state. Setting its environment variables does not create a Studio
+connector or a background sync service. Configuration listed here describes the
+adapter contract for future authorized integration. Preserve TLS verification;
+`STUDIO_ELN_VERIFY_TLS=0` weakens that boundary and is not the normal setup.
+See [configuration](configuration.md) and [privacy](privacy.md) for current
+application state and network paths.

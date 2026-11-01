@@ -1,4 +1,4 @@
-import { openCreationDetails, openCriteriaEditor, openTaskCreator } from "./ux-helpers";
+import { selectVisibleOption, openCreationDetails, openCriteriaEditor, openTaskCreator } from "./ux-helpers";
 import { expect, request, test, type BrowserContext } from "@playwright/test";
 
 const API = "http://127.0.0.1:8790";
@@ -154,14 +154,14 @@ test("create one task per mode (AT-0206-1)", async ({ page, context }) => {
           .getByRole("button", { name: /at-0206 ref/ })
           .click();
         await openCreationDetails(page, "create task");
-        await page.getByLabel("What should match?").selectOption("functional_and_analytical");
+        await selectVisibleOption(page, page.getByLabel("What should match?"), "functional_and_analytical");
       },
     },
     {
       mode: "discover",
       fill: async () => {
         await page.getByRole("radio", { name: "Explore", exact: true }).check();
-        await page.getByLabel("What are you exploring?").selectOption("formulation");
+        await selectVisibleOption(page, page.getByLabel("What are you exploring?"), "formulation");
         await openCreationDetails(page, "create task");
         await page.getByLabel("Research goal (optional)").fill("low-VOC binder");
       },

@@ -112,8 +112,6 @@
 @media(min-width:1001px) {
  .has-agent-panel .cs-shell { padding-right:var(--agent-panel-width); }
  .has-agent-panel .cs-shell__session { display:none; }
- .has-agent-panel .cs-workspace-finder { width:auto; min-width:40px; }
- .has-agent-panel .cs-workspace-finder span,.has-agent-panel .cs-workspace-finder kbd { display:none; }
  .has-agent-panel .cs-content { container-type:inline-size; }
  .cs-chat-panel.is-expanded { width:calc(100vw - var(--sidebar-width)); max-width:none; }
  .has-agent-panel.has-expanded-chat .cs-shell { padding-right:0; }

@@ -92,10 +92,20 @@ claimed against a compromised guest or all side channels.
 3. `cloud_providers.register(spec, approval, backend)` — registration
    refuses missing/expired/wrong-capability/wrong-subject approvals —
    then the adapter added to `cloud_broker.providers.PROVIDERS` under
-   the approved provider name. The broker path remains the only egress.
+   the approved provider name. The broker remains the required path for that
+   reviewed science-compute export; configured research inference and explicit
+   source/model downloads have their own separate authorization paths.
 4. The `ApprovedEnvironment` spec filled with the provider's *verified*
    attestation values (measurement, image/model digests, GPU coverage,
    network/operator posture, TTL caps) — never assumed.
 
 Until then `confidential_capability()` reports `not_configured` and the
 surface is inert.
+
+## Relationship to current providers
+
+This unconfigured confidential-science adapter is separate from configured HTTP
+inference providers. Authorized research inference can send context to a chosen
+provider without making the confidential-cloud adapter live or attested. Do not
+interpret `not_configured` here as a whole-application no-network guarantee.
+See [inference providers](inference-providers.md) and [privacy](privacy.md).

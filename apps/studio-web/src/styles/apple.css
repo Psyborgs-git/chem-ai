@@ -14,6 +14,10 @@
   --motion-enter: 240ms;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-fast: 0ms; --motion-med: 0ms; --motion-enter: 0ms; }
+}
+
 :root, :root[data-theme="light"] {
   --surface: #ffffff;
   --surface-raised: #f8f8f6;
@@ -165,7 +169,6 @@ h1, h2, h3 { letter-spacing: -.025em; }
 .cs-kicker, .cs-sidebar__label { letter-spacing: .045em; font-weight: 600; }
 .cs-tab { border-radius: var(--radius-sm); }
 .cs-tab--active { border-color: var(--border-strong); box-shadow: inset 0 -2px var(--accent); }
-.cs-workspace-finder { background: var(--control-surface); border-radius: var(--radius-sm); }
 
 @media (pointer: coarse) {
   .cs-btn, .cs-icon-btn, .cs-icon-button, [data-icon-only="true"], [data-slot="button"], [data-slot="select-trigger"], .cs-input, .cs-select { min-height: 44px; }

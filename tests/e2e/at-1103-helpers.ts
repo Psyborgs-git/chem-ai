@@ -54,6 +54,7 @@ export const METRIC_ID = "metric.synthetic-performance";
 type FocusedDescriptor = {
   tag: string;
   text: string;
+  ariaLabel: string;
   id: string;
   inTaskNav: boolean;
   inSubNav: boolean;
@@ -66,11 +67,12 @@ export async function focused(page: Page): Promise<FocusedDescriptor> {
   return page.evaluate(() => {
     const el = document.activeElement as HTMLElement | null;
     if (!el || el === document.body) {
-      return { tag: "body", text: "", id: "", inTaskNav: false, inSubNav: false, inPrimaryNav: false, pressed: null, current: null };
+      return { tag: "body", text: "", ariaLabel: "", id: "", inTaskNav: false, inSubNav: false, inPrimaryNav: false, pressed: null, current: null };
     }
     return {
       tag: el.tagName.toLowerCase(),
       text: (el.textContent ?? "").trim(),
+      ariaLabel: el.getAttribute("aria-label") ?? "",
       id: el.id ?? "",
       inTaskNav: !!el.closest('nav[aria-label="task sections"]'),
       inSubNav: !!el.closest('nav[aria-label="section views"]'),

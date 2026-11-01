@@ -184,12 +184,14 @@ test("theme toggle and reduced motion (AT-1103-2)", async ({ page, context }) =>
   const before = await accent();
 
   // toggle by keyboard only: Tab to it, Enter activates
-  const f = await tabUntil(page, (d) => d.tag === "button" && (d.text === "Light" || d.text === "Dark"), 40);
+  const f = await tabUntil(page, (d) => d.tag === "button" && d.ariaLabel === "Switch to dark theme", 40);
+  await expect(page.getByRole("button", { name: "Switch to dark theme", exact: true })).toBeFocused();
   expect(f.pressed).toBe("false");
   await page.keyboard.press("Enter");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   expect(await accent()).not.toBe(before);
   expect((await focused(page)).pressed).toBe("true");
+  await expect(page.getByRole("button", { name: "Switch to light theme", exact: true })).toBeFocused();
   // the dark tokens also paint — the header background actually changes
   const headerBg = await page
     .locator(".cs-shell__header")

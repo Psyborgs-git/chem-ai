@@ -1,102 +1,107 @@
-# Runbook — engine installation/benchmark and model operations
+# Engine and model operations
 
-Audience: owner / `manage_models` holder. Everything here is optional —
-the core pilot works without any of it (`installation.md` §9). Every
-lane fails closed and reports `ENGINE_UNAVAILABLE`/`unavailable` rather
-than faking capability when its prerequisites are absent (AT-1104-2).
+Optional engines and model runtimes are separate from core records. Missing
+software, unavailable hardware, or unconfigured profiles must report unavailable
+rather than substitute fixture output. The [private learning workspace](learning-workspace.md)
+and the older task-scoped registry are distinct systems.
 
-## 1. How engines run (§13.3)
+## Choose the correct lane
 
-Container profile `restricted.json` (`infra/local/worker-profiles/`):
-`--network none`, read-only rootfs, non-root, bounded resources,
-process-tree kill. The subprocess profile `development-reduced.json`
-does **not** deny network egress and says so — runs requiring network
-denial are blocked by policy, never run unprotected (residual R1).
+| Capability | Setup and boundary |
+|---|---|
+| Native SMILES properties | `engines` extra with native RDKit, or its pinned descriptor image |
+| Private assistant/property training | Isolated MLX, Transformers, Chemprop, or REINVENT interpreter and owner-private jobs |
+| Private local-model preview/activation | Saved private asset/candidate; human activation tied to matched held-out evaluation |
+| Older task optimization/science adapters | Explicit server profile flags, pinned image, typed input, and isolation profile |
+| Older task model registry/SFT/RL | Versioned vault artifacts, compatibility validation, evaluation and human promotion gate |
+| Configured inference endpoint | Provider connection, secure key storage, model protocol, and consent; not an engine image |
 
-## 2. Engine images — build and smoke
+Use [providers](inference-providers.md) for HTTP inference and
+[polymer simulation](polymer-simulation.md) for native RadonPy/LAMMPS setup.
+Installing a library does not enable every UI action or profile automatically.
 
-| Lane | Image | Build (verified commands) | Size |
-|---|---|---|---|
-| RDKit descriptors | `chem-studio-rdkit:2026.3.6` | `docker buildx build --platform linux/amd64 -t chem-studio-rdkit:2026.3.6 infra/images/rdkit` | — |
-| Local inference | `ghcr.io/ggml-org/llama.cpp:server` + volume `chem-models` + pinned `gemma-2b-it` GGUF (sha256-verified, copied from a local store — **no automatic downloads**, U13) | `docker pull ghcr.io/ggml-org/llama.cpp:server` | — |
-| BayBE optimization | `chem-studio-baybe:0.15.0-v1` | `docker build -f workers/optimization/Dockerfile -t chem-studio-baybe:0.15.0-v1 .` | ~1.76 GB |
-| QCEngine/xtb | `chem-studio-qcengine:0.51.0-v1` | `docker build -f workers/chemistry/quantum/Dockerfile -t chem-studio-qcengine:0.51.0-v1 .` | — |
-| Materials (thermo/UNIFAC) | `chem-studio-materials:0.6.1-v1` | `docker build -f workers/chemistry/materials/Dockerfile -t chem-studio-materials:0.6.1-v1 .` | — |
-| Molecular design (REINVENT) | `chem-studio-reinvent:4.8-v1` | `docker build -f workers/chemistry/design/Dockerfile -t chem-studio-reinvent:4.8-v1 .` | — |
-| Retrosynthesis (AiZynthFinder) | `chem-studio-aizynthfinder:4.4.1-v1` | `docker build -f workers/chemistry/synthesis/Dockerfile -t chem-studio-aizynthfinder:4.4.1-v1 .` | ≥8 GiB container envelope — stock+ONNX OOMs at 4 GiB (exit 137) |
-| Chemprop property models | `chem-studio-chemprop:2.3.1-v1` | `docker build -f workers/optimization/property_models/chemprop/Dockerfile -t chem-studio-chemprop:2.3.1-v1 .` | ~2.25 GB |
-| Model loader (registry) | `chem-studio-model-load:0.1.0` | `docker build -f workers/inference/model_loading/Dockerfile -t chem-studio-model-load:0.1.0 .` | — |
-| SFT trainer | `chem-studio-sft:0.1.0-v5` | `docker build -f workers/training/sft/Dockerfile -t chem-studio-sft:0.1.0-v5 .` | — |
-| RL trainer | `chem-studio-rl:0.1.0-v1` | `docker build -f workers/training/rl/trainer/Dockerfile -t chem-studio-rl:0.1.0-v1 .` | — |
+## Optional profiles and isolation
 
-- **Verify:** `make test-engines` — exits 2 with `UNAVAILABLE:` + the
-  exact build command when images are absent (honest by design).
-  With images present it runs `pytest -m engine` against the real
-  containers.
-- AiZynthFinder note: figshare model downloads use the canonical CDN
-  (`ndownloader.figshare.com/files/<id>` — `figshare.com/ndownloader`
-  is AWS-WAF challenged and returns 0 bytes). rdkit-based images need
-  `libxrender1 libxext6` on slim bases.
-- Restart the API with the matching `STUDIO_PROFILE_*` flags
-  (`installation.md` §4) — profile off ⇒ commands fail closed.
+The core dependency environment contains no GPU/model/science engine imports.
+Use declared `uv` extras only when needed, retaining all required extras during
+synchronization. Older science lanes additionally use explicit
+`STUDIO_PROFILE_LOCAL_AI`, `STUDIO_PROFILE_OPTIMIZATION`,
+`STUDIO_PROFILE_QUANTUM`, `STUDIO_PROFILE_MATERIALS`,
+`STUDIO_PROFILE_TRAINING`, `STUDIO_PROFILE_DESIGN`, or
+`STUDIO_PROFILE_SYNTHESIS` flags as applicable. Restart the API after changing
+flags. Private learning dispatch is separately available by default and probes
+its optional backend interpreters.
 
-## 3. Model registry (CS-0802)
+The `restricted` container profile uses network denial, read-only root filesystem,
+non-root execution, bounded resources, and process-group termination. The
+`development-reduced` subprocess profile does not enforce network denial and
+must not satisfy a contract that requires it. Native private learning and
+simulation workers scrub credentials but do not claim the container's OS-level
+network boundary.
 
-- Task tab **models**: `learningModelReleaseRegisterMutation` registers
-  a release (adapter + artifact lineage); `…ValidateMutation` runs the
-  isolated load in `chem-studio-model-load` (load happens in the pinned
-  container, never in the API process);
-  `…PromoteMutation`/`…ApproveMutation`/`…RollbackMutation` manage the
-  serving pointer — atomic pointer flip, session pins
-  (`learningSessionModelBindMutation`) keep existing sessions on their
-  release until rebound.
-- Releases flow `registered → validated → promoted` (superseded on
-  rollback); `serving_chain` integrity is part of `recovery_check`.
+## Build pinned adapter images
 
-## 4. Training (CS-0801 SFT, CS-0901/0902 RL)
+Run from the repository root. These builds can download public dependencies and
+require compatible Docker/platform resources; they are not core onboarding.
+Consult the owning Dockerfile and requirement lock for the current image contract.
 
-- Tab **datasets** (`learningDataset*`) → snapshot +
-  leakage-safe splits (group keys `formula:`/`batch:`/`dedup:`/`doc:`/
-  `sample:`); tab **training** (`learningTrainingRun*`) → create →
-  submit (human approval; agent principals cannot approve) → queue →
-  execute → transition. Checkpoint save/reload round-trips are
-  identity-verified; cancel produces `incomplete_run` (usable=false),
-  never a failed-pretending-success.
-- RL: typed-action environment, closed tool catalog, replay provenance,
-  hard budgets — budget exhaustion stops work as `budget_exhausted`;
-  there is **no** cloud fallback path (`test_no_cloud_fallback_path`).
-  Reward promotion routes through the CS-0803 gate — training reward
-  rising without independent eval gain → promotion REJECTED.
-- `make train-smoke` / `make eval-smoke`: BLOCKED without the training
-  extra + hardware (U08/U13); fixture evidence is `fixture_only`
-  `not_validated` always.
+| Lane | Build command |
+|---|---|
+| RDKit | `docker buildx build --platform linux/amd64 -t chem-studio-rdkit:2026.3.6 infra/images/rdkit` |
+| BayBE | `docker build -f workers/optimization/Dockerfile -t chem-studio-baybe:0.15.0-v1 .` |
+| QCEngine/xtb | `docker build -f workers/chemistry/quantum/Dockerfile -t chem-studio-qcengine:0.51.0-v1 .` |
+| Materials/thermo | `docker build -f workers/chemistry/materials/Dockerfile -t chem-studio-materials:0.6.1-v1 .` |
+| REINVENT | `docker build -f workers/chemistry/design/Dockerfile -t chem-studio-reinvent:4.8-v1 .` |
+| AiZynthFinder | `docker build -f workers/chemistry/synthesis/Dockerfile -t chem-studio-aizynthfinder:4.4.1-v1 .` |
+| Chemprop adapter | `docker build -f workers/optimization/property_models/chemprop/Dockerfile -t chem-studio-chemprop:2.3.1-v1 .` |
+| Registry loader | `docker build -f workers/inference/model_loading/Dockerfile -t chem-studio-model-load:0.1.0 .` |
+| Older SFT trainer | `docker build -f workers/training/sft/Dockerfile -t chem-studio-sft:0.1.0-v5 .` |
+| Older RL trainer | `docker build -f workers/training/rl/trainer/Dockerfile -t chem-studio-rl:0.1.0-v1 .` |
 
-## 5. Evaluation and promotion gate (CS-0803)
+AiZynthFinder's stock/model payload needs a substantial memory envelope; historical
+checks needed about 8 GiB. Exit 137 is a real resource failure, not an inference
+result. Image tags and model/license requirements must match the adapter's
+allowlist; do not silently point a pinned adapter at a different solver version.
 
-- Tab **evaluations** (`learningEvaluation*`): suite create → freeze →
-  hidden labels (double gate: `read_eval_labels` capability +
-  `kind=service` principal — forged grants stripped at context load)
-  → run. Promotion requires the matched baseline + scientific gates;
-  final release is human (`approve_model`).
+`make test-engines` checks the RDKit prerequisite, then runs the engine suites.
+Review per-lane outcomes and missing dependencies; passing descriptor tests does
+not qualify every optional engine. Older llama.cpp serving additionally needs
+its configured image/model volume and checksum-approved local GGUF asset; no
+core bootstrap model download is implied.
 
-## Failure symptoms
+## Older registry and promotion
 
-| Symptom | Cause | Recovery |
-|---|---|---|
-| `ENGINE_UNAVAILABLE` | image absent | build per §2 table; tests skip honestly rather than pass falsely |
-| `profile_unavailable` typed fail | backend missing a required contract control | use the container profile (subprocess can't deny network) |
-| exit 137 mid-run | container memory envelope | AiZynthFinder needs ~8 GiB; raise `--memory` |
-| promotion rejected despite reward gain | independent eval flat/regressed | intended gate — inspect component rewards, never bypass |
+The Model registry and older task learning controls register releases with
+artifact/adapter/training lineage. Validation loads a release in the pinned
+loader rather than importing arbitrary weights into the API process. Serving
+pointer changes are atomic, and session model pins retain their selected release
+until explicitly rebound. Inspect base/tokenizer compatibility before promotion.
 
-## Privacy concerns
+Training flows use frozen datasets and grouped splits, declared configurations,
+resource admission, and human approval where required. Cancellation preserves
+incomplete checkpoint state; an incomplete run is not a usable successful
+training result. RL uses a closed action/tool catalog and hard budgets without
+an automatic cloud fallback.
 
-- Model artifacts and checkpoints live in the vault; exports route only
-  through the approved broker (`privacy.md`).
-- A 2B fixture model is not a validated chemistry assistant — treat
-  every turn as fixture output.
+Independent evaluation, matched baselines, and applicable scientific gates are
+separate from training reward. A reward increase alone cannot approve promotion.
+The human release/activation action must be authorized for the exact candidate;
+an agent cannot grant itself this authority.
 
-## Evidence location
+## Current private model operations
 
-`docs/execution/tickets/CS-0404.md`, `CS-0405.md`, `CS-0603.md`,
-`CS-0604.md`, `CS-0701…CS-0703.md`, `CS-0801…CS-0803.md`,
-`CS-0901…CS-0903.md`.
+Use **Local learning** for custom imports, model catalog downloads, preflight,
+training, evaluation, cancellation, and resumption. Use a model preview or explicit
+agent-run selection to inspect a candidate without changing the active binding.
+[Learning documentation](learning-workspace.md) describes supported data kinds,
+protocols, limits, and backend behavior.
+
+Models downloaded into the active vault are included in a full vault backup.
+Imported existing model directories remain at their registered external paths;
+copy those separately. Remote worker-local model mappings and files also need
+separate recovery. A restored DB does not make a missing external model loadable.
+
+`make eval-smoke` executes a fixture-only evaluation. `make train-smoke` is an
+older prerequisite/harness gate and may report blocked; it is not the current
+private-learning acceptance workflow. Native training and engine execution
+establish software behavior, not scientific qualification of predictions.

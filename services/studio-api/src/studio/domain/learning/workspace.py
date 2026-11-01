@@ -773,46 +773,98 @@ class LearningWorkspaceService:
             raise DomainError(
                 ErrorCode.VALIDATION, "Tool catalog exceeds the local model context limit"
             )
+        # The application's catalog uses name/input_schema, while model chat
+        # templates and completion parsing use the OpenAI function envelope.
+        # Normalize once so the prompt and the allowlist name the same tools.
+        normalized_tools: list[dict[str, Any]] = []
+        for tool in tools or []:
+            if not isinstance(tool, dict):
+                raise DomainError(ErrorCode.VALIDATION, "Local model tools must be objects")
+            function = tool.get("function") if "function" in tool else {
+                "name": tool.get("name"),
+                "description": tool.get("description", ""),
+                "parameters": tool.get("input_schema", {}),
+            }
+            if (
+                not isinstance(function, dict)
+                or not isinstance(function.get("name"), str)
+                or not function["name"].strip()
+                or not isinstance(function.get("parameters", {}), dict)
+            ):
+                raise DomainError(
+                    ErrorCode.VALIDATION, "Local model tools require a name and object schema"
+                )
+            normalized_tools.append({"type": "function", "function": dict(function)})
         from studio.domain.learning.workspace_runtime.dispatcher import run_preview
 
         result = run_preview(
-            model, "", min(4096, max(1, max_tokens)), self.settings, messages=messages, tools=tools
+            model,
+            "",
+            min(4096, max(1, max_tokens)),
+            self.settings,
+            messages=messages,
+            tools=normalized_tools,
         )
         raw = str(result.get("text", ""))
-        allowed = {tool.get("function", {}).get("name") for tool in (tools or [])}
+        allowed = {tool["function"]["name"] for tool in normalized_tools}
         calls: list[dict[str, Any]] = []
-        for block in re.findall(r"<tool_call>\s*(.*?)\s*</tool_call>", raw, flags=re.DOTALL):
-            try:
-                value = json.loads(block)
-                name = value.get("name")
-                arguments = value.get("arguments", {})
-                if isinstance(arguments, str):
+        protocol: list[Any] | None = None
+        tagged = False
+        try:
+            value = json.loads(raw)
+        except ValueError:
+            # Only a response entirely made of protocol blocks is executable.
+            # Fenced examples and explanatory text containing tags are answers.
+            blocks = re.compile(r"<tool_call>\s*(.*?)\s*</tool_call>", flags=re.DOTALL)
+            matches = list(blocks.finditer(raw))
+            if matches and not blocks.sub("", raw).strip():
+                tagged = True
+                try:
+                    protocol = [json.loads(match.group(1)) for match in matches]
+                except ValueError as exc:
+                    raise DomainError(
+                        ErrorCode.MODEL_INCOMPATIBLE, "Local model returned a malformed tool call"
+                    ) from exc
+        else:
+            # Parse whole JSON first so literal protocol-looking strings inside
+            # a trained answer schema cannot execute or be stripped from it.
+            if isinstance(value, dict) and set(value) in (
+                {"tool", "arguments"}, {"name", "arguments"}
+            ):
+                protocol = [value]
+        for value in protocol or []:
+            if not isinstance(value, dict) or set(value) not in (
+                {"tool", "arguments"}, {"name", "arguments"}
+            ):
+                raise DomainError(
+                    ErrorCode.MODEL_INCOMPATIBLE, "Local model returned a malformed tool call"
+                )
+            name, arguments = value.get("tool", value.get("name")), value["arguments"]
+            if tagged and isinstance(arguments, str):
+                try:
                     arguments = json.loads(arguments)
-                if name in allowed and isinstance(arguments, dict):
-                    calls.append(
-                        {
-                            "id": "local_" + uuid.uuid4().hex,
-                            "type": "function",
-                            "function": {"name": name, "arguments": json.dumps(arguments)},
-                        }
-                    )
-            except (ValueError, TypeError, AttributeError):
-                continue
-        if not calls and raw.strip().startswith("{"):
-            try:
-                value = json.loads(raw)
-                name = value.get("tool", value.get("name"))
-                if name in allowed and isinstance(value.get("arguments"), dict):
-                    calls.append(
-                        {
-                            "id": "local_" + uuid.uuid4().hex,
-                            "type": "function",
-                            "function": {"name": name, "arguments": json.dumps(value["arguments"])},
-                        }
-                    )
-            except (ValueError, TypeError, AttributeError):
-                pass
-        content = re.sub(r"<tool_call>.*?</tool_call>", "", raw, flags=re.DOTALL).strip()
+                except ValueError as exc:
+                    raise DomainError(
+                        ErrorCode.MODEL_INCOMPATIBLE,
+                        "Local model returned malformed tool arguments",
+                    ) from exc
+            if not isinstance(name, str) or not name.strip() or not isinstance(arguments, dict):
+                raise DomainError(
+                    ErrorCode.MODEL_INCOMPATIBLE, "Local model returned a malformed tool call"
+                )
+            if name in allowed:
+                calls.append({
+                    "id": "local_" + uuid.uuid4().hex,
+                    "type": "function",
+                    "function": {"name": name, "arguments": json.dumps(arguments)},
+                })
+        if protocol is not None and not calls:
+            raise DomainError(
+                ErrorCode.MODEL_INCOMPATIBLE,
+                "Local model returned only unsupported or malformed tool calls; "
+                "select a compatible model or review its training",
+            )
+        content = "" if protocol is not None else raw.strip()
         return {
             "choices": [
                 {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
-import { useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
 import { ArrowDownLeft, ArrowUp, Expand, History, LoaderCircle, Plus, RefreshCw, Settings2, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,8 @@ export function AgentSidebar() {
   const [policyDraft, setPolicyDraft] = useState<AgentPolicy>(defaultPolicy), [autopilot, setAutopilot] = useState(false);
   const [researchGoal, setResearchGoal] = useState(""), [scheduleHours, setScheduleHours] = useState(24), [recurring, setRecurring] = useState(false);
   const restoredOwner = useRef("");
+  const navigatingToHelp = useRef(false);
+  const openHelp = () => { navigatingToHelp.current = true; setOpen(false); };
   const providersQuery = useWorkspace<AgentProvider[] | { providers: AgentProvider[] }>(open ? "/api/agent-workspace/providers" : null);
   const historyPath = `/api/agent-workspace/threads?q=${encodeURIComponent(historyQuery)}&offset=0&limit=50`;
   const threadsQuery = useWorkspace<AgentThread[] | HistoryResponse>(open ? historyPath : null, open ? 5000 : 0);
@@ -176,6 +178,7 @@ export function AgentSidebar() {
   useEffect(() => { const results = activeThread?.messages?.filter((item) => item.kind === "tool_result" && !seenToolEvents.current.has(item.id)) ?? []; if (!results.length) return; results.forEach((item) => seenToolEvents.current.add(item.id)); window.dispatchEvent(new Event("studio-workspace-updated")); }, [activeThread?.messages]);
   useEffect(() => {
     if (!open) return;
+    navigatingToHelp.current = false;
     const previous = document.activeElement as HTMLElement | null, previousOverflow = document.body.style.overflow;
     if (window.matchMedia("(max-width: 1000px)").matches) document.body.style.overflow = "hidden";
     const listener = (event: KeyboardEvent) => {
@@ -188,7 +191,7 @@ export function AgentSidebar() {
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     };
-    document.addEventListener("keydown", listener); return () => { document.removeEventListener("keydown", listener); document.body.style.overflow = previousOverflow; previous?.isConnected && previous.focus(); };
+    document.addEventListener("keydown", listener); return () => { document.removeEventListener("keydown", listener); document.body.style.overflow = previousOverflow; if (!navigatingToHelp.current && previous?.isConnected) previous.focus(); };
   }, [open]);
   const providerPayload = () => ({ providerId: providerId && providerId !== "$runtime" && !providerId.startsWith("local:") ? providerId : undefined, localModelId: providerId.startsWith("local:") ? providerId.slice(6) : undefined, modelId: modelId || undefined, role });
   const send = async (event: FormEvent) => {
@@ -235,7 +238,7 @@ export function AgentSidebar() {
         {historyOpen && historyPane}
         {(!historyOpen || expanded) && <section className="cs-chat-conversation" aria-label="Current chat"><header className="cs-chat-current"><h2 title={currentTitle}>{currentTitle}</h2><div className="cs-chat-model-control"><AgentModelSelect providers={providers} localModels={localModels.data ?? []} providerId={providerId} modelId={modelId} onChange={(provider, model) => { setProviderId(provider); setModelId(model); defaultModelApplied.current = true; }} /></div></header>
           <MessageScrollerProvider key={threadId || unsentDraftKey} autoScroll defaultScrollPosition="end"><MessageScroller className="cs-chat-scroller"><MessageScrollerViewport className="cs-chat-transcript" aria-label="Conversation scroll area">{(messageHistory.threadId === threadId ? messageHistory.hasEarlier : activeThread?.hasEarlierMessages) && <div className="cs-chat-earlier-note"><Button type="button" variant="outline" size="sm" disabled={loadingEarlier} onClick={() => void loadEarlier()}>{loadingEarlier ? "Loading…" : "Load earlier messages"}</Button></div>}<MessageScrollerContent role="log" aria-label="Agent conversation messages" aria-live="polite" className="cs-chat-transcript-content">
-            {threadQuery.loading && threadId && !activeThread ? <p className="cs-chat-loading" role="status">Opening chat…</p> : !transcript.length ? <MessageScrollerItem messageId="welcome" className="cs-chat-welcome"><h3>What would you like to explore?</h3><p>Ask a question or start a research task.</p><div>{["Find papers for my research", "Review my latest training run"].map((prompt) => <Button key={prompt} type="button" variant="outline" onClick={() => saveDraft(prompt)}>{prompt}</Button>)}</div></MessageScrollerItem> : <><ChatTranscript messages={transcript} activeRunId={activeRun?.id} /></>}
+            {threadQuery.loading && threadId && !activeThread ? <p className="cs-chat-loading" role="status">Opening chat…</p> : !transcript.length ? <MessageScrollerItem messageId="welcome" className="cs-chat-welcome"><h3>What would you like to explore?</h3><p>Ask about the app, learn a chemistry term, or start research.</p><Link to="/help/usage/chemistry-basics" onClick={(event) => { if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) openHelp(); }}>New to chemistry? Start here</Link><div>{["How do I use the studio?", "Find papers for my research", "Review my latest training run"].map((prompt) => <Button key={prompt} type="button" variant="outline" onClick={() => saveDraft(prompt)}>{prompt}</Button>)}</div></MessageScrollerItem> : <><ChatTranscript messages={transcript} activeRunId={activeRun?.id} onOpenHelp={openHelp} /></>}
             {lastRun && (activeRun || resumableStates.includes(lastRun.status) || lastRun.error) && <div className="cs-chat-run-state" role="status"><span className={activeRun ? "cs-live-dot" : ""} /><span>{activeRun ? activeRun.cancelRequested ? "Stopping after the current step…" : activeRun.progress?.waitingForJob ? "Waiting for a compute job…" : "Agent is working…" : lastRun.status.replaceAll("_", " ")}</span>{!activeRun && resumableStates.includes(lastRun.status) && <Button variant="ghost" onClick={() => void post(`/api/agent-workspace/runs/${lastRun.id}/resume`).then(threadQuery.refresh).catch((e) => setError(messageOf(e)))}>Resume</Button>}{lastRun.error && <p>{lastRun.error}</p>}</div>}
             {lastRun?.progress && <MessageScrollerItem messageId="run-details" className="cs-chat-run-details"><TechnicalDetails label="Run details" value={lastRun.progress} /></MessageScrollerItem>}
           </MessageScrollerContent></MessageScrollerViewport><MessageScrollerButton behavior="auto" aria-label="Scroll to latest message" /></MessageScroller></MessageScrollerProvider>

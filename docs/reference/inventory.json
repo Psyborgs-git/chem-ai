@@ -1,0 +1,5404 @@
+{
+  "rest": [
+    {
+      "id": "DELETE /api/library/folders/{ident}",
+      "method": "DELETE",
+      "path": "/api/library/folders/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 70,
+      "handler": "folder_delete",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "expectedRevision",
+          "python_name": "expected_revision",
+          "in": "query",
+          "type": "int",
+          "required": true,
+          "default": "Query(alias='expectedRevision', ge=1)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, bool]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "DELETE /api/library/memory/{ident}",
+      "method": "DELETE",
+      "path": "/api/library/memory/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 180,
+      "handler": "memory_forget",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, bool]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "DELETE /api/library/notebooks/{ident}",
+      "method": "DELETE",
+      "path": "/api/library/notebooks/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 103,
+      "handler": "notebook_delete",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "expectedRevision",
+          "python_name": "expected_revision",
+          "in": "query",
+          "type": "int",
+          "required": true,
+          "default": "Query(alias='expectedRevision', ge=1)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, bool]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "DELETE /api/library/pages/{ident}",
+      "method": "DELETE",
+      "path": "/api/library/pages/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 138,
+      "handler": "page_delete",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "expectedRevision",
+          "python_name": "expected_revision",
+          "in": "query",
+          "type": "int",
+          "required": true,
+          "default": "Query(alias='expectedRevision', ge=1)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, bool]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "DELETE /api/library/sources/{ident}",
+      "method": "DELETE",
+      "path": "/api/library/sources/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 275,
+      "handler": "source_delete",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "expectedRevision",
+          "python_name": "expected_revision",
+          "in": "query",
+          "type": "int",
+          "required": true,
+          "default": "Query(alias='expectedRevision', ge=1)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, bool]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/agent-workspace/background",
+      "method": "GET",
+      "path": "/api/agent-workspace/background",
+      "source": "services/studio-api/src/studio/api/background.py",
+      "line": 33,
+      "handler": "background_status",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, bool | str]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/agent-workspace/policies",
+      "method": "GET",
+      "path": "/api/agent-workspace/policies",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 55,
+      "handler": "policy",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/agent-workspace/providers",
+      "method": "GET",
+      "path": "/api/agent-workspace/providers",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 34,
+      "handler": "providers",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/agent-workspace/runs/{run_id}",
+      "method": "GET",
+      "path": "/api/agent-workspace/runs/{run_id}",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 114,
+      "handler": "run",
+      "parameters": [
+        {
+          "name": "run_id",
+          "python_name": "run_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/agent-workspace/threads",
+      "method": "GET",
+      "path": "/api/agent-workspace/threads",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 67,
+      "handler": "threads",
+      "parameters": [
+        {
+          "name": "q",
+          "python_name": "q",
+          "in": "query",
+          "type": "str",
+          "required": false,
+          "default": "Query(default='', max_length=200)"
+        },
+        {
+          "name": "offset",
+          "python_name": "offset",
+          "in": "query",
+          "type": "int",
+          "required": false,
+          "default": "Query(default=0, ge=0)"
+        },
+        {
+          "name": "limit",
+          "python_name": "limit",
+          "in": "query",
+          "type": "int",
+          "required": false,
+          "default": "Query(default=50, ge=1, le=100)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/agent-workspace/threads/{thread_id}",
+      "method": "GET",
+      "path": "/api/agent-workspace/threads/{thread_id}",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 85,
+      "handler": "thread",
+      "parameters": [
+        {
+          "name": "thread_id",
+          "python_name": "thread_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "before",
+          "python_name": "before",
+          "in": "query",
+          "type": "uuid.UUID | None",
+          "required": false,
+          "default": "None"
+        },
+        {
+          "name": "limit",
+          "python_name": "limit",
+          "in": "query",
+          "type": "int",
+          "required": false,
+          "default": "Query(default=1000, ge=1, le=1000)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/agent-workspace/tools",
+      "method": "GET",
+      "path": "/api/agent-workspace/tools",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 23,
+      "handler": "tool_catalog",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/artifacts/{artifact_id}",
+      "method": "GET",
+      "path": "/api/artifacts/{artifact_id}",
+      "source": "services/studio-api/src/studio/api/transfers/routes.py",
+      "line": 156,
+      "handler": "artifact_metadata",
+      "parameters": [
+        {
+          "name": "artifact_id",
+          "python_name": "artifact_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/artifacts/{artifact_id}/content",
+      "method": "GET",
+      "path": "/api/artifacts/{artifact_id}/content",
+      "source": "services/studio-api/src/studio/api/transfers/routes.py",
+      "line": 131,
+      "handler": "download_content",
+      "parameters": [
+        {
+          "name": "artifact_id",
+          "python_name": "artifact_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "StreamingResponse",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/auth/setup-needed",
+      "method": "GET",
+      "path": "/api/auth/setup-needed",
+      "source": "services/studio-api/src/studio/api/auth_routes.py",
+      "line": 103,
+      "handler": "setup_needed",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/desktop/runtime",
+      "method": "GET",
+      "path": "/api/desktop/runtime",
+      "source": "services/studio-api/src/studio/api/desktop.py",
+      "line": 107,
+      "handler": "desktop_runtime",
+      "parameters": [],
+      "status": 200,
+      "annotation": "JSONResponse",
+      "condition": "desktop frontend enabled",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/events/snapshot",
+      "method": "GET",
+      "path": "/api/events/snapshot",
+      "source": "services/studio-api/src/studio/api/events/routes.py",
+      "line": 204,
+      "handler": "snapshot",
+      "parameters": [
+        {
+          "name": "channel",
+          "python_name": "channel",
+          "in": "query",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "id",
+          "python_name": "id",
+          "in": "query",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": "Authoritative current state + the stream cursor it corresponds to."
+    },
+    {
+      "id": "GET /api/events/stream",
+      "method": "GET",
+      "path": "/api/events/stream",
+      "source": "services/studio-api/src/studio/api/events/routes.py",
+      "line": 257,
+      "handler": "stream",
+      "parameters": [
+        {
+          "name": "channel",
+          "python_name": "channel",
+          "in": "query",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "id",
+          "python_name": "id",
+          "in": "query",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "since",
+          "python_name": "since",
+          "in": "query",
+          "type": "int",
+          "required": false,
+          "default": "0"
+        }
+      ],
+      "status": 200,
+      "annotation": "StreamingResponse",
+      "condition": "core",
+      "docstring": "SSE endpoint. ``Last-Event-ID`` wins over ``since`` on reconnect.\n\nThe auth context is resolved on a short-lived session that is\ncommitted and closed BEFORE the response starts streaming — the\n``authenticate_token`` last-seen UPDATE must never pin a row lock\nfor the lifetime of an SSE connection."
+    },
+    {
+      "id": "GET /api/learning-workspace/capabilities",
+      "method": "GET",
+      "path": "/api/learning-workspace/capabilities",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 24,
+      "handler": "capabilities",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/datasets",
+      "method": "GET",
+      "path": "/api/learning-workspace/datasets",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 29,
+      "handler": "datasets",
+      "parameters": [],
+      "status": 200,
+      "annotation": "list[dict[str, Any]]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/datasets/{identifier}",
+      "method": "GET",
+      "path": "/api/learning-workspace/datasets/{identifier}",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 70,
+      "handler": "dataset",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/jobs",
+      "method": "GET",
+      "path": "/api/learning-workspace/jobs",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 129,
+      "handler": "jobs",
+      "parameters": [],
+      "status": 200,
+      "annotation": "list[dict[str, Any]]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/jobs/preflight",
+      "method": "GET",
+      "path": "/api/learning-workspace/jobs/preflight",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 150,
+      "handler": "default_job_preflight",
+      "parameters": [
+        {
+          "name": "datasetId",
+          "python_name": "datasetId",
+          "in": "query",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "kind",
+          "python_name": "kind",
+          "in": "query",
+          "type": "str",
+          "required": false,
+          "default": "'sft'"
+        },
+        {
+          "name": "modelId",
+          "python_name": "modelId",
+          "in": "query",
+          "type": "str | None",
+          "required": false,
+          "default": "None"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/jobs/{identifier}",
+      "method": "GET",
+      "path": "/api/learning-workspace/jobs/{identifier}",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 164,
+      "handler": "job",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/jobs/{identifier}/artifacts/{name:path}",
+      "method": "GET",
+      "path": "/api/learning-workspace/jobs/{identifier}/artifacts/{name:path}",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 176,
+      "handler": "artifact",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "name",
+          "python_name": "name",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "FileResponse",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/models",
+      "method": "GET",
+      "path": "/api/learning-workspace/models",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 82,
+      "handler": "models",
+      "parameters": [],
+      "status": 200,
+      "annotation": "list[dict[str, Any]]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/models/{identifier}",
+      "method": "GET",
+      "path": "/api/learning-workspace/models/{identifier}",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 103,
+      "handler": "model",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/worker/jobs/{identifier}/checkpoint",
+      "method": "GET",
+      "path": "/api/learning-workspace/worker/jobs/{identifier}/checkpoint",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 229,
+      "handler": "worker_checkpoint",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "workerId",
+          "python_name": "workerId",
+          "in": "query",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "Response",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/learning-workspace/worker/jobs/{identifier}/model",
+      "method": "GET",
+      "path": "/api/learning-workspace/worker/jobs/{identifier}/model",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 264,
+      "handler": "worker_model",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "workerId",
+          "python_name": "workerId",
+          "in": "query",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "Response",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/library",
+      "method": "GET",
+      "path": "/api/library",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 47,
+      "handler": "library",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/library/pages/{ident}",
+      "method": "GET",
+      "path": "/api/library/pages/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 124,
+      "handler": "page_get",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/library/research/search",
+      "method": "GET",
+      "path": "/api/library/research/search",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 187,
+      "handler": "research_search",
+      "parameters": [
+        {
+          "name": "connector",
+          "python_name": "connector",
+          "in": "query",
+          "type": "Literal['openalex', 'crossref', 'pubchem', 'web']",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "q",
+          "python_name": "q",
+          "in": "query",
+          "type": "str",
+          "required": true,
+          "default": "Query(min_length=1, max_length=500)"
+        },
+        {
+          "name": "limit",
+          "python_name": "limit",
+          "in": "query",
+          "type": "int",
+          "required": false,
+          "default": "Query(default=10, ge=1, le=20)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/library/search",
+      "method": "GET",
+      "path": "/api/library/search",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 151,
+      "handler": "search",
+      "parameters": [
+        {
+          "name": "q",
+          "python_name": "q",
+          "in": "query",
+          "type": "str",
+          "required": true,
+          "default": "Query(min_length=1, max_length=500)"
+        },
+        {
+          "name": "limit",
+          "python_name": "limit",
+          "in": "query",
+          "type": "int",
+          "required": false,
+          "default": "Query(default=20, ge=1, le=50)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/library/sources/{ident}",
+      "method": "GET",
+      "path": "/api/library/sources/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 204,
+      "handler": "source_get",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/library/sources/{ident}/content",
+      "method": "GET",
+      "path": "/api/library/sources/{ident}/content",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 254,
+      "handler": "source_content",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "format",
+          "python_name": "format",
+          "in": "query",
+          "type": "Literal['original', 'text', 'metadata']",
+          "required": false,
+          "default": "'original'"
+        }
+      ],
+      "status": 200,
+      "annotation": "FileResponse",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/library/structures/preview",
+      "method": "GET",
+      "path": "/api/library/structures/preview",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 288,
+      "handler": "structure_preview",
+      "parameters": [
+        {
+          "name": "smiles",
+          "python_name": "smiles",
+          "in": "query",
+          "type": "str",
+          "required": true,
+          "default": "Query(min_length=1, max_length=10000)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/research-workflows",
+      "method": "GET",
+      "path": "/api/research-workflows",
+      "source": "services/studio-api/src/studio/api/research_workflows.py",
+      "line": 16,
+      "handler": "workflows",
+      "parameters": [],
+      "status": 200,
+      "annotation": "list[dict[str, Any]]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/research-workflows/{identifier}",
+      "method": "GET",
+      "path": "/api/research-workflows/{identifier}",
+      "source": "services/studio-api/src/studio/api/research_workflows.py",
+      "line": 39,
+      "handler": "detail",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/simulations/capabilities",
+      "method": "GET",
+      "path": "/api/simulations/capabilities",
+      "source": "services/studio-api/src/studio/api/simulations.py",
+      "line": 21,
+      "handler": "capabilities",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/simulations/jobs",
+      "method": "GET",
+      "path": "/api/simulations/jobs",
+      "source": "services/studio-api/src/studio/api/simulations.py",
+      "line": 26,
+      "handler": "jobs",
+      "parameters": [
+        {
+          "name": "campaignId",
+          "python_name": "campaignId",
+          "in": "query",
+          "type": "str | None",
+          "required": false,
+          "default": "None"
+        }
+      ],
+      "status": 200,
+      "annotation": "list[dict[str, Any]]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/simulations/jobs/{identifier}",
+      "method": "GET",
+      "path": "/api/simulations/jobs/{identifier}",
+      "source": "services/studio-api/src/studio/api/simulations.py",
+      "line": 42,
+      "handler": "job",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /api/simulations/jobs/{identifier}/artifacts/{name:path}",
+      "method": "GET",
+      "path": "/api/simulations/jobs/{identifier}/artifacts/{name:path}",
+      "source": "services/studio-api/src/studio/api/simulations.py",
+      "line": 61,
+      "handler": "artifact",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "name",
+          "python_name": "name",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "FileResponse",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /healthz",
+      "method": "GET",
+      "path": "/healthz",
+      "source": "services/studio-api/src/studio/api/app.py",
+      "line": 62,
+      "handler": "healthz",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, str]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "GET /readyz",
+      "method": "GET",
+      "path": "/readyz",
+      "source": "services/studio-api/src/studio/api/app.py",
+      "line": 66,
+      "handler": "readyz",
+      "parameters": [],
+      "status": 200,
+      "annotation": "JSONResponse",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "PATCH /api/library/folders/{ident}",
+      "method": "PATCH",
+      "path": "/api/library/folders/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 61,
+      "handler": "folder_update",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "UpdateFolder",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "PATCH /api/library/notebooks/{ident}",
+      "method": "PATCH",
+      "path": "/api/library/notebooks/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 92,
+      "handler": "notebook_update",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "UpdateNotebook",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "PATCH /api/library/pages/{ident}",
+      "method": "PATCH",
+      "path": "/api/library/pages/{ident}",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 129,
+      "handler": "page_update",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "UpdatePage",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/agent-workspace/background",
+      "method": "POST",
+      "path": "/api/agent-workspace/background",
+      "source": "services/studio-api/src/studio/api/background.py",
+      "line": 50,
+      "handler": "background_change",
+      "parameters": [
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "BackgroundChange",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, bool | str]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/agent-workspace/providers/{provider_id}/discover",
+      "method": "POST",
+      "path": "/api/agent-workspace/providers/{provider_id}/discover",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 50,
+      "handler": "discover",
+      "parameters": [
+        {
+          "name": "provider_id",
+          "python_name": "provider_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/agent-workspace/providers/{provider_id}/models",
+      "method": "POST",
+      "path": "/api/agent-workspace/providers/{provider_id}/models",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 41,
+      "handler": "save_model",
+      "parameters": [
+        {
+          "name": "provider_id",
+          "python_name": "provider_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/agent-workspace/runs/{run_id}/cancel",
+      "method": "POST",
+      "path": "/api/agent-workspace/runs/{run_id}/cancel",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 119,
+      "handler": "cancel",
+      "parameters": [
+        {
+          "name": "run_id",
+          "python_name": "run_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/agent-workspace/runs/{run_id}/resume",
+      "method": "POST",
+      "path": "/api/agent-workspace/runs/{run_id}/resume",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 126,
+      "handler": "resume",
+      "parameters": [
+        {
+          "name": "run_id",
+          "python_name": "run_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/agent-workspace/threads",
+      "method": "POST",
+      "path": "/api/agent-workspace/threads",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 78,
+      "handler": "create_thread",
+      "parameters": [
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/agent-workspace/threads/{thread_id}/runs",
+      "method": "POST",
+      "path": "/api/agent-workspace/threads/{thread_id}/runs",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 105,
+      "handler": "create_run",
+      "parameters": [
+        {
+          "name": "thread_id",
+          "python_name": "thread_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/artifacts/uploads",
+      "method": "POST",
+      "path": "/api/artifacts/uploads",
+      "source": "services/studio-api/src/studio/api/transfers/routes.py",
+      "line": 56,
+      "handler": "initiate_upload",
+      "parameters": [
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "InitiateUploadRequest",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/artifacts/uploads/{artifact_id}/abort",
+      "method": "POST",
+      "path": "/api/artifacts/uploads/{artifact_id}/abort",
+      "source": "services/studio-api/src/studio/api/transfers/routes.py",
+      "line": 121,
+      "handler": "abort_upload",
+      "parameters": [
+        {
+          "name": "artifact_id",
+          "python_name": "artifact_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/artifacts/uploads/{artifact_id}/finish",
+      "method": "POST",
+      "path": "/api/artifacts/uploads/{artifact_id}/finish",
+      "source": "services/studio-api/src/studio/api/transfers/routes.py",
+      "line": 96,
+      "handler": "finish_upload",
+      "parameters": [
+        {
+          "name": "artifact_id",
+          "python_name": "artifact_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "FinishUploadRequest | None",
+          "required": false,
+          "default": "None"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/auth/login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "source": "services/studio-api/src/studio/api/auth_routes.py",
+      "line": 80,
+      "handler": "login",
+      "parameters": [
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "LoginRequest",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/auth/logout",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "source": "services/studio-api/src/studio/api/auth_routes.py",
+      "line": 93,
+      "handler": "logout",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/auth/setup",
+      "method": "POST",
+      "path": "/api/auth/setup",
+      "source": "services/studio-api/src/studio/api/auth_routes.py",
+      "line": 65,
+      "handler": "setup_owner",
+      "parameters": [
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "SetupRequest",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/datasets/from-notebook",
+      "method": "POST",
+      "path": "/api/learning-workspace/datasets/from-notebook",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 189,
+      "handler": "notebook_dataset",
+      "parameters": [
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/datasets/from-source",
+      "method": "POST",
+      "path": "/api/learning-workspace/datasets/from-source",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 198,
+      "handler": "source_dataset",
+      "parameters": [
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/datasets/import",
+      "method": "POST",
+      "path": "/api/learning-workspace/datasets/import",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 34,
+      "handler": "import_dataset",
+      "parameters": [
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/datasets/upload",
+      "method": "POST",
+      "path": "/api/learning-workspace/datasets/upload",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 43,
+      "handler": "upload_dataset",
+      "parameters": [
+        {
+          "name": "file",
+          "python_name": "file",
+          "in": "multipart",
+          "type": "Annotated[UploadFile, File()]",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "metadata",
+          "python_name": "metadata",
+          "in": "multipart",
+          "type": "str",
+          "required": false,
+          "default": "Form('{}')"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/datasets/{identifier}/freeze",
+      "method": "POST",
+      "path": "/api/learning-workspace/datasets/{identifier}/freeze",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 75,
+      "handler": "freeze_dataset",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/jobs",
+      "method": "POST",
+      "path": "/api/learning-workspace/jobs",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 134,
+      "handler": "create_job",
+      "parameters": [
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/jobs/preflight",
+      "method": "POST",
+      "path": "/api/learning-workspace/jobs/preflight",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 143,
+      "handler": "job_preflight",
+      "parameters": [
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/jobs/{identifier}/cancel",
+      "method": "POST",
+      "path": "/api/learning-workspace/jobs/{identifier}/cancel",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 169,
+      "handler": "cancel",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/jobs/{identifier}/resume",
+      "method": "POST",
+      "path": "/api/learning-workspace/jobs/{identifier}/resume",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 182,
+      "handler": "resume",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/models",
+      "method": "POST",
+      "path": "/api/learning-workspace/models",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 87,
+      "handler": "register_model",
+      "parameters": [
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/models/{identifier}/activate",
+      "method": "POST",
+      "path": "/api/learning-workspace/models/{identifier}/activate",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 108,
+      "handler": "activate_model",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/models/{identifier}/chat",
+      "method": "POST",
+      "path": "/api/learning-workspace/models/{identifier}/chat",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 117,
+      "handler": "model_chat",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/models/{identifier}/preview",
+      "method": "POST",
+      "path": "/api/learning-workspace/models/{identifier}/preview",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 96,
+      "handler": "preview",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/worker/jobs/{identifier}/complete",
+      "method": "POST",
+      "path": "/api/learning-workspace/worker/jobs/{identifier}/complete",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 241,
+      "handler": "worker_complete",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "file",
+          "python_name": "file",
+          "in": "multipart",
+          "type": "Annotated[UploadFile, File()]",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "metadata",
+          "python_name": "metadata",
+          "in": "multipart",
+          "type": "str",
+          "required": true,
+          "default": "Form(...)"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/worker/jobs/{identifier}/heartbeat",
+      "method": "POST",
+      "path": "/api/learning-workspace/worker/jobs/{identifier}/heartbeat",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 218,
+      "handler": "worker_heartbeat",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/learning-workspace/worker/lease",
+      "method": "POST",
+      "path": "/api/learning-workspace/worker/lease",
+      "source": "services/studio-api/src/studio/api/learning_workspace.py",
+      "line": 207,
+      "handler": "worker_lease",
+      "parameters": [
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/library/downloads/reveal",
+      "method": "POST",
+      "path": "/api/library/downloads/reveal",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 310,
+      "handler": "downloads_reveal",
+      "parameters": [],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": "Open only the authenticated owner's fixed research folder."
+    },
+    {
+      "id": "POST /api/library/folders",
+      "method": "POST",
+      "path": "/api/library/folders",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 54,
+      "handler": "folder_create",
+      "parameters": [
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "CreateFolder",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 201,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/library/memory",
+      "method": "POST",
+      "path": "/api/library/memory",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 173,
+      "handler": "memory_create",
+      "parameters": [
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "CreateMemory",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 201,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/library/notebooks",
+      "method": "POST",
+      "path": "/api/library/notebooks",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 83,
+      "handler": "notebook_create",
+      "parameters": [
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "CreateNotebook",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 201,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/library/pages",
+      "method": "POST",
+      "path": "/api/library/pages",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 116,
+      "handler": "page_create",
+      "parameters": [
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "CreatePage",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 201,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/library/pages/{ident}/restore",
+      "method": "POST",
+      "path": "/api/library/pages/{ident}/restore",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 164,
+      "handler": "page_restore",
+      "parameters": [
+        {
+          "name": "ident",
+          "python_name": "ident",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "RestorePage",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/library/sources/artifact",
+      "method": "POST",
+      "path": "/api/library/sources/artifact",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 243,
+      "handler": "source_artifact",
+      "parameters": [
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "ArchiveArtifact",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 201,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/library/sources/fetch",
+      "method": "POST",
+      "path": "/api/library/sources/fetch",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 197,
+      "handler": "source_fetch",
+      "parameters": [
+        {
+          "name": "data",
+          "python_name": "data",
+          "in": "JSON body",
+          "type": "FetchSource",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 201,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/library/sources/upload",
+      "method": "POST",
+      "path": "/api/library/sources/upload",
+      "source": "services/studio-api/src/studio/api/library.py",
+      "line": 209,
+      "handler": "source_upload",
+      "parameters": [
+        {
+          "name": "file",
+          "python_name": "file",
+          "in": "multipart",
+          "type": "Annotated[UploadFile, File()]",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "title",
+          "python_name": "title",
+          "in": "multipart",
+          "type": "str | None",
+          "required": false,
+          "default": "Form(default=None, max_length=500)"
+        }
+      ],
+      "status": 201,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/research-workflows",
+      "method": "POST",
+      "path": "/api/research-workflows",
+      "source": "services/studio-api/src/studio/api/research_workflows.py",
+      "line": 32,
+      "handler": "create",
+      "parameters": [
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/simulations/jobs",
+      "method": "POST",
+      "path": "/api/simulations/jobs",
+      "source": "services/studio-api/src/studio/api/simulations.py",
+      "line": 33,
+      "handler": "create_job",
+      "parameters": [
+        {
+          "name": "payload",
+          "python_name": "payload",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/simulations/jobs/{identifier}/cancel",
+      "method": "POST",
+      "path": "/api/simulations/jobs/{identifier}/cancel",
+      "source": "services/studio-api/src/studio/api/simulations.py",
+      "line": 47,
+      "handler": "cancel",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "POST /api/simulations/jobs/{identifier}/resume",
+      "method": "POST",
+      "path": "/api/simulations/jobs/{identifier}/resume",
+      "source": "services/studio-api/src/studio/api/simulations.py",
+      "line": 54,
+      "handler": "resume",
+      "parameters": [
+        {
+          "name": "identifier",
+          "python_name": "identifier",
+          "in": "path",
+          "type": "str",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "PUT /api/agent-workspace/policies",
+      "method": "PUT",
+      "path": "/api/agent-workspace/policies",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 60,
+      "handler": "save_policy",
+      "parameters": [
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "PUT /api/agent-workspace/threads/{thread_id}/automation",
+      "method": "PUT",
+      "path": "/api/agent-workspace/threads/{thread_id}/automation",
+      "source": "services/studio-api/src/studio/api/agent_workspace.py",
+      "line": 96,
+      "handler": "automation",
+      "parameters": [
+        {
+          "name": "thread_id",
+          "python_name": "thread_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        },
+        {
+          "name": "body",
+          "python_name": "body",
+          "in": "JSON body",
+          "type": "dict[str, Any]",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": ""
+    },
+    {
+      "id": "PUT /api/artifacts/uploads/{artifact_id}/content",
+      "method": "PUT",
+      "path": "/api/artifacts/uploads/{artifact_id}/content",
+      "source": "services/studio-api/src/studio/api/transfers/routes.py",
+      "line": 77,
+      "handler": "stream_content",
+      "parameters": [
+        {
+          "name": "artifact_id",
+          "python_name": "artifact_id",
+          "in": "path",
+          "type": "uuid.UUID",
+          "required": true,
+          "default": "required"
+        }
+      ],
+      "status": 200,
+      "annotation": "dict[str, Any]",
+      "condition": "core",
+      "docstring": "Append request-body bytes to staging (streaming, size-capped)."
+    }
+  ],
+  "graphql": [
+    {
+      "id": "mutation analytical.compare",
+      "kind": "mutation",
+      "path": "analytical.compare",
+      "namespace": "analytical",
+      "signature": "compare(input: AnalyticalCompareInput!): AnalyticalResult!",
+      "return_type": "AnalyticalResult",
+      "input_types": [
+        "AnalyticalCompareInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation analytical.ingest",
+      "kind": "mutation",
+      "path": "analytical.ingest",
+      "namespace": "analytical",
+      "signature": "ingest(input: AnalyticalIngestInput!): AnalyticalResult!",
+      "return_type": "AnalyticalResult",
+      "input_types": [
+        "AnalyticalIngestInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation candidates.create",
+      "kind": "mutation",
+      "path": "candidates.create",
+      "namespace": "candidates",
+      "signature": "create(input: CandidateCreateInput!): CandidateRevisionResult!",
+      "return_type": "CandidateRevisionResult",
+      "input_types": [
+        "CandidateCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation candidates.patchPropose",
+      "kind": "mutation",
+      "path": "candidates.patchPropose",
+      "namespace": "candidates",
+      "signature": "patchPropose(input: CandidatePatchProposeInput!): CandidatePatchResult!",
+      "return_type": "CandidatePatchResult",
+      "input_types": [
+        "CandidatePatchProposeInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation candidates.patchReview",
+      "kind": "mutation",
+      "path": "candidates.patchReview",
+      "namespace": "candidates",
+      "signature": "patchReview(input: CandidatePatchReviewInput!): CandidatePatchResult!",
+      "return_type": "CandidatePatchResult",
+      "input_types": [
+        "CandidatePatchReviewInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation candidates.review",
+      "kind": "mutation",
+      "path": "candidates.review",
+      "namespace": "candidates",
+      "signature": "review(input: CandidateReviewInput!): CandidateRevisionResult!",
+      "return_type": "CandidateRevisionResult",
+      "input_types": [
+        "CandidateReviewInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation candidates.submit",
+      "kind": "mutation",
+      "path": "candidates.submit",
+      "namespace": "candidates",
+      "signature": "submit(input: CandidateSubmitInput!): CandidateRevisionResult!",
+      "return_type": "CandidateRevisionResult",
+      "input_types": [
+        "CandidateSubmitInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation contractDraftCreate",
+      "kind": "mutation",
+      "path": "contractDraftCreate",
+      "namespace": "root",
+      "signature": "contractDraftCreate(input: ContractDraftCreateInput!): ContractRevisionResult!",
+      "return_type": "ContractRevisionResult",
+      "input_types": [
+        "ContractDraftCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation contractFreeze",
+      "kind": "mutation",
+      "path": "contractFreeze",
+      "namespace": "root",
+      "signature": "contractFreeze(input: ContractFreezeInput!): ContractRevisionResult!",
+      "return_type": "ContractRevisionResult",
+      "input_types": [
+        "ContractFreezeInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation evidence.claimCreate",
+      "kind": "mutation",
+      "path": "evidence.claimCreate",
+      "namespace": "evidence",
+      "signature": "claimCreate(input: ClaimCreateInput!): EvidenceClaimResult!",
+      "return_type": "EvidenceClaimResult",
+      "input_types": [
+        "ClaimCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation evidence.claimLink",
+      "kind": "mutation",
+      "path": "evidence.claimLink",
+      "namespace": "evidence",
+      "signature": "claimLink(input: ClaimLinkInput!): ClaimLinkResult!",
+      "return_type": "ClaimLinkResult",
+      "input_types": [
+        "ClaimLinkInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation evidence.claimReview",
+      "kind": "mutation",
+      "path": "evidence.claimReview",
+      "namespace": "evidence",
+      "signature": "claimReview(input: ClaimReviewInput!): EvidenceClaimResult!",
+      "return_type": "EvidenceClaimResult",
+      "input_types": [
+        "ClaimReviewInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation exports.decide",
+      "kind": "mutation",
+      "path": "exports.decide",
+      "namespace": "exports",
+      "signature": "decide(input: ExportDecideInput!): ExportReviewResult!",
+      "return_type": "ExportReviewResult",
+      "input_types": [
+        "ExportDecideInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation exports.prepare",
+      "kind": "mutation",
+      "path": "exports.prepare",
+      "namespace": "exports",
+      "signature": "prepare(input: ExportPrepareInput!): ExportReviewResult!",
+      "return_type": "ExportReviewResult",
+      "input_types": [
+        "ExportPrepareInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation exports.setClassification",
+      "kind": "mutation",
+      "path": "exports.setClassification",
+      "namespace": "exports",
+      "signature": "setClassification(input: ExportSetClassificationInput!): ExportReviewResult!",
+      "return_type": "ExportReviewResult",
+      "input_types": [
+        "ExportSetClassificationInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation formulations.familyCreate",
+      "kind": "mutation",
+      "path": "formulations.familyCreate",
+      "namespace": "formulations",
+      "signature": "familyCreate(input: FormulationFamilyCreateInput!): FormulationFamilyResult!",
+      "return_type": "FormulationFamilyResult",
+      "input_types": [
+        "FormulationFamilyCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation formulations.processAccept",
+      "kind": "mutation",
+      "path": "formulations.processAccept",
+      "namespace": "formulations",
+      "signature": "processAccept(input: ProcessRevisionIdInput!): ProcessRevisionResult!",
+      "return_type": "ProcessRevisionResult",
+      "input_types": [
+        "ProcessRevisionIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation formulations.processDraft",
+      "kind": "mutation",
+      "path": "formulations.processDraft",
+      "namespace": "formulations",
+      "signature": "processDraft(input: ProcessRevisionDraftInput!): ProcessRevisionResult!",
+      "return_type": "ProcessRevisionResult",
+      "input_types": [
+        "ProcessRevisionDraftInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation formulations.revisionAccept",
+      "kind": "mutation",
+      "path": "formulations.revisionAccept",
+      "namespace": "formulations",
+      "signature": "revisionAccept(input: FormulationRevisionIdInput!): FormulationRevisionResult!",
+      "return_type": "FormulationRevisionResult",
+      "input_types": [
+        "FormulationRevisionIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation formulations.revisionDraft",
+      "kind": "mutation",
+      "path": "formulations.revisionDraft",
+      "namespace": "formulations",
+      "signature": "revisionDraft(input: FormulationRevisionDraftInput!): FormulationRevisionResult!",
+      "return_type": "FormulationRevisionResult",
+      "input_types": [
+        "FormulationRevisionDraftInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation imports.artifactImport",
+      "kind": "mutation",
+      "path": "imports.artifactImport",
+      "namespace": "imports",
+      "signature": "artifactImport(input: ImportArtifactInput!): ImportBatchResult!",
+      "return_type": "ImportBatchResult",
+      "input_types": [
+        "ImportArtifactInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation imports.recordPromote",
+      "kind": "mutation",
+      "path": "imports.recordPromote",
+      "namespace": "imports",
+      "signature": "recordPromote(input: PromoteRecordInput!): EvidenceClaimResult!",
+      "return_type": "EvidenceClaimResult",
+      "input_types": [
+        "PromoteRecordInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation imports.recordReview",
+      "kind": "mutation",
+      "path": "imports.recordReview",
+      "namespace": "imports",
+      "signature": "recordReview(input: ReviewRecordInput!): ExtractedRecordResult!",
+      "return_type": "ExtractedRecordResult",
+      "input_types": [
+        "ReviewRecordInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation imports.sourceRevoke",
+      "kind": "mutation",
+      "path": "imports.sourceRevoke",
+      "namespace": "imports",
+      "signature": "sourceRevoke(input: SourceRevokeInput!): SourceRevokeResult!",
+      "return_type": "SourceRevokeResult",
+      "input_types": [
+        "SourceRevokeInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.actualsRecord",
+      "kind": "mutation",
+      "path": "lab.measurements.actualsRecord",
+      "namespace": "lab.measurements",
+      "signature": "actualsRecord(input: ActualsRecordInput!): ExecutionResult!",
+      "return_type": "ExecutionResult",
+      "input_types": [
+        "ActualsRecordInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.batchAdd",
+      "kind": "mutation",
+      "path": "lab.measurements.batchAdd",
+      "namespace": "lab.measurements",
+      "signature": "batchAdd(input: BatchAddInput!): BatchResult!",
+      "return_type": "BatchResult",
+      "input_types": [
+        "BatchAddInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.executionClose",
+      "kind": "mutation",
+      "path": "lab.measurements.executionClose",
+      "namespace": "lab.measurements",
+      "signature": "executionClose(input: ExecutionCloseInput!): ExecutionResult!",
+      "return_type": "ExecutionResult",
+      "input_types": [
+        "ExecutionCloseInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.executionHistoricalImport",
+      "kind": "mutation",
+      "path": "lab.measurements.executionHistoricalImport",
+      "namespace": "lab.measurements",
+      "signature": "executionHistoricalImport(input: ExecutionHistoricalInput!): ExecutionResult!",
+      "return_type": "ExecutionResult",
+      "input_types": [
+        "ExecutionHistoricalInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.executionOpen",
+      "kind": "mutation",
+      "path": "lab.measurements.executionOpen",
+      "namespace": "lab.measurements",
+      "signature": "executionOpen(input: ExecutionOpenInput!): ExecutionResult!",
+      "return_type": "ExecutionResult",
+      "input_types": [
+        "ExecutionOpenInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.measurementAmend",
+      "kind": "mutation",
+      "path": "lab.measurements.measurementAmend",
+      "namespace": "lab.measurements",
+      "signature": "measurementAmend(input: MeasurementAmendInput!): MeasurementResult!",
+      "return_type": "MeasurementResult",
+      "input_types": [
+        "MeasurementAmendInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.measurementApplicability",
+      "kind": "mutation",
+      "path": "lab.measurements.measurementApplicability",
+      "namespace": "lab.measurements",
+      "signature": "measurementApplicability(input: MeasurementApplicabilityInput!): MeasurementResult!",
+      "return_type": "MeasurementResult",
+      "input_types": [
+        "MeasurementApplicabilityInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.measurementMapApplicability",
+      "kind": "mutation",
+      "path": "lab.measurements.measurementMapApplicability",
+      "namespace": "lab.measurements",
+      "signature": "measurementMapApplicability(input: MeasurementApplicabilityMapInput!): ApplicabilityMapResult!",
+      "return_type": "ApplicabilityMapResult",
+      "input_types": [
+        "MeasurementApplicabilityMapInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.measurementRecord",
+      "kind": "mutation",
+      "path": "lab.measurements.measurementRecord",
+      "namespace": "lab.measurements",
+      "signature": "measurementRecord(input: MeasurementRecordInput!): MeasurementResult!",
+      "return_type": "MeasurementResult",
+      "input_types": [
+        "MeasurementRecordInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.measurementReview",
+      "kind": "mutation",
+      "path": "lab.measurements.measurementReview",
+      "namespace": "lab.measurements",
+      "signature": "measurementReview(input: MeasurementReviewInput!): MeasurementResult!",
+      "return_type": "MeasurementResult",
+      "input_types": [
+        "MeasurementReviewInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.measurements.sampleAdd",
+      "kind": "mutation",
+      "path": "lab.measurements.sampleAdd",
+      "namespace": "lab.measurements",
+      "signature": "sampleAdd(input: SampleAddInput!): SampleResult!",
+      "return_type": "SampleResult",
+      "input_types": [
+        "SampleAddInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.packetExport",
+      "kind": "mutation",
+      "path": "lab.packetExport",
+      "namespace": "lab",
+      "signature": "packetExport(input: PlanIdInput!): PacketResult!",
+      "return_type": "PacketResult",
+      "input_types": [
+        "PlanIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.planCreate",
+      "kind": "mutation",
+      "path": "lab.planCreate",
+      "namespace": "lab",
+      "signature": "planCreate(input: PlanCreateInput!): PlanResult!",
+      "return_type": "PlanResult",
+      "input_types": [
+        "PlanCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.planReview",
+      "kind": "mutation",
+      "path": "lab.planReview",
+      "namespace": "lab",
+      "signature": "planReview(input: PlanReviewInput!): PlanResult!",
+      "return_type": "PlanResult",
+      "input_types": [
+        "PlanReviewInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.planSubmit",
+      "kind": "mutation",
+      "path": "lab.planSubmit",
+      "namespace": "lab",
+      "signature": "planSubmit(input: PlanIdInput!): PlanResult!",
+      "return_type": "PlanResult",
+      "input_types": [
+        "PlanIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation lab.planUpdate",
+      "kind": "mutation",
+      "path": "lab.planUpdate",
+      "namespace": "lab",
+      "signature": "planUpdate(input: PlanUpdateInput!): PlanResult!",
+      "return_type": "PlanResult",
+      "input_types": [
+        "PlanUpdateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.evaluationRunStart",
+      "kind": "mutation",
+      "path": "learning.evaluationRunStart",
+      "namespace": "learning",
+      "signature": "evaluationRunStart(input: EvaluationRunStartInput!): EvaluationRunResult!",
+      "return_type": "EvaluationRunResult",
+      "input_types": [
+        "EvaluationRunStartInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.evaluationSuiteCreate",
+      "kind": "mutation",
+      "path": "learning.evaluationSuiteCreate",
+      "namespace": "learning",
+      "signature": "evaluationSuiteCreate(input: EvaluationSuiteCreateInput!): EvaluationSuiteResult!",
+      "return_type": "EvaluationSuiteResult",
+      "input_types": [
+        "EvaluationSuiteCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.evaluationSuiteFreeze",
+      "kind": "mutation",
+      "path": "learning.evaluationSuiteFreeze",
+      "namespace": "learning",
+      "signature": "evaluationSuiteFreeze(input: EvaluationSuiteIdInput!): EvaluationSuiteResult!",
+      "return_type": "EvaluationSuiteResult",
+      "input_types": [
+        "EvaluationSuiteIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.evaluationSuiteLabels",
+      "kind": "mutation",
+      "path": "learning.evaluationSuiteLabels",
+      "namespace": "learning",
+      "signature": "evaluationSuiteLabels(input: EvaluationSuiteLabelsInput!): EvaluationSuiteResult!",
+      "return_type": "EvaluationSuiteResult",
+      "input_types": [
+        "EvaluationSuiteLabelsInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.modelReleaseApprove",
+      "kind": "mutation",
+      "path": "learning.modelReleaseApprove",
+      "namespace": "learning",
+      "signature": "modelReleaseApprove(input: ModelReleaseApproveInput!): ModelReleaseResult!",
+      "return_type": "ModelReleaseResult",
+      "input_types": [
+        "ModelReleaseApproveInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.modelReleaseConvert",
+      "kind": "mutation",
+      "path": "learning.modelReleaseConvert",
+      "namespace": "learning",
+      "signature": "modelReleaseConvert(input: ModelReleaseConvertInput!): ModelReleaseResult!",
+      "return_type": "ModelReleaseResult",
+      "input_types": [
+        "ModelReleaseConvertInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.modelReleasePromote",
+      "kind": "mutation",
+      "path": "learning.modelReleasePromote",
+      "namespace": "learning",
+      "signature": "modelReleasePromote(input: ModelReleaseIdInput!): ModelReleaseResult!",
+      "return_type": "ModelReleaseResult",
+      "input_types": [
+        "ModelReleaseIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.modelReleaseRegister",
+      "kind": "mutation",
+      "path": "learning.modelReleaseRegister",
+      "namespace": "learning",
+      "signature": "modelReleaseRegister(input: ModelReleaseRegisterInput!): ModelReleaseResult!",
+      "return_type": "ModelReleaseResult",
+      "input_types": [
+        "ModelReleaseRegisterInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.modelReleaseRollback",
+      "kind": "mutation",
+      "path": "learning.modelReleaseRollback",
+      "namespace": "learning",
+      "signature": "modelReleaseRollback(input: ModelReleaseRollbackInput!): ModelReleaseResult!",
+      "return_type": "ModelReleaseResult",
+      "input_types": [
+        "ModelReleaseRollbackInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.modelReleaseValidate",
+      "kind": "mutation",
+      "path": "learning.modelReleaseValidate",
+      "namespace": "learning",
+      "signature": "modelReleaseValidate(input: ModelReleaseIdInput!): ModelReleaseResult!",
+      "return_type": "ModelReleaseResult",
+      "input_types": [
+        "ModelReleaseIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.promotionApprove",
+      "kind": "mutation",
+      "path": "learning.promotionApprove",
+      "namespace": "learning",
+      "signature": "promotionApprove(input: PromotionApproveInput!): PromotionDecisionResult!",
+      "return_type": "PromotionDecisionResult",
+      "input_types": [
+        "PromotionApproveInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.promotionDecide",
+      "kind": "mutation",
+      "path": "learning.promotionDecide",
+      "namespace": "learning",
+      "signature": "promotionDecide(input: PromotionDecideInput!): PromotionDecisionResult!",
+      "return_type": "PromotionDecisionResult",
+      "input_types": [
+        "PromotionDecideInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.promotionPromote",
+      "kind": "mutation",
+      "path": "learning.promotionPromote",
+      "namespace": "learning",
+      "signature": "promotionPromote(input: PromotionPromoteInput!): PromotionDecisionResult!",
+      "return_type": "PromotionDecisionResult",
+      "input_types": [
+        "PromotionPromoteInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.sessionModelBind",
+      "kind": "mutation",
+      "path": "learning.sessionModelBind",
+      "namespace": "learning",
+      "signature": "sessionModelBind(input: SessionModelBindInput!): SessionBindResult!",
+      "return_type": "SessionBindResult",
+      "input_types": [
+        "SessionModelBindInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.snapshotBuild",
+      "kind": "mutation",
+      "path": "learning.snapshotBuild",
+      "namespace": "learning",
+      "signature": "snapshotBuild(input: DatasetSnapshotBuildInput!): DatasetSnapshotResult!",
+      "return_type": "DatasetSnapshotResult",
+      "input_types": [
+        "DatasetSnapshotBuildInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.snapshotFreeze",
+      "kind": "mutation",
+      "path": "learning.snapshotFreeze",
+      "namespace": "learning",
+      "signature": "snapshotFreeze(input: DatasetSnapshotIdInput!): DatasetSnapshotResult!",
+      "return_type": "DatasetSnapshotResult",
+      "input_types": [
+        "DatasetSnapshotIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.snapshotPrepareRun",
+      "kind": "mutation",
+      "path": "learning.snapshotPrepareRun",
+      "namespace": "learning",
+      "signature": "snapshotPrepareRun(input: DatasetSnapshotIdInput!): DatasetPrepareResult!",
+      "return_type": "DatasetPrepareResult",
+      "input_types": [
+        "DatasetSnapshotIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.trainingRunApprove",
+      "kind": "mutation",
+      "path": "learning.trainingRunApprove",
+      "namespace": "learning",
+      "signature": "trainingRunApprove(input: TrainingRunApproveInput!): TrainingRunResult!",
+      "return_type": "TrainingRunResult",
+      "input_types": [
+        "TrainingRunApproveInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.trainingRunCancel",
+      "kind": "mutation",
+      "path": "learning.trainingRunCancel",
+      "namespace": "learning",
+      "signature": "trainingRunCancel(input: TrainingRunIdInput!): TrainingRunResult!",
+      "return_type": "TrainingRunResult",
+      "input_types": [
+        "TrainingRunIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.trainingRunCreate",
+      "kind": "mutation",
+      "path": "learning.trainingRunCreate",
+      "namespace": "learning",
+      "signature": "trainingRunCreate(input: TrainingRunCreateInput!): TrainingRunResult!",
+      "return_type": "TrainingRunResult",
+      "input_types": [
+        "TrainingRunCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.trainingRunExecute",
+      "kind": "mutation",
+      "path": "learning.trainingRunExecute",
+      "namespace": "learning",
+      "signature": "trainingRunExecute(input: TrainingRunExecuteInput!): TrainingRunResult!",
+      "return_type": "TrainingRunResult",
+      "input_types": [
+        "TrainingRunExecuteInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.trainingRunQueue",
+      "kind": "mutation",
+      "path": "learning.trainingRunQueue",
+      "namespace": "learning",
+      "signature": "trainingRunQueue(input: TrainingRunIdInput!): TrainingRunResult!",
+      "return_type": "TrainingRunResult",
+      "input_types": [
+        "TrainingRunIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.trainingRunResume",
+      "kind": "mutation",
+      "path": "learning.trainingRunResume",
+      "namespace": "learning",
+      "signature": "trainingRunResume(input: TrainingRunIdInput!): TrainingRunResult!",
+      "return_type": "TrainingRunResult",
+      "input_types": [
+        "TrainingRunIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.trainingRunSubmit",
+      "kind": "mutation",
+      "path": "learning.trainingRunSubmit",
+      "namespace": "learning",
+      "signature": "trainingRunSubmit(input: TrainingRunIdInput!): TrainingRunResult!",
+      "return_type": "TrainingRunResult",
+      "input_types": [
+        "TrainingRunIdInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation learning.trainingRunTransition",
+      "kind": "mutation",
+      "path": "learning.trainingRunTransition",
+      "namespace": "learning",
+      "signature": "trainingRunTransition(input: TrainingRunTransitionInput!): TrainingRunResult!",
+      "return_type": "TrainingRunResult",
+      "input_types": [
+        "TrainingRunTransitionInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation materials.gradeCreate",
+      "kind": "mutation",
+      "path": "materials.gradeCreate",
+      "namespace": "materials",
+      "signature": "gradeCreate(input: MaterialGradeCreateInput!): MaterialGradeResult!",
+      "return_type": "MaterialGradeResult",
+      "input_types": [
+        "MaterialGradeCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation materials.gradeReconcile",
+      "kind": "mutation",
+      "path": "materials.gradeReconcile",
+      "namespace": "materials",
+      "signature": "gradeReconcile(input: MaterialGradeReconcileInput!): MaterialGradeResult!",
+      "return_type": "MaterialGradeResult",
+      "input_types": [
+        "MaterialGradeReconcileInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation materials.identityCreate",
+      "kind": "mutation",
+      "path": "materials.identityCreate",
+      "namespace": "materials",
+      "signature": "identityCreate(input: MaterialIdentityCreateInput!): MaterialIdentityResult!",
+      "return_type": "MaterialIdentityResult",
+      "input_types": [
+        "MaterialIdentityCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation materials.matchPropose",
+      "kind": "mutation",
+      "path": "materials.matchPropose",
+      "namespace": "materials",
+      "signature": "matchPropose(input: MaterialMatchProposeInput!): MaterialIdentityResult!",
+      "return_type": "MaterialIdentityResult",
+      "input_types": [
+        "MaterialMatchProposeInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation materials.matchReview",
+      "kind": "mutation",
+      "path": "materials.matchReview",
+      "namespace": "materials",
+      "signature": "matchReview(input: MaterialMatchReviewInput!): MaterialIdentityResult!",
+      "return_type": "MaterialIdentityResult",
+      "input_types": [
+        "MaterialMatchReviewInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation materials.referenceProductCreate",
+      "kind": "mutation",
+      "path": "materials.referenceProductCreate",
+      "namespace": "materials",
+      "signature": "referenceProductCreate(input: ReferenceProductCreateInput!): ReferenceProductResult!",
+      "return_type": "ReferenceProductResult",
+      "input_types": [
+        "ReferenceProductCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation materials.referenceRevisionDraft",
+      "kind": "mutation",
+      "path": "materials.referenceRevisionDraft",
+      "namespace": "materials",
+      "signature": "referenceRevisionDraft(input: ReferenceRevisionDraftInput!): ReferenceRevisionResult!",
+      "return_type": "ReferenceRevisionResult",
+      "input_types": [
+        "ReferenceRevisionDraftInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation materials.referenceRevisionFreeze",
+      "kind": "mutation",
+      "path": "materials.referenceRevisionFreeze",
+      "namespace": "materials",
+      "signature": "referenceRevisionFreeze(input: ReferenceRevisionFreezeInput!): ReferenceRevisionResult!",
+      "return_type": "ReferenceRevisionResult",
+      "input_types": [
+        "ReferenceRevisionFreezeInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation materials.structureReview",
+      "kind": "mutation",
+      "path": "materials.structureReview",
+      "namespace": "materials",
+      "signature": "structureReview(input: MaterialStructureReviewInput!): MaterialIdentityResult!",
+      "return_type": "MaterialIdentityResult",
+      "input_types": [
+        "MaterialStructureReviewInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation notebookCreate",
+      "kind": "mutation",
+      "path": "notebookCreate",
+      "namespace": "root",
+      "signature": "notebookCreate(title: String!, folderId: ID = null): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "mutation notebookPageCreate",
+      "kind": "mutation",
+      "path": "notebookPageCreate",
+      "namespace": "root",
+      "signature": "notebookPageCreate(input: JSON!): JSON!",
+      "return_type": "JSON",
+      "input_types": [
+        "JSON"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation notebookPageUpdate",
+      "kind": "mutation",
+      "path": "notebookPageUpdate",
+      "namespace": "root",
+      "signature": "notebookPageUpdate(id: ID!, input: JSON!): JSON!",
+      "return_type": "JSON",
+      "input_types": [
+        "JSON"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation optimization.command",
+      "kind": "mutation",
+      "path": "optimization.command",
+      "namespace": "optimization",
+      "signature": "command(input: OptimizationCommandInput!): OptimizationResult!",
+      "return_type": "OptimizationResult",
+      "input_types": [
+        "OptimizationCommandInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation optimization.create",
+      "kind": "mutation",
+      "path": "optimization.create",
+      "namespace": "optimization",
+      "signature": "create(input: OptimizationCreateInput!): OptimizationResult!",
+      "return_type": "OptimizationResult",
+      "input_types": [
+        "OptimizationCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation privateAgentRunStart",
+      "kind": "mutation",
+      "path": "privateAgentRunStart",
+      "namespace": "root",
+      "signature": "privateAgentRunStart(threadId: ID!, input: JSON!): JSON!",
+      "return_type": "JSON",
+      "input_types": [
+        "JSON"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation privateAgentThreadCreate",
+      "kind": "mutation",
+      "path": "privateAgentThreadCreate",
+      "namespace": "root",
+      "signature": "privateAgentThreadCreate(input: JSON!): JSON!",
+      "return_type": "JSON",
+      "input_types": [
+        "JSON"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation privateLearningDatasetImport",
+      "kind": "mutation",
+      "path": "privateLearningDatasetImport",
+      "namespace": "root",
+      "signature": "privateLearningDatasetImport(input: JSON!): JSON!",
+      "return_type": "JSON",
+      "input_types": [
+        "JSON"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation privateLearningJobStart",
+      "kind": "mutation",
+      "path": "privateLearningJobStart",
+      "namespace": "root",
+      "signature": "privateLearningJobStart(input: JSON!): JSON!",
+      "return_type": "JSON",
+      "input_types": [
+        "JSON"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation projectCreate",
+      "kind": "mutation",
+      "path": "projectCreate",
+      "namespace": "root",
+      "signature": "projectCreate(input: ProjectCreateInput!): ProjectResult!",
+      "return_type": "ProjectResult",
+      "input_types": [
+        "ProjectCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation providers.cleanupCredentials",
+      "kind": "mutation",
+      "path": "providers.cleanupCredentials",
+      "namespace": "providers",
+      "signature": "cleanupCredentials: InferenceCredentialCleanupResult!",
+      "return_type": "InferenceCredentialCleanupResult",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "mutation providers.delete",
+      "kind": "mutation",
+      "path": "providers.delete",
+      "namespace": "providers",
+      "signature": "delete(input: InferenceProviderDeleteInput!): InferenceProviderDeleteResult!",
+      "return_type": "InferenceProviderDeleteResult",
+      "input_types": [
+        "InferenceProviderDeleteInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation providers.save",
+      "kind": "mutation",
+      "path": "providers.save",
+      "namespace": "providers",
+      "signature": "save(input: InferenceProviderSaveInput!): InferenceProviderResult!",
+      "return_type": "InferenceProviderResult",
+      "input_types": [
+        "InferenceProviderSaveInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation providers.test",
+      "kind": "mutation",
+      "path": "providers.test",
+      "namespace": "providers",
+      "signature": "test(input: InferenceProviderTestInput!): InferenceProviderTestResult!",
+      "return_type": "InferenceProviderTestResult",
+      "input_types": [
+        "InferenceProviderTestInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation research.messagePost",
+      "kind": "mutation",
+      "path": "research.messagePost",
+      "namespace": "research",
+      "signature": "messagePost(input: MessagePostInput!): SessionMessageResult!",
+      "return_type": "SessionMessageResult",
+      "input_types": [
+        "MessagePostInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation research.questionRaise",
+      "kind": "mutation",
+      "path": "research.questionRaise",
+      "namespace": "research",
+      "signature": "questionRaise(input: QuestionRaiseInput!): TaskQuestionResult!",
+      "return_type": "TaskQuestionResult",
+      "input_types": [
+        "QuestionRaiseInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation research.questionResolve",
+      "kind": "mutation",
+      "path": "research.questionResolve",
+      "namespace": "research",
+      "signature": "questionResolve(input: QuestionResolveInput!): TaskQuestionResult!",
+      "return_type": "TaskQuestionResult",
+      "input_types": [
+        "QuestionResolveInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation research.sessionEnd",
+      "kind": "mutation",
+      "path": "research.sessionEnd",
+      "namespace": "research",
+      "signature": "sessionEnd(input: SessionEndInput!): ResearchSessionResult!",
+      "return_type": "ResearchSessionResult",
+      "input_types": [
+        "SessionEndInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation research.sessionStart",
+      "kind": "mutation",
+      "path": "research.sessionStart",
+      "namespace": "research",
+      "signature": "sessionStart(input: SessionStartInput!): ResearchSessionResult!",
+      "return_type": "ResearchSessionResult",
+      "input_types": [
+        "SessionStartInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation research.summaryCreate",
+      "kind": "mutation",
+      "path": "research.summaryCreate",
+      "namespace": "research",
+      "signature": "summaryCreate(input: SummaryCreateInput!): TaskSummaryResult!",
+      "return_type": "TaskSummaryResult",
+      "input_types": [
+        "SummaryCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation research.turnCancel",
+      "kind": "mutation",
+      "path": "research.turnCancel",
+      "namespace": "research",
+      "signature": "turnCancel(input: TurnCancelInput!): TurnCancelResult!",
+      "return_type": "TurnCancelResult",
+      "input_types": [
+        "TurnCancelInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation research.turnRequest",
+      "kind": "mutation",
+      "path": "research.turnRequest",
+      "namespace": "research",
+      "signature": "turnRequest(input: TurnRequestInput!): TurnRequestResult!",
+      "return_type": "TurnRequestResult",
+      "input_types": [
+        "TurnRequestInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation runs.describeStructure",
+      "kind": "mutation",
+      "path": "runs.describeStructure",
+      "namespace": "runs",
+      "signature": "describeStructure(input: DescribeStructureInput!): RunResult!",
+      "return_type": "RunResult",
+      "input_types": [
+        "DescribeStructureInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation runs.quickDescribeStructure",
+      "kind": "mutation",
+      "path": "runs.quickDescribeStructure",
+      "namespace": "runs",
+      "signature": "quickDescribeStructure(input: QuickDescribeStructureInput!): RunResult!",
+      "return_type": "RunResult",
+      "input_types": [
+        "QuickDescribeStructureInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation runs.request",
+      "kind": "mutation",
+      "path": "runs.request",
+      "namespace": "runs",
+      "signature": "request(input: RunRequestInput!): RunResult!",
+      "return_type": "RunResult",
+      "input_types": [
+        "RunRequestInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation runs.requestCancel",
+      "kind": "mutation",
+      "path": "runs.requestCancel",
+      "namespace": "runs",
+      "signature": "requestCancel(input: RunCancelInput!): RunResult!",
+      "return_type": "RunResult",
+      "input_types": [
+        "RunCancelInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation runs.requestFallback",
+      "kind": "mutation",
+      "path": "runs.requestFallback",
+      "namespace": "runs",
+      "signature": "requestFallback(input: RunFallbackInput!): FallbackResult!",
+      "return_type": "FallbackResult",
+      "input_types": [
+        "RunFallbackInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation taskClose",
+      "kind": "mutation",
+      "path": "taskClose",
+      "namespace": "root",
+      "signature": "taskClose(input: TaskCloseInput!): TaskResult!",
+      "return_type": "TaskResult",
+      "input_types": [
+        "TaskCloseInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation taskCreate",
+      "kind": "mutation",
+      "path": "taskCreate",
+      "namespace": "root",
+      "signature": "taskCreate(input: TaskCreateInput!): TaskCreateResult!",
+      "return_type": "TaskCreateResult",
+      "input_types": [
+        "TaskCreateInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation taskReopen",
+      "kind": "mutation",
+      "path": "taskReopen",
+      "namespace": "root",
+      "signature": "taskReopen(input: TaskReopenInput!): TaskResult!",
+      "return_type": "TaskResult",
+      "input_types": [
+        "TaskReopenInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "mutation taskTransition",
+      "kind": "mutation",
+      "path": "taskTransition",
+      "namespace": "root",
+      "signature": "taskTransition(input: TaskTransitionInput!): TaskResult!",
+      "return_type": "TaskResult",
+      "input_types": [
+        "TaskTransitionInput"
+      ],
+      "description": ""
+    },
+    {
+      "id": "query canManageInferenceProviders",
+      "kind": "query",
+      "path": "canManageInferenceProviders",
+      "namespace": "root",
+      "signature": "canManageInferenceProviders: Boolean!",
+      "return_type": "Boolean",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query claimLinks",
+      "kind": "query",
+      "path": "claimLinks",
+      "namespace": "root",
+      "signature": "claimLinks(claimId: ID!): [ClaimLink!]!",
+      "return_type": "ClaimLink",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query computeResources",
+      "kind": "query",
+      "path": "computeResources",
+      "namespace": "root",
+      "signature": "computeResources: JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query dataQualityReport",
+      "kind": "query",
+      "path": "dataQualityReport",
+      "namespace": "root",
+      "signature": "dataQualityReport(batchId: ID = null): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query datasetSnapshotDrift",
+      "kind": "query",
+      "path": "datasetSnapshotDrift",
+      "namespace": "root",
+      "signature": "datasetSnapshotDrift(snapshotId: ID!): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query datasetSnapshots",
+      "kind": "query",
+      "path": "datasetSnapshots",
+      "namespace": "root",
+      "signature": "datasetSnapshots(taskId: ID = null): [DatasetSnapshotInfo!]!",
+      "return_type": "DatasetSnapshotInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query engineCapabilities",
+      "kind": "query",
+      "path": "engineCapabilities",
+      "namespace": "root",
+      "signature": "engineCapabilities: ProfileCapabilities!",
+      "return_type": "ProfileCapabilities",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query evaluationRun",
+      "kind": "query",
+      "path": "evaluationRun",
+      "namespace": "root",
+      "signature": "evaluationRun(evaluationRunId: ID!): EvaluationRunInfo",
+      "return_type": "EvaluationRunInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query evaluationRuns",
+      "kind": "query",
+      "path": "evaluationRuns",
+      "namespace": "root",
+      "signature": "evaluationRuns(modelReleaseId: ID = null, evaluationSuiteId: ID = null): [EvaluationRunInfo!]!",
+      "return_type": "EvaluationRunInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query evaluationSuite",
+      "kind": "query",
+      "path": "evaluationSuite",
+      "namespace": "root",
+      "signature": "evaluationSuite(evaluationSuiteId: ID!): EvaluationSuiteInfo",
+      "return_type": "EvaluationSuiteInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query evaluationSuites",
+      "kind": "query",
+      "path": "evaluationSuites",
+      "namespace": "root",
+      "signature": "evaluationSuites(taskId: ID = null): [EvaluationSuiteInfo!]!",
+      "return_type": "EvaluationSuiteInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query evidenceClaims",
+      "kind": "query",
+      "path": "evidenceClaims",
+      "namespace": "root",
+      "signature": "evidenceClaims(kind: String = null, status: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): EvidenceClaimConnection!",
+      "return_type": "EvidenceClaimConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query exportReview",
+      "kind": "query",
+      "path": "exportReview",
+      "namespace": "root",
+      "signature": "exportReview(proposalId: ID!): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query formulationFamilies",
+      "kind": "query",
+      "path": "formulationFamilies",
+      "namespace": "root",
+      "signature": "formulationFamilies(search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): FormulationFamilyConnection!",
+      "return_type": "FormulationFamilyConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query formulationRevisions",
+      "kind": "query",
+      "path": "formulationRevisions",
+      "namespace": "root",
+      "signature": "formulationRevisions(familyId: ID = null, search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): FormulationRevisionConnection!",
+      "return_type": "FormulationRevisionConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query hardwareCapabilities",
+      "kind": "query",
+      "path": "hardwareCapabilities",
+      "namespace": "root",
+      "signature": "hardwareCapabilities: HardwareCapabilities!",
+      "return_type": "HardwareCapabilities",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query importBatches",
+      "kind": "query",
+      "path": "importBatches",
+      "namespace": "root",
+      "signature": "importBatches(first: Int = null, after: String = null, last: Int = null, before: String = null): ImportBatchConnection!",
+      "return_type": "ImportBatchConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query importRecords",
+      "kind": "query",
+      "path": "importRecords",
+      "namespace": "root",
+      "signature": "importRecords(batchId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ExtractedRecordConnection!",
+      "return_type": "ExtractedRecordConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query inferenceCredentialCleanupPending",
+      "kind": "query",
+      "path": "inferenceCredentialCleanupPending",
+      "namespace": "root",
+      "signature": "inferenceCredentialCleanupPending: Boolean!",
+      "return_type": "Boolean",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query inferenceProviders",
+      "kind": "query",
+      "path": "inferenceProviders",
+      "namespace": "root",
+      "signature": "inferenceProviders: [InferenceProvider!]!",
+      "return_type": "InferenceProvider",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query materialGrades",
+      "kind": "query",
+      "path": "materialGrades",
+      "namespace": "root",
+      "signature": "materialGrades(materialId: ID = null, search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): MaterialGradeConnection!",
+      "return_type": "MaterialGradeConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query materialIdentities",
+      "kind": "query",
+      "path": "materialIdentities",
+      "namespace": "root",
+      "signature": "materialIdentities(search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): MaterialIdentityConnection!",
+      "return_type": "MaterialIdentityConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query measurementContractCheck",
+      "kind": "query",
+      "path": "measurementContractCheck",
+      "namespace": "root",
+      "signature": "measurementContractCheck(measurementId: ID!, metric: JSON!): JSON!",
+      "return_type": "JSON",
+      "input_types": [
+        "JSON"
+      ],
+      "description": ""
+    },
+    {
+      "id": "query modelRelease",
+      "kind": "query",
+      "path": "modelRelease",
+      "namespace": "root",
+      "signature": "modelRelease(modelReleaseId: ID!): ModelReleaseInfo",
+      "return_type": "ModelReleaseInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query modelReleases",
+      "kind": "query",
+      "path": "modelReleases",
+      "namespace": "root",
+      "signature": "modelReleases(taskId: ID = null): [ModelReleaseInfo!]!",
+      "return_type": "ModelReleaseInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query node",
+      "kind": "query",
+      "path": "node",
+      "namespace": "root",
+      "signature": "node(\n  \"\"\"The ID of the object.\"\"\"\n  id: ID!\n): Node",
+      "return_type": "Node",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query nodes",
+      "kind": "query",
+      "path": "nodes",
+      "namespace": "root",
+      "signature": "nodes(ids: [ID!]!): [Node]!",
+      "return_type": "Node",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query planExecutions",
+      "kind": "query",
+      "path": "planExecutions",
+      "namespace": "root",
+      "signature": "planExecutions(planId: ID!): [LabExecution!]!",
+      "return_type": "LabExecution",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query privateAgent",
+      "kind": "query",
+      "path": "privateAgent",
+      "namespace": "root",
+      "signature": "privateAgent: PrivateAgentInfo!",
+      "return_type": "PrivateAgentInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query privateAgentRun",
+      "kind": "query",
+      "path": "privateAgentRun",
+      "namespace": "root",
+      "signature": "privateAgentRun(id: ID!): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query privateLearning",
+      "kind": "query",
+      "path": "privateLearning",
+      "namespace": "root",
+      "signature": "privateLearning: PrivateLearningInfo!",
+      "return_type": "PrivateLearningInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query privateLibrary",
+      "kind": "query",
+      "path": "privateLibrary",
+      "namespace": "root",
+      "signature": "privateLibrary: PrivateLibraryInfo!",
+      "return_type": "PrivateLibraryInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query processRevisions",
+      "kind": "query",
+      "path": "processRevisions",
+      "namespace": "root",
+      "signature": "processRevisions(familyId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ProcessRevisionConnection!",
+      "return_type": "ProcessRevisionConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query projectTasks",
+      "kind": "query",
+      "path": "projectTasks",
+      "namespace": "root",
+      "signature": "projectTasks(projectId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): TaskConnection!",
+      "return_type": "TaskConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query projects",
+      "kind": "query",
+      "path": "projects",
+      "namespace": "root",
+      "signature": "projects(first: Int = null, after: String = null, last: Int = null, before: String = null): ProjectConnection!",
+      "return_type": "ProjectConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query promotionDecision",
+      "kind": "query",
+      "path": "promotionDecision",
+      "namespace": "root",
+      "signature": "promotionDecision(modelReleaseId: ID!): PromotionDecisionInfo",
+      "return_type": "PromotionDecisionInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query referenceProductRevisions",
+      "kind": "query",
+      "path": "referenceProductRevisions",
+      "namespace": "root",
+      "signature": "referenceProductRevisions(productId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ReferenceRevisionConnection!",
+      "return_type": "ReferenceRevisionConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query referenceProducts",
+      "kind": "query",
+      "path": "referenceProducts",
+      "namespace": "root",
+      "signature": "referenceProducts(search: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): ReferenceProductConnection!",
+      "return_type": "ReferenceProductConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query replicationSummary",
+      "kind": "query",
+      "path": "replicationSummary",
+      "namespace": "root",
+      "signature": "replicationSummary(executionId: ID!): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query researchTask",
+      "kind": "query",
+      "path": "researchTask",
+      "namespace": "root",
+      "signature": "researchTask(id: ID!): Task",
+      "return_type": "Task",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query revocationImpact",
+      "kind": "query",
+      "path": "revocationImpact",
+      "namespace": "root",
+      "signature": "revocationImpact(artifactId: String!): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query runFallback",
+      "kind": "query",
+      "path": "runFallback",
+      "namespace": "root",
+      "signature": "runFallback(runId: ID!): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query servingPointer",
+      "kind": "query",
+      "path": "servingPointer",
+      "namespace": "root",
+      "signature": "servingPointer: ServingPointerInfo",
+      "return_type": "ServingPointerInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query sessionMessages",
+      "kind": "query",
+      "path": "sessionMessages",
+      "namespace": "root",
+      "signature": "sessionMessages(sessionId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): SessionMessageConnection!",
+      "return_type": "SessionMessageConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query sessionModelPins",
+      "kind": "query",
+      "path": "sessionModelPins",
+      "namespace": "root",
+      "signature": "sessionModelPins(taskId: ID = null): [SessionModelPinInfo!]!",
+      "return_type": "SessionModelPinInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query sourceRevocations",
+      "kind": "query",
+      "path": "sourceRevocations",
+      "namespace": "root",
+      "signature": "sourceRevocations(artifactId: String = null): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskCandidateRevisions",
+      "kind": "query",
+      "path": "taskCandidateRevisions",
+      "namespace": "root",
+      "signature": "taskCandidateRevisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): CandidateConnection!",
+      "return_type": "CandidateConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskCloseoutPacket",
+      "kind": "query",
+      "path": "taskCloseoutPacket",
+      "namespace": "root",
+      "signature": "taskCloseoutPacket(taskId: ID!, candidateRevisionId: ID = null): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskContractRevisions",
+      "kind": "query",
+      "path": "taskContractRevisions",
+      "namespace": "root",
+      "signature": "taskContractRevisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ContractConnection!",
+      "return_type": "ContractConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskDecisions",
+      "kind": "query",
+      "path": "taskDecisions",
+      "namespace": "root",
+      "signature": "taskDecisions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): DecisionConnection!",
+      "return_type": "DecisionConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskEvaluation",
+      "kind": "query",
+      "path": "taskEvaluation",
+      "namespace": "root",
+      "signature": "taskEvaluation(taskId: ID!, candidateRevisionId: ID = null): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskExecutions",
+      "kind": "query",
+      "path": "taskExecutions",
+      "namespace": "root",
+      "signature": "taskExecutions(taskId: ID!): [LabExecution!]!",
+      "return_type": "LabExecution",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskPlans",
+      "kind": "query",
+      "path": "taskPlans",
+      "namespace": "root",
+      "signature": "taskPlans(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ExperimentPlanConnection!",
+      "return_type": "ExperimentPlanConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskQuestions",
+      "kind": "query",
+      "path": "taskQuestions",
+      "namespace": "root",
+      "signature": "taskQuestions(taskId: ID!): [TaskQuestion!]!",
+      "return_type": "TaskQuestion",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskReassessmentStatus",
+      "kind": "query",
+      "path": "taskReassessmentStatus",
+      "namespace": "root",
+      "signature": "taskReassessmentStatus(taskId: ID!): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskReport",
+      "kind": "query",
+      "path": "taskReport",
+      "namespace": "root",
+      "signature": "taskReport(taskId: ID!): JSON!",
+      "return_type": "JSON",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskRuns",
+      "kind": "query",
+      "path": "taskRuns",
+      "namespace": "root",
+      "signature": "taskRuns(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): RunConnection!",
+      "return_type": "RunConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskSessions",
+      "kind": "query",
+      "path": "taskSessions",
+      "namespace": "root",
+      "signature": "taskSessions(taskId: ID!, first: Int = null, after: String = null, last: Int = null, before: String = null): ResearchSessionConnection!",
+      "return_type": "ResearchSessionConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query taskSummaries",
+      "kind": "query",
+      "path": "taskSummaries",
+      "namespace": "root",
+      "signature": "taskSummaries(taskId: ID!): [TaskSummary!]!",
+      "return_type": "TaskSummary",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query tasks",
+      "kind": "query",
+      "path": "tasks",
+      "namespace": "root",
+      "signature": "tasks(workflowState: String = null, first: Int = null, after: String = null, last: Int = null, before: String = null): TaskConnection!",
+      "return_type": "TaskConnection",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query trainingRun",
+      "kind": "query",
+      "path": "trainingRun",
+      "namespace": "root",
+      "signature": "trainingRun(trainingRunId: ID!): TrainingRunInfo",
+      "return_type": "TrainingRunInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query trainingRuns",
+      "kind": "query",
+      "path": "trainingRuns",
+      "namespace": "root",
+      "signature": "trainingRuns(taskId: ID = null): [TrainingRunInfo!]!",
+      "return_type": "TrainingRunInfo",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query viewer",
+      "kind": "query",
+      "path": "viewer",
+      "namespace": "root",
+      "signature": "viewer: User!",
+      "return_type": "User",
+      "input_types": [],
+      "description": ""
+    },
+    {
+      "id": "query workspace",
+      "kind": "query",
+      "path": "workspace",
+      "namespace": "root",
+      "signature": "workspace: Workspace!",
+      "return_type": "Workspace",
+      "input_types": [],
+      "description": ""
+    }
+  ],
+  "environment": [
+    {
+      "id": "CARGO_BUILD_JOBS",
+      "sources": [
+        "infra/local/desktop.sh"
+      ]
+    },
+    {
+      "id": "CARGO_TARGET_DIR",
+      "sources": [
+        "infra/local/desktop.sh",
+        "tests/desktop/smoke.mjs"
+      ]
+    },
+    {
+      "id": "PNPM",
+      "sources": [
+        "Makefile"
+      ]
+    },
+    {
+      "id": "STUDIO_ALLOWED_ORIGINS",
+      "sources": [
+        "apps/studio-web/src-tauri/src/runtime.rs",
+        "services/studio-api/src/studio/config/settings.py",
+        "tests/desktop/smoke.mjs",
+        "tests/e2e/serve.sh",
+        "tests/performance/test_cs1103_benchmark.py"
+      ]
+    },
+    {
+      "id": "STUDIO_ARTIFACT_MAX_BYTES",
+      "sources": [
+        "services/studio-api/src/studio/config/settings.py"
+      ]
+    },
+    {
+      "id": "STUDIO_BIND_HOST",
+      "sources": [
+        "services/studio-api/src/studio/config/settings.py"
+      ]
+    },
+    {
+      "id": "STUDIO_BROWSER_EXECUTABLE_PATH",
+      "sources": [
+        "tests/e2e/playwright.config.ts",
+        "tests/native-ui/playwright.config.ts"
+      ]
+    },
+    {
+      "id": "STUDIO_CHEMPROP_PYTHON",
+      "sources": [
+        "services/studio-api/src/studio/domain/learning/workspace.py"
+      ]
+    },
+    {
+      "id": "STUDIO_DATABASE_URL",
+      "sources": [
+        "services/studio-api/migrations/env.py",
+        "services/studio-api/src/studio/config/settings.py",
+        "services/studio-api/tests/conftest.py",
+        "services/studio-api/tests/integration/test_inference_style_migration.py",
+        "tests/e2e/serve.sh",
+        "tests/integration/migrations/conftest.py",
+        "tests/integration/recovery/backup_restore_check.py",
+        "tests/integration/recovery/no_egress_check.py",
+        "tests/performance/conftest.py",
+        "tests/performance/test_cs1103_benchmark.py"
+      ]
+    },
+    {
+      "id": "STUDIO_DESKTOP_BUILD_ID",
+      "sources": [
+        "apps/studio-web/src-tauri/src/runtime.rs",
+        "services/studio-api/src/studio/config/settings.py",
+        "tests/desktop/smoke.mjs"
+      ]
+    },
+    {
+      "id": "STUDIO_DESKTOP_FRONTEND_DIR",
+      "sources": [
+        "apps/studio-web/src-tauri/src/runtime.rs",
+        "infra/local/background.sh",
+        "services/studio-api/src/studio/api/desktop.py",
+        "services/studio-api/src/studio/config/settings.py",
+        "services/studio-api/tests/unit/test_desktop_web.py",
+        "tests/desktop/smoke.mjs"
+      ]
+    },
+    {
+      "id": "STUDIO_ELN_API_TOKEN",
+      "sources": [
+        "packages/engine-adapters/elabftw/engine_adapter_elabftw/contracts.py",
+        "services/studio-api/tests/security/test_eln_bridge_security.py",
+        "services/studio-api/tests/unit/test_eln_bridge.py"
+      ]
+    },
+    {
+      "id": "STUDIO_ELN_BASE_URL",
+      "sources": [
+        "packages/engine-adapters/elabftw/engine_adapter_elabftw/contracts.py",
+        "services/studio-api/tests/security/test_eln_bridge_security.py",
+        "services/studio-api/tests/unit/test_eln_bridge.py"
+      ]
+    },
+    {
+      "id": "STUDIO_ELN_ENABLED",
+      "sources": [
+        "packages/engine-adapters/elabftw/engine_adapter_elabftw/adapter.py",
+        "packages/engine-adapters/elabftw/engine_adapter_elabftw/contracts.py",
+        "services/studio-api/tests/security/test_eln_bridge_security.py",
+        "services/studio-api/tests/unit/test_eln_bridge.py"
+      ]
+    },
+    {
+      "id": "STUDIO_ELN_TIMEOUT_SECONDS",
+      "sources": [
+        "packages/engine-adapters/elabftw/engine_adapter_elabftw/contracts.py",
+        "services/studio-api/tests/security/test_eln_bridge_security.py"
+      ]
+    },
+    {
+      "id": "STUDIO_ELN_VERIFY_TLS",
+      "sources": [
+        "packages/engine-adapters/elabftw/engine_adapter_elabftw/contracts.py"
+      ]
+    },
+    {
+      "id": "STUDIO_EVENT_MAX_SECONDS",
+      "sources": [
+        "services/studio-api/src/studio/api/events/routes.py",
+        "tests/e2e/par-08a.spec.ts",
+        "tests/e2e/serve.sh",
+        "tests/performance/test_cs1103_benchmark.py"
+      ]
+    },
+    {
+      "id": "STUDIO_LAMMPS_EXEC",
+      "sources": [
+        "services/studio-api/src/studio/domain/simulations/dispatcher.py",
+        "services/studio-api/tests/unit/test_simulations.py",
+        "workers/simulation/radonpy_worker.py"
+      ]
+    },
+    {
+      "id": "STUDIO_MLX_PYTHON",
+      "sources": [
+        "services/studio-api/src/studio/domain/learning/workspace.py"
+      ]
+    },
+    {
+      "id": "STUDIO_OPENALEX_API_KEY",
+      "sources": [
+        "services/studio-api/src/studio/domain/library/research.py"
+      ]
+    },
+    {
+      "id": "STUDIO_PGTOOL_CONTAINER",
+      "sources": [
+        "infra/local/backup.py",
+        "tests/integration/migrations/conftest.py"
+      ]
+    },
+    {
+      "id": "STUDIO_PORT",
+      "sources": [
+        "apps/studio-web/src-tauri/src/runtime.rs",
+        "services/studio-api/src/studio/config/settings.py",
+        "tests/desktop/smoke.mjs"
+      ]
+    },
+    {
+      "id": "STUDIO_PROFILE_DESIGN",
+      "sources": [
+        "services/studio-api/src/studio/config/settings.py",
+        "services/studio-api/src/studio/domain/chemistry/design.py"
+      ]
+    },
+    {
+      "id": "STUDIO_PROFILE_LOCAL_AI",
+      "sources": [
+        "services/studio-api/src/studio/api/capabilities.py",
+        "services/studio-api/src/studio/config/settings.py"
+      ]
+    },
+    {
+      "id": "STUDIO_PROFILE_MATERIALS",
+      "sources": [
+        "services/studio-api/src/studio/config/settings.py",
+        "services/studio-api/src/studio/domain/chemistry/materials.py"
+      ]
+    },
+    {
+      "id": "STUDIO_PROFILE_OPTIMIZATION",
+      "sources": [
+        "services/studio-api/src/studio/config/settings.py"
+      ]
+    },
+    {
+      "id": "STUDIO_PROFILE_QUANTUM",
+      "sources": [
+        "services/studio-api/src/studio/config/settings.py",
+        "services/studio-api/src/studio/domain/chemistry/quantum.py"
+      ]
+    },
+    {
+      "id": "STUDIO_PROFILE_SYNTHESIS",
+      "sources": [
+        "services/studio-api/src/studio/config/settings.py",
+        "services/studio-api/src/studio/domain/chemistry/synthesis.py"
+      ]
+    },
+    {
+      "id": "STUDIO_PROFILE_TRAINING",
+      "sources": [
+        "services/studio-api/src/studio/config/settings.py",
+        "services/studio-api/src/studio/domain/learning/rl.py",
+        "services/studio-api/src/studio/domain/learning/sft.py"
+      ]
+    },
+    {
+      "id": "STUDIO_REINVENT_PYTHON",
+      "sources": [
+        "services/studio-api/src/studio/domain/learning/workspace.py"
+      ]
+    },
+    {
+      "id": "STUDIO_RESEARCH_DOWNLOADS_ROOT",
+      "sources": [
+        "services/studio-api/src/studio/domain/library/service.py",
+        "services/studio-api/tests/integration/test_private_library.py",
+        "services/studio-api/tests/integration/test_research_workflows.py",
+        "services/studio-api/tests/integration/test_retained_artifact_archive.py",
+        "services/studio-api/tests/unit/test_agent_dataset_origin.py",
+        "services/studio-api/tests/unit/test_private_library.py",
+        "tests/e2e/serve.sh"
+      ]
+    },
+    {
+      "id": "STUDIO_SEARXNG_URL",
+      "sources": [
+        "infra/local/background.sh",
+        "services/studio-api/src/studio/domain/library/research.py",
+        "services/studio-api/tests/unit/test_library_research.py"
+      ]
+    },
+    {
+      "id": "STUDIO_SESSION_TTL_SECONDS",
+      "sources": [
+        "services/studio-api/src/studio/config/settings.py"
+      ]
+    },
+    {
+      "id": "STUDIO_SIMULATION_PYTHON",
+      "sources": [
+        "services/studio-api/src/studio/domain/simulations/service.py"
+      ]
+    },
+    {
+      "id": "STUDIO_SIMULATION_REAL_TEST",
+      "sources": [
+        "services/studio-api/tests/integration/test_simulations.py"
+      ]
+    },
+    {
+      "id": "STUDIO_TRAINING_PYTHON",
+      "sources": [
+        "services/studio-api/src/studio/domain/learning/workspace.py"
+      ]
+    },
+    {
+      "id": "STUDIO_TRANSFORMERS_PYTHON",
+      "sources": [
+        "services/studio-api/src/studio/domain/learning/workspace.py"
+      ]
+    },
+    {
+      "id": "STUDIO_VAULT_ROOT",
+      "sources": [
+        "apps/studio-web/src-tauri/src/runtime.rs",
+        "apps/studio-web/src/features/help/HelpPage.test.tsx",
+        "infra/local/background.sh",
+        "infra/local/dev.sh",
+        "infra/local/pilot_gate.py",
+        "services/studio-api/src/studio/config/settings.py",
+        "services/studio-api/tests/unit/test_studio_docs.py",
+        "tests/desktop/smoke.mjs",
+        "tests/e2e/help.spec.ts",
+        "tests/e2e/serve.sh",
+        "tests/performance/test_cs1103_benchmark.py"
+      ]
+    },
+    {
+      "id": "STUDIO_WORKER_TOKEN",
+      "sources": [
+        "workers/training/workspace_worker.py"
+      ]
+    },
+    {
+      "id": "UV",
+      "sources": [
+        "Makefile"
+      ]
+    },
+    {
+      "id": "UV_CACHE_DIR",
+      "sources": [
+        "infra/local/dev.sh"
+      ]
+    },
+    {
+      "id": "UV_PYTHON_INSTALL_DIR",
+      "sources": [
+        "infra/local/dev.sh"
+      ]
+    },
+    {
+      "id": "VITE_API_TARGET",
+      "sources": [
+        "apps/studio-web/vite.config.ts"
+      ]
+    }
+  ],
+  "types": [
+    {
+      "name": "ActualsRecordInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "AnalyticalCompareInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "AnalyticalComparisonInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "AnalyticalIngestInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "AnalyticalMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "AnalyticalResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "AnalyticalSeriesInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ApplicabilityMapResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "BatchAddInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "BatchResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "Boolean",
+      "kind": "built_in_scalar"
+    },
+    {
+      "name": "CandidateConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "CandidateCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "CandidateEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "CandidatePatchProposeInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "CandidatePatchResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "CandidatePatchReviewInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "CandidateReviewInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "CandidateRevision",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "CandidateRevisionResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "CandidateSubmitInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "CandidatesMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "CapabilityStatus",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ClaimCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ClaimLink",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ClaimLinkInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ClaimLinkResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ClaimReviewInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ContextManifest",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ContractConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ContractDraftCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ContractEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ContractFreezeInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ContractRevision",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ContractRevisionResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "DatasetPrepareResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "DatasetSnapshotBuildInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "DatasetSnapshotIdInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "DatasetSnapshotInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "DatasetSnapshotResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "DateTime",
+      "kind": "scalar_type_definition"
+    },
+    {
+      "name": "Decision",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "DecisionConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "DecisionEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "DescribeStructureInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "DomainErrorPayload",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "EvaluationRunInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "EvaluationRunResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "EvaluationRunStartInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "EvaluationSuiteCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "EvaluationSuiteIdInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "EvaluationSuiteInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "EvaluationSuiteLabelsInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "EvaluationSuiteResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "EvidenceClaim",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "EvidenceClaimConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "EvidenceClaimEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "EvidenceClaimResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "EvidenceMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExecutionCloseInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ExecutionHistoricalInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ExecutionOpenInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ExecutionResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExperimentPlan",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExperimentPlanConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExperimentPlanEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExportDecideInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ExportPrepareInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ExportReviewResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExportSetClassificationInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ExportsMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExtractedRecord",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExtractedRecordConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExtractedRecordEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ExtractedRecordResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "FallbackResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "Float",
+      "kind": "built_in_scalar"
+    },
+    {
+      "name": "FormulationFamily",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "FormulationFamilyConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "FormulationFamilyCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "FormulationFamilyEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "FormulationFamilyResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "FormulationRevision",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "FormulationRevisionConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "FormulationRevisionDraftInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "FormulationRevisionEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "FormulationRevisionIdInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "FormulationRevisionResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "FormulationsMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "HardwareCapabilities",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ID",
+      "kind": "built_in_scalar"
+    },
+    {
+      "name": "ImportArtifactInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ImportBatch",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ImportBatchConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ImportBatchEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ImportBatchResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ImportsMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "InferenceCredentialCleanupResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "InferenceProvider",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "InferenceProviderDeleteInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "InferenceProviderDeleteResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "InferenceProviderResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "InferenceProviderSaveInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "InferenceProviderTestInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "InferenceProviderTestResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "Int",
+      "kind": "built_in_scalar"
+    },
+    {
+      "name": "JSON",
+      "kind": "scalar_type_definition"
+    },
+    {
+      "name": "LabBatch",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "LabExecution",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "LabMeasurementsMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "LabMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "LabSample",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "LearningMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MaterialGrade",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MaterialGradeConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MaterialGradeCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MaterialGradeEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MaterialGradeReconcileInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MaterialGradeResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MaterialIdentity",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MaterialIdentityConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MaterialIdentityCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MaterialIdentityEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MaterialIdentityResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MaterialMatchProposeInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MaterialMatchReviewInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MaterialStructureReviewInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MaterialsMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "Measurement",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MeasurementAmendInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MeasurementApplicabilityInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MeasurementApplicabilityMapInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MeasurementRecordInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MeasurementResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "MeasurementReviewInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "MessagePostInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ModelReleaseApproveInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ModelReleaseConvertInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ModelReleaseIdInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ModelReleaseInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ModelReleaseRegisterInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ModelReleaseResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ModelReleaseRollbackInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "Node",
+      "kind": "interface_type_definition"
+    },
+    {
+      "name": "OptimizationCampaignInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "OptimizationCommandInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "OptimizationCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "OptimizationMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "OptimizationOperation",
+      "kind": "enum_type_definition"
+    },
+    {
+      "name": "OptimizationResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PacketResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PageInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PlanCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "PlanIdInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "PlanResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PlanReviewInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "PlanUpdateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "PrivateAgentInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PrivateLearningInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PrivateLibraryInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PrivateNotebookInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PrivatePageInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ProcessRevision",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ProcessRevisionConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ProcessRevisionDraftInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ProcessRevisionEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ProcessRevisionIdInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ProcessRevisionResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ProfileCapabilities",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "Project",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ProjectConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ProjectCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ProjectEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ProjectResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PromoteRecordInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "PromotionApproveInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "PromotionDecideInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "PromotionDecisionInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PromotionDecisionResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "PromotionPromoteInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ProviderMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "QuestionRaiseInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "QuestionResolveInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "QuickDescribeStructureInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ReferenceProduct",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ReferenceProductConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ReferenceProductCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ReferenceProductEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ReferenceProductResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ReferenceProductRevision",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ReferenceRevisionConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ReferenceRevisionDraftInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ReferenceRevisionEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ReferenceRevisionFreezeInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "ReferenceRevisionResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ResearchMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ResearchSession",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ResearchSessionConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ResearchSessionEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ResearchSessionResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ReviewRecordInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "Run",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "RunAttempt",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "RunCancelInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "RunConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "RunEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "RunFallbackInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "RunRequestInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "RunResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "RunsMutation",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "SampleAddInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "SampleResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "ServingPointerInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "SessionBindResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "SessionEndInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "SessionMessage",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "SessionMessageConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "SessionMessageEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "SessionMessageResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "SessionModelBindInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "SessionModelPinInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "SessionStartInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "SourceRevokeInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "SourceRevokeResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "String",
+      "kind": "built_in_scalar"
+    },
+    {
+      "name": "SummaryCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "Task",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TaskCloseInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TaskConnection",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TaskCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TaskCreateResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TaskEdge",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TaskQuestion",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TaskQuestionResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TaskReopenInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TaskResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TaskSummary",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TaskSummaryResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TaskTransitionInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TrainingRunApproveInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TrainingRunCreateInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TrainingRunExecuteInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TrainingRunIdInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TrainingRunInfo",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TrainingRunResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TrainingRunTransitionInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TurnCancelInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TurnCancelResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "TurnRequestInput",
+      "kind": "input_object_type_definition"
+    },
+    {
+      "name": "TurnRequestResult",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "User",
+      "kind": "object_type_definition"
+    },
+    {
+      "name": "Workspace",
+      "kind": "object_type_definition"
+    }
+  ]
+}

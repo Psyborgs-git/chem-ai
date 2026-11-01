@@ -59,6 +59,15 @@ seed-demo: ## Load SYNTHETIC demo data (labels visible, non-scientific)
 
 ## ---------- checks ----------
 
+.PHONY: docs-generate docs-check
+docs-generate: ## Regenerate offline API/configuration reference Markdown
+	$(UV) run --no-sync python infra/ci/export_help_reference.py
+
+docs-check: ## Check reference coverage, article links, and help content boundaries
+	$(UV) run --no-sync python infra/ci/export_help_reference.py --check
+	$(UV) run --no-sync --group dev pytest tests/unit/test_help_reference.py
+	$(PNPM) docs:check
+
 .PHONY: lint
 lint: ## ruff lint
 	$(UV) run --group dev ruff check .
@@ -72,7 +81,7 @@ typecheck: ## mypy strict + tsc
 contracts-check: ## Validate handoff pack + fixture/schema conformance
 	cd $(PACK) && ../../.venv/bin/python scripts/validate_pack.py \
 	  --report planning/pack-validation-report.json
-	$(PYTEST) tests/unit/test_contracts.py tests/unit/test_design_map.py -q
+	$(PYTEST) tests/unit/test_contracts.py tests/unit/test_design_map.py tests/unit/test_relay_boundaries.py -q
 	$(UV) run python infra/ci/export_schema.py --check
 	$(UV) run python infra/ci/check_relay_boundaries.py
 	$(UV) run python packages/contracts/sync_contracts.py --check

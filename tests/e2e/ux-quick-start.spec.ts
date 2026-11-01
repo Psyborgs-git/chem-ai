@@ -20,8 +20,12 @@ test("Home calculates CCO once, shows its actual drawing, and reloads the saved 
     if (isOperation(request, "homeQuickCalculationMutation")) submissions += 1;
   });
   await page.goto("/");
+  const explore = page.getByRole("button", { name: "Explore molecule", exact: true });
+  await explore.click();
+  await expect(explore).toHaveAttribute("aria-expanded", "true");
   const form = page.getByRole("form", { name: "Quick molecular calculation" });
   await expect(form).toBeVisible();
+  await expect(form.getByLabel("Molecular structure", { exact: true })).toBeFocused();
   await expect(form.locator("[required]")).toHaveCount(1);
   await form.getByLabel("Molecular structure", { exact: true }).fill("CCO");
   const responsePromise = page.waitForResponse((response) => isOperation(response.request(), "homeQuickCalculationMutation"), { timeout: 70_000 });
@@ -78,11 +82,13 @@ test("Home starts Explore research with a title and activates it from the header
   const token = await signIn(context);
   const title = "UX explore molecule interactions";
   await page.goto("/");
-  await page.getByRole("link", { name: /Start research/ }).click();
+  await page.getByRole("link", { name: /^(New research task|Start a research task)$/ }).click();
   const sheet = page.getByRole("dialog", { name: "Start a research task", exact: true });
   await expect(sheet).toBeVisible();
   await expect(sheet.getByRole("radio", { name: "Explore", exact: true })).toBeChecked();
-  await expect(sheet.getByRole("combobox", { name: "What are you exploring?" })).toHaveValue("molecule");
+  const targetKind = sheet.getByRole("combobox", { name: "What are you exploring?" });
+  await expect(targetKind).toHaveValue("molecule");
+  await expect(targetKind.locator("option:checked")).toHaveText("A molecule");
   await expect(sheet.locator("[required]")).toHaveCount(1);
   await sheet.getByLabel("task title", { exact: true }).fill(title);
   const responsePromise = page.waitForResponse((response) => isOperation(response.request(), "tasksTaskCreateMutation"));

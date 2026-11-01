@@ -22,7 +22,7 @@ from typing import Any
 import pytest
 from chem_studio_policy.capabilities import capabilities_for_role
 from sqlalchemy.orm import Session
-from workers.inference import LlamaCppRuntime
+from workers.inference import LlamaCppRuntime, TurnBudget
 
 from studio.application.agent_tools import AgentTurnRunner, ToolDispatcher
 from studio.auth.context import ServiceContext, load_context
@@ -709,7 +709,11 @@ def test_native_tools_discover_context_then_read_and_validate_actual_candidates(
         [discover_task, after_discovery, after_first, after_second, after_verification]
     ) as provider:
         runtime, config, _store = configured_runtime(provider, ctx.workspace_id)
-        outcome = AgentTurnRunner(session, ctx, runtime=runtime).run_turn(
+        # Five generations carry the expanded docs/tool catalog each time.
+        # This fixture tests protocol sequencing; budget enforcement has dedicated cases below.
+        outcome = AgentTurnRunner(
+            session, ctx, runtime=runtime, budget=TurnBudget(max_total_tokens=16_384)
+        ).run_turn(
             research.id,
             "Inspect the current task and its candidates, then check what can be validated.",
         )

@@ -1,184 +1,114 @@
-# Recovery — upgrades, interruption, restore, retention (CS-1102)
+# Recovery and upgrades
 
-Operational contract for schema upgrades, resumable backfills, and
-fresh-machine restore for the local/core profile. Everything below is
-backed by executed runs (see `docs/execution/tickets/CS-1102.md`);
-verify against *your* environment before relying on it operationally.
-See `backup-restore.md` (CS-0505) for the per-command backup runbook.
+Recovery combines a compatible database, the correct full vault tree, optional
+external model files, credentials, and runtime dependencies. A healthy HTTP
+process alone is not a recovered Studio. Start with [backup and restore](backup-restore.md)
+and the [state inventory](configuration.md).
 
-## 1. Upgrade posture (§26.2)
+## Upgrade an existing installation
 
-The alembic chain uses **expand → migrate → contract** ordering for
-populated installs. `migrations/env.py` wraps each `upgrade` run in a
-single transaction (`context.begin_transaction()`), so a killed or
-failed upgrade rolls back atomically — there is no half-migrated
-schema to repair.
+1. Record the currently running revision and make a verified, quiesced backup.
+2. Read changes to dependencies, migrations, profiles, and native packaging.
+3. Stop foreground/native/background API processes and external writers.
+4. Install the new revision's locked Python and pnpm dependencies, retaining
+   required extras or recreating optional isolated environments.
+5. Run migration against the intended database, then rebuild the frontend or
+   native app and restart the backend with its existing vault configuration.
+6. Check sign-in, representative saved records/files, and any enabled optional
+   runtime before resuming recurring or expensive work.
 
-Verified behaviour (AT-1102-1, AT-1102-2 — real runs, testcontainers
-`postgres:16.10-alpine`):
-
-- Populated `0012_evidence_revocation` → `head` upgrade preserves every
-  pre-existing row byte-for-byte on its projected columns: contract
-  `content_hash` values still hash-verify, approval `bound_digest`s are
-  intact, artifact checksums still match vault bytes, all FK lineage
-  resolves, and capability grants (including revoked ones, which stay
-  *denied*) authorize identically via `load_context`.
-- Post-upgrade schema deltas land cleanly on populated tables:
-  `outbox_events.seq` is backfilled unique non-null on existing rows
-  (0016), `uq_approvals_scope_id` is created (0017), and the three
-  immutability triggers `optimization_definition_immutable`,
-  `analytical_series_immutable`, `analytical_comparison_immutable`
-  exist (0021/0022).
-- `SIGKILL` of an `alembic upgrade head` process mid-chain leaves
-  `alembic_version = 0012_evidence_revocation`, zero post-base objects
-  (e.g. no `runs` table), and zero modified seeded rows. Re-running the
-  upgrade to `head` then succeeds — resume is **restart**, not
-  continuation.
-
-### Rollback
-
-Do **not** run `alembic downgrade` on a populated install. Downgrade
-drops columns and constraint coverage added post-release and can
-silently orphan data. Rollback = deploy the previous application
-version against the current schema where the expand-phase schema is
-still compatible, or restore the latest backup. Destructive downgrade
-is never the recovery plan (§26.2).
-
-## 2. Interrupted migrations and backfills
-
-Two interruption modes, both exercised against real processes:
-
-- **Migration kill** — atomic rollback (above). Safe to re-run; never
-  partial.
-- **Backfill kill** — backfills run as *checkpointed idempotent jobs*
-  (`infra/local/resumable_backfill.py`), not inside the migration.
-  Each batch commits its emitted digests **and** the checkpoint
-  (`ops_backfill_checkpoints.last_key`) in one transaction; a kill
-  mid-batch rolls the whole batch back, a kill between batches leaves
-  a durable checkpoint. Resume re-reads `id > last_key` and emits with
-  `INSERT … ON CONFLICT DO NOTHING` — a re-run can only produce
-  missing→present, never duplicate or rewritten digest rows.
-
-```bash
-uv run python infra/local/resumable_backfill.py run \
-  --dsn postgresql://studio:studio@127.0.0.1:54329/studio \
-  [--batch-size 500] [--max-batches N] [--sleep-ms MS]
-uv run python infra/local/resumable_backfill.py status --dsn DSN
-uv run python infra/local/resumable_backfill.py verify --dsn DSN
+```sh
+uv sync --python 3.12 --group dev --frozen
+pnpm install --frozen-lockfile
+make migrate
+pnpm build:web
 ```
 
-`verify` recomputes every source row's canonical digest and compares
-it to the emitted digest — a source row changed since emit is reported
-as `drift: claim <id>` (exit 1), a deleted source as `orphan digest`,
-a never-emitted one as `missing digest`. Digests are append-only: the
-runner never `UPDATE`s `ops_record_digests`.
+Include `--extra engines` or other required extras in the `uv sync` command when
+that installation uses them. A normal web build does not update an installed
+native bundle; use [desktop rebuild](desktop-macos.md).
 
-## 3. Fresh-machine restore (§21.6)
+Migrations are defined under `services/studio-api/migrations`. Use `upgrade head`
+rather than copying a historical revision number. Inspect migration compatibility
+for the versions involved; old ticket evidence is not proof of an arbitrary
+future rollback path.
 
-A restore is only "ready" when it validates *as a system*, not when
-postgres accepts connections. Sequence:
+## Interrupted migration
 
-```bash
-# 1. back up (db.dump + vault tree + manifest.json)
-uv run python infra/local/backup.py backup --dsn DSN \
-  --vault VAULT_DIR --out BACKUP_DIR
+The migration environment wraps PostgreSQL upgrades in a transaction. If a
+process fails or is killed, inspect its exit/log and current Alembic revision,
+resolve the underlying problem, and rerun `make migrate`. Do not manually mark a
+failed migration applied or delete tables to make startup pass.
 
-# 2. verify manifest checksums without restoring
-uv run python infra/local/backup.py verify --backup BACKUP_DIR
-
-# 3. restore into a CLEAN database + CLEAN vault dir
-uv run python infra/local/backup.py restore --backup BACKUP_DIR \
-  --dsn NEW_DSN --vault NEW_VAULT_DIR
-
-# 4. integrity validation — enumerates every missing/broken item
-uv run python infra/local/recovery_check.py \
-  --dsn NEW_DSN --vault NEW_VAULT_DIR [--json]
+```sh
+uv run alembic -c services/studio-api/migrations/alembic.ini current
+uv run alembic -c services/studio-api/migrations/alembic.ini heads
+make migrate
 ```
 
-`recovery_check.py` runs twelve checks (all must pass, or the exact
-missing items are listed with their ids, exit 1):
+Do not run `alembic downgrade` on populated research data as a recovery shortcut.
+Prefer a verified compatible application revision against the expanded schema,
+a forward fix, or a restore to clean destinations from a matching backup.
 
-| check | fails when |
+## Resumable maintenance backfills
+
+`infra/local/resumable_backfill.py` runs an explicit checkpointed, append-only
+record-digest backfill. This is a maintenance tool, not a universal job-recovery
+command. Use the intended DSN and inspect status first:
+
+```sh
+uv run python infra/local/resumable_backfill.py status   --dsn postgresql://studio:studio@127.0.0.1:54329/studio
+uv run python infra/local/resumable_backfill.py run   --dsn postgresql://studio:studio@127.0.0.1:54329/studio --batch-size 500
+uv run python infra/local/resumable_backfill.py verify   --dsn postgresql://studio:studio@127.0.0.1:54329/studio
+```
+
+Each batch commits emitted digests and its checkpoint together. Restarting emits
+missing records idempotently. Verification reports missing digests, drift, or
+orphan digests; do not overwrite historical digests to hide a mismatch.
+
+## Recover interrupted research and compute
+
+| Work | Recovery behavior |
 |---|---|
-| `alembic_head` | restored schema version ≠ expected head |
-| `required_tables` | a required table is absent (incl. CS-0802 serving/`export_proposals`, and CS-1003 export-broker tables when the head carries them) |
-| `artifact_blobs` | a committed artifact's vault blob is missing or its sha256 ≠ `checksum_sha256` |
-| `derived_lineage` | a `derived` artifact references a `source_artifact_ids` entry absent from `artifacts` |
-| `serving_chain` | a `serving_pointers.release_id` has no release, the release is not servable (`validated`/`promoted`/`superseded`), its adapter/training_run is missing, or a `session_model_pins` row references a missing session/release |
-| `training_lineage` | a `training_runs` row's dataset/config/adapter/result artifact is missing |
-| `scopes` | a capability grant's principal (or a principal's workspace) is absent |
-| `key_material` | no `credential_hash` exists at all, or an `auth_sessions.token_hash` is malformed |
-| `approvals` | an approval `bound_digest` is absent/malformed |
-| `export_proposals` | a proposal's run or feasibility report is missing, or its `bound_digest` malformed |
-| `evidence_refs` | a claim's `source_batch_id`/`source_record_id` or a chunk's `artifact_id` is absent |
-| `revocation_tombstones` | a `source_revocations` row's artifact is absent |
-| `export_broker` | (when present) `export_jobs.proposal_id` / `export_receipts.job_id` dangling |
+| Private agent run | Durable step checkpoints and worker leases recover after backend restart; inspect persisted state and events before resending. |
+| Recurring private research | Requires enabled owner autopilot, limits, and a running backend; disabling autopilot prevents further scheduling. |
+| Private local learning | Expired leases leave interrupted work; use the job's resume action. Transformers resumes optimizer checkpoints; MLX resumes adapters as a warm start. |
+| Remote learning worker | Lease/heartbeat expiry records interruption. Restore worker model mappings and uploaded checkpoint availability before resuming. |
+| Polymer simulation | Resume completed stage/seed checkpoints within the original cumulative wall-clock cap; an interrupted stage reruns. |
+| Older generic task run | Caller-driven reconciliation remains separate from the private agent/learning/simulation supervisors. Inspect that run's cancellation/reconciliation state. |
 
-Executed on the seeded populated fixture (60 seeded objects, 6 vault
-blobs, 64 restored tables):
+Cancelling an agent run stops further agent steps. A separately created learning
+or simulation job has its own lifecycle and cancellation control. Preserve
+completed outputs and check the corresponding job rather than assuming the
+conversation cancellation terminated every child activity.
 
-```text
-backup ok: …/backup (alembic=0026_feasibility_fallback, db=220167B, vault_files=6)
-verify ok: …/backup (6 vault files)
-restore ok: db=… alembic=0026_feasibility_fallback vault_files=6 -> …/vault-dst
-  PASS alembic_head (0026_feasibility_fallback)
-  … (12 checks) …
-recovery_check: ok (0 missing)
-```
+## Restore validation
 
-And sabotage is enumerated exactly — deleting one blob, dropping
-`session_model_pins`, corrupting an approval digest yields
-`recovery_check: FAILED (3 missing)` listing each item with its id.
+Restore into clean destinations as described in [backup and restore](backup-restore.md).
+Use the application's matching revision to validate a snapshot before upgrading
+it. `infra/local/recovery_check.py` compares the schema head to the checked-out
+application by default; `--expect-alembic` selects an explicitly expected revision.
 
-> `pg_dump`/`pg_restore` must not be older than the server. The tools
-> prefer host binaries only when `client_major >= server_major`;
-> otherwise they fall back to `docker exec` into the postgres container
-> (compose: `chem-studio-postgres`; override with
-> `STUDIO_PGTOOL_CONTAINER`). On this box the host clients are 14.x
-> while the server is 16.x — the container fallback is used
-> automatically.
+The checker inspects required core tables, artifact checksums, derived lineage,
+older model serving/training references, capabilities, password/session material,
+approval digests, evidence references, source tombstones, and optional broker
+references. It does not prove all newer private-state or external-runtime
+recovery. Add manual checks for this installation's notebooks, protected sources,
+Downloads, models, checkpoints, simulations, and provider Keychain credentials.
 
-## 4. Retention and deletion — what is actually kept
+If a restore attempt partially fails, retain diagnostics, abandon that target,
+and repeat using new empty destinations. Avoid mixing a partial restore with
+live data. Switch the real installation to restored state only after validation.
 
-Honest inventory of the core profile. **There are no retention-window
-policies configured** (§21.6: "supply configuration and explicit
-policy placeholders"); nothing ages out on a timer.
+## Retention and deletion
 
-| surface | "deletion" actually does | what backups retain |
-|---|---|---|
-| source artifact revoked | row stays; `review_state='revoked'`; `source_revocations` tombstone rows record the impact report; chunks leave the retrieval index (index version bump); extracted records → `rejected` with `source_revoked`; claims → `superseded` (still queryable with provenance); derived artifacts → `retention.lineage_review='required'` | **everything** — the blob bytes remain in the vault and in every later backup |
-| capability grant revoked | row stays; `revoked_at` set; `load_context` excludes it | full grant history incl. revoked rows |
-| auth session ended | `revoked_at` set | sessions + token hashes |
-| principal disabled | `disabled_at` set; row stays | credentials + grants |
-| approval revoked/expired | `revoked_at` / `expires_at`; row stays | approvals + bound digests |
-| upload aborted | `upload_state='aborted'`; staging `.part` file discarded by `discard_staging` | nothing — aborted blobs never committed |
-| staged uploads | `stale_staging(ttl)` sweep — the only physical cleanup | staging `.part` files older than TTL are purgeable |
-| workspace purge | `delete_workspace_tree` — exists but is **retention-lifecycle only, never called from request paths** | n/a |
-| vault blob (`remove_blob`) | API exists, **no request-path callers** | blobs are never deleted by the app |
+There is no configured universal age-based retention or secure-purge policy.
+Source revocation removes access/retrieval and marks derived impact while
+preserving source bytes, tombstones, and historical records. Capability/session
+revocation preserves history. Notebook trash and source/memory deletion have
+record-specific behavior; forgetting a memory does not undo past model training.
 
-Implications:
-
-- **Revoke ≠ delete.** Revoked content's bytes stay in the vault and
-  propagate into backups until someone runs the workspace-purge
-  lifecycle tooling (which currently exists only as
-  `delete_workspace_tree`/`remove_blob` primitives with no scheduler).
-- A backup taken *after* a revocation still carries the revoked bytes
-  and their tombstones — correct: the tombstone/report is evidence,
-  and the blob is what the tombstone is about.
-- `ops_record_digests` (backfill output) is append-only; its `verify`
-  is the detector for any source row rewritten under an existing
-  digest.
-- If a real deletion policy lands later (e.g. GDPR-style purge),
-  `recovery_check` must be extended to treat purged items as
-  *expected-absent* rather than missing — today nothing is
-  expected-absent.
-
-## 5. Non-destructive posture summary
-
-- Upgrades: single-transaction, expand→migrate→contract; kill-safe;
-  resume = restart.
-- Backfills: out-of-migration, checkpointed, idempotent, append-only.
-- Rollback: compatible roll-forward or restore; never `alembic
-  downgrade` on populated data.
-- Deletion: soft marks everywhere; no scheduled purge; revoked
-  evidence stays recoverable — and visible — in backups.
+A fresh backup may still include revoked/private bytes and old revisions.
+Physical cleanup, deletion of exported copies, model unlearning, and secure SSD
+or cloud erasure are separate concerns. See [privacy](privacy.md) before treating
+a UI deletion or a source revocation as a complete data-erasure action.

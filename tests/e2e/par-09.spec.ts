@@ -1,4 +1,4 @@
-import { openCriteriaEditor } from "./ux-helpers";
+import { selectVisibleOption, openCriteriaEditor } from "./ux-helpers";
 import { expect, request, test } from "@playwright/test";
 import {
   gql,
@@ -404,7 +404,7 @@ test.describe("PAR-09 task workspace organization", () => {
     await editor.getByLabel("metric id").first().fill("metric.par09");
     await editor.getByLabel("metric label").first().fill("Synthetic");
     await editor.getByLabel("target value(s)").first().fill("5");
-    await editor.getByLabel("unit").first().selectOption("dimensionless");
+    await selectVisibleOption(page, editor.getByLabel("unit").first(), { label: "dimensionless" });
 
     await page.route("**/graphql", (route) => route.abort());
     await editor.getByRole("button", { name: "save draft" }).click();
@@ -432,8 +432,9 @@ test.describe("PAR-09 task workspace organization", () => {
     const taskId = await seedClosedTask(token, { close: false });
 
     await page.goto("/");
-    await expect(page.getByRole("region", { name: "Ready for your review" }).getByRole("heading", { name: "Ready for your review", exact: true })).toBeVisible();
-    const pending = page.locator('[data-field="pending-decisions"]');
+    const review = page.getByRole("region", { name: "Ready for review", exact: true });
+    await expect(review.getByRole("heading", { name: "Ready for review", exact: true })).toBeVisible();
+    const pending = review.locator('[data-field="pending-decisions"]');
     await expect(pending).toContainText("a11y review task");
     const recent = page.locator('[data-field="recent-tasks"]');
     await expect(recent).toContainText("a11y review task");

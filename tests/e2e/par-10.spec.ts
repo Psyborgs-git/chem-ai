@@ -1,4 +1,4 @@
-import { openResearchStream, openCreationDetails, openCriteriaEditor, openProjectCreator, openRegistryCreator, openTaskCreator, openTaskTool } from "./ux-helpers";
+import { selectVisibleOption, openResearchStream, openCreationDetails, openCriteriaEditor, openProjectCreator, openRegistryCreator, openTaskCreator, openTaskTool } from "./ux-helpers";
 import {
   expect,
   request,
@@ -164,7 +164,7 @@ async function acceptedFormulationRev(
     }
   }
   await editor.getByLabel("declared total").fill("100");
-  await editor.getByLabel("completeness").selectOption("complete");
+  await selectVisibleOption(page, editor.getByLabel("completeness"), "complete");
   await editor
     .getByRole("button", { name: "save formulation draft" })
     .click();
@@ -209,7 +209,7 @@ async function acceptCandidateViaUi(
       .fill(opts.difference);
   }
   if (opts.entityKind === "material") {
-    await propose.locator("#entity-kind").selectOption("material");
+    await selectVisibleOption(page, propose.locator("#entity-kind"), "material");
     await propose
       .getByRole("combobox", { name: "material identity" })
       .fill(opts.entitySearch ?? "");
@@ -264,10 +264,10 @@ async function freezeContractViaUi(
   }
   await contract.getByLabel("metric label").first().fill(metric.label);
   await contract.getByLabel("metric id").first().fill(metric.id);
-  await contract.getByLabel("operator").first().selectOption(metric.operator);
+  await selectVisibleOption(page, contract.getByLabel("operator").first(), metric.operator);
   await contract.getByLabel("target value(s)").first().fill(metric.target);
-  await contract.getByLabel("unit").first().selectOption("dimensionless");
-  await contract.getByLabel("aggregation").first().selectOption("single");
+  await selectVisibleOption(page, contract.getByLabel("unit").first(), { label: "dimensionless" });
+  await selectVisibleOption(page, contract.getByLabel("aggregation").first(), "single");
   await contract.getByRole("button", { name: "save draft" }).click();
   await expect(page.locator("[data-save-state='saved']")).toBeVisible();
   await page.reload();
@@ -377,17 +377,16 @@ async function recordAcceptedMeasurementViaUi(
   const batch = execution.locator("li[data-batch-id]");
   await expect(batch).toHaveCount(1);
   await batch.getByLabel("new sample label").fill("a1");
-  await batch
-    .locator('select[aria-label="sample kind"]')
-    .selectOption("aliquot");
+  await selectVisibleOption(page, batch
+    .locator('select[aria-label="sample kind"]'), "aliquot");
   await batch.getByRole("button", { name: "add sample" }).click();
   const sample = batch.locator("li[data-sample-id]");
   const mform = sample.locator('details[data-field="measurement-form"]');
   await mform.locator("summary").first().click();
   await mform.locator('[data-field="measurement-context"] > summary').click();
   await mform.getByLabel("method").fill(opts.method);
-  await mform.getByRole("combobox", { name: "What did you measure?", exact: true }).selectOption(opts.metric);
-  await mform.getByLabel("repeat type").selectOption("independent_batch");
+  await selectVisibleOption(page, mform.getByRole("combobox", { name: "What did you measure?", exact: true }), opts.metric);
+  await selectVisibleOption(page, mform.getByLabel("repeat type"), "independent_batch");
   await mform.getByLabel("Measured value", { exact: true }).fill(opts.value);
   await mform.getByLabel("Measurement unit", { exact: true }).fill("dimensionless");
   await mform.getByRole("button", { name: "record" }).click();
@@ -480,7 +479,7 @@ test.describe("PAR-10 acceptance journeys", () => {
     await editor.getByRole("button", { name: "add ingredient" }).click();
     await fillIngredient(editor, 1, `${RUN} resin`, `${RUN} resin`, "30", "binder");
     await editor.getByLabel("declared total").fill("100");
-    await editor.getByLabel("completeness").selectOption("complete");
+    await selectVisibleOption(page, editor.getByLabel("completeness"), "complete");
     await editor
       .getByRole("button", { name: "save formulation draft" })
       .click();
@@ -605,7 +604,7 @@ test.describe("PAR-10 acceptance journeys", () => {
     await expect(page.locator('[data-field="close-form"]')).toBeVisible({
       timeout: 15000,
     });
-    await page.locator("#closure-decision").selectOption("supported_success");
+    await selectVisibleOption(page, page.locator("#closure-decision"), "supported_success");
     const closeBtn = page.getByRole("button", { name: "close task" });
     await expect(closeBtn).toBeDisabled();
     await page
@@ -656,7 +655,7 @@ test.describe("PAR-10 acceptance journeys", () => {
     await pform.getByLabel("product name").fill(`${RUN} ref-coat`);
     await pform.getByLabel("supplier (optional)").fill("fixture supplier");
     await pform.getByLabel("category (optional)").fill("coating");
-    await pform.locator("#prod-knowledge").selectOption("unknown");
+    await selectVisibleOption(page, pform.locator("#prod-knowledge"), "unknown");
     await pform.getByRole("button", { name: "register product" }).click();
     await expect(
       page
@@ -688,7 +687,7 @@ test.describe("PAR-10 acceptance journeys", () => {
       })
       .click();
     await openCreationDetails(page, "create task");
-    await taskForm.getByLabel("What should match?").selectOption("functional_and_analytical");
+    await selectVisibleOption(page, taskForm.getByLabel("What should match?"), "functional_and_analytical");
     await taskForm
       .getByRole("button", { name: /Create task/ })
       .click();
@@ -728,7 +727,7 @@ test.describe("PAR-10 acceptance journeys", () => {
         .getByLabel("Raw export artifact id (uuid)")
         .fill(art);
       await page.getByLabel("Series label (optional)").fill(label);
-      await page.getByLabel("Analytical method").selectOption("infrared");
+      await selectVisibleOption(page, page.getByLabel("Analytical method"), "infrared");
       await page.getByLabel("X-axis unit").fill("cm-1");
       await page.getByLabel("Y-axis unit").fill("absorbance");
       await page.getByLabel("Sample label", { exact: true }).fill(sample);
@@ -740,12 +739,10 @@ test.describe("PAR-10 acceptance journeys", () => {
       ).toBeVisible({ timeout: 15000 });
     }
 
-    await page
-      .locator('select[aria-label="Left series"]')
-      .selectOption({ label: `${RUN} series A (infrared)` });
-    await page
-      .locator('select[aria-label="Right series"]')
-      .selectOption({ label: `${RUN} series B (infrared)` });
+    await selectVisibleOption(page, page
+      .locator('select[aria-label="Left series"]'), { label: `${RUN} series A (infrared)` });
+    await selectVisibleOption(page, page
+      .locator('select[aria-label="Right series"]'), { label: `${RUN} series B (infrared)` });
     await page
       .getByRole("button", { name: "Compute scoped similarity" })
       .click();
@@ -862,7 +859,7 @@ test.describe("PAR-10 acceptance journeys", () => {
     const taskForm = page.locator('form[aria-label="create task"]');
     await taskForm.getByLabel("task title").fill(`${RUN} discover task`);
     await taskForm.getByRole("radio", { name: "Explore", exact: true }).check();
-    await taskForm.getByLabel("What are you exploring?").selectOption("formulation");
+    await selectVisibleOption(page, taskForm.getByLabel("What are you exploring?"), "formulation");
     await openCreationDetails(page, "create task");
     await taskForm
       .getByLabel("Research goal (optional)")
@@ -994,7 +991,7 @@ test.describe("PAR-10 acceptance journeys", () => {
     await expect(page.locator('[data-field="close-form"]')).toBeVisible({
       timeout: 15000,
     });
-    await page.locator("#closure-decision").selectOption("supported_success");
+    await selectVisibleOption(page, page.locator("#closure-decision"), "supported_success");
     await page
       .locator("text=I confirm this closure as the human reviewer")
       .click();

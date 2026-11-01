@@ -1,4 +1,5 @@
 import { expect, request, test, type BrowserContext } from "@playwright/test";
+import { decodeGlobalId } from "./at-1103-helpers";
 
 const API = "http://127.0.0.1:8790";
 const ORIGIN = { origin: "http://127.0.0.1:8790" };
@@ -102,7 +103,9 @@ async function seedPriorSession(token: string): Promise<string> {
     `mutation ($t: ID!, $e: JSON!) { candidates { create(input: {
        taskId: $t, entityKind: "formulation", evidenceIds: $e }) {
        candidate { id } errors { code message } } } }`,
-    { t: taskId, e: [claimId] },
+    // The JSON evidence list stores canonical UUIDs, not Relay display IDs.
+    // This binds the expected claim to the task's actual candidate context.
+    { t: taskId, e: [decodeGlobalId(claimId)] },
   );
   const candId = cand.data.candidates.create.candidate.id as string;
   const patch = await gql(

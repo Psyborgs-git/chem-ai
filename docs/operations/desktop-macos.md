@@ -76,35 +76,34 @@ native app menu or Command-Q to stop an owned backend. The log folder is private
 
 ## Native boundary
 
-The boot screen has three fixed native commands: `runtime_status`,
-`runtime_retry` and `runtime_open`. They accept no filesystem paths, program
-names, arguments or URLs. Each command verifies that it originated in the
-bundled asset page. Runtime navigation permits only verified loopback app ports;
-web citations open in the system browser. The loopback app receives only the
-permission needed to drag its native title bar, with no shell or filesystem
-plugin exposed.
+The boot screen exposes only `runtime_status`, `runtime_retry`, and `runtime_open`.
+They accept no filesystem paths, programs, arguments, or URLs and verify the
+bundled-page origin. Runtime navigation permits verified loopback app origins;
+external citations open in the system browser. The loopback app receives only
+its required native window-drag permission, without a general shell/filesystem
+plugin.
 
-Reference: [Tauri Vite integration](https://v2.tauri.app/start/frontend/vite/),
-[native commands](https://v2.tauri.app/develop/calling-rust/),
-[capabilities](https://v2.tauri.app/security/capabilities/),
-[macOS bundles](https://v2.tauri.app/distribute/macos-application-bundle/) and
-[DMG packaging](https://v2.tauri.app/distribute/dmg/).
+Help is bundled into the frontend and available after sign-in at `/help`.
+Read `docs/README.md` in the checkout when startup or sign-in is unavailable.
+Changing Markdown requires rebuilding the frontend/native bundle to update the
+installed app; restarting an old bundle does not replace its bundled help.
 
-## Local verification
+## Verify a rebuild
 
-The Apple Silicon build was installed in `~/Applications/Chemistry Studio.app`
-and opened to the native sign-in screen. A cold-start smoke check verified the
-bundled startup screen's native handoff, database readiness and owned-process
-shutdown; a separate check verified reuse of an existing backend. The DMG and
-ad-hoc app signature were verified locally.
+Run `pnpm test:desktop` for Rust/runtime checks and `pnpm smoke:desktop` with the
+app quit for the Finder-like launch, native handoff, process ownership, and
+backend-reuse smoke. The smoke does not create research records or use account
+credentials. Browser-controlled native startup tests are separate from opening
+the actual macOS app. Check the built app's sign-in screen, light/dark layout,
+help navigation, and a saved non-sensitive record interactively when validating
+a release.
 
-The native loopback service calculated ethanol (`CCO`) as C2H6O and 46.069 g/mol
-with RDKit, retained the same saved result on replay, and returned a failed
-result without descriptors for an invalid-valence control. This calculation was
-sent through the native app's local service; it was not a physical experiment.
+Runtime implementation is under `apps/studio-web/src-tauri`; static frontend and
+origin boundaries are tested under `services/studio-api/tests/unit/test_desktop_web.py`
+and the desktop-auth integration tests. Historical local evidence may be under
+`.runtime/evidence/native`; it is not proof of the currently installed build's
+signature, notarization, provider behavior, or scientific accuracy.
 
-The latest checks include 107 frontend tests, 14 desktop backend tests, 5 Rust
-runtime tests, 8 browser journeys, and 3 launch/recovery/reduced-motion visual
-checks. Startup screenshot checks use a controlled native bridge; the actual
-macOS app's startup handoff and sign-in screen were checked separately. Local
-artifacts are under `.runtime/evidence/native/`.
+Use [configuration](configuration.md) for stored state, [troubleshooting](troubleshooting.md)
+for startup failures, and [backup and restore](backup-restore.md) before changing
+checkout/runtime locations.

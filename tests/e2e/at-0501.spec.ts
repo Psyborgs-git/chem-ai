@@ -1,3 +1,4 @@
+import { selectVisibleOption } from "./ux-helpers";
 import { expect, request, test, type BrowserContext } from "@playwright/test";
 
 const API = "http://127.0.0.1:8790";
@@ -125,8 +126,8 @@ test("approved plan exports a manual-execution packet (AT-0501-3)", async ({
   expect(plan.data.lab.planCreate.errors).toEqual([]);
 
   await page.goto("/lab");
-  await page.locator("#lab-project").selectOption({ label: "E2E Project" });
-  await page.locator("#lab-task").selectOption({ label: "lab plan task" });
+  await selectVisibleOption(page, page.locator("#lab-project"), { label: "E2E Project" });
+  await selectVisibleOption(page, page.locator("#lab-task"), { label: "lab plan task" });
 
   const card = page.locator(".cs-plan");
   await expect(card).toHaveCount(1);
