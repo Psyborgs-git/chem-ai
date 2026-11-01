@@ -20,6 +20,16 @@ describe("agent activity", () => {
     expect(pending.type === "tool" && activitySummary(pending).detail).toBe("Working…");
     expect(failure.type === "tool" && activitySummary(failure)).toEqual(expect.objectContaining({ failed: true, detail: "No training rights" }));
   });
+  it("labels documentation work as articles rather than scientific sources", () => {
+    const row = activityRows([message("docs", "tool_result", "docs-call", '{"ok":true,"data":{"results":[{"title":"Getting started"}]}}', "search_studio_docs")])[0];
+    expect(row.type === "tool" && activitySummary(row)).toEqual({ title: "Search documentation", detail: "1 article", failed: false });
+    const wrapped = activityRows([message("wrapped", "tool_result", "wrapped-call", '{"ok":true,"data":{"ok":true,"untrusted":true,"data":{"results":[{"title":"Getting started"}]}}}', "search_studio_docs")])[0];
+    expect(wrapped.type === "tool" && activitySummary(wrapped).detail).toBe("1 article");
+  });
+  it("shows a refused dispatcher call as a failure inside its transport envelope", () => {
+    const row = activityRows([message("refused", "tool_result", "docs-call", '{"ok":true,"data":{"ok":false,"error":{"message":"Unknown documentation article"}}}', "read_studio_doc")])[0];
+    expect(row.type === "tool" && activitySummary(row)).toEqual({ title: "Read documentation", detail: "Unknown documentation article", failed: true });
+  });
 });
 
 it("collapses all tools in the same turn into one activity while preserving the final answer", async () => {

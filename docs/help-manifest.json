@@ -1,0 +1,517 @@
+{
+  "version": 1,
+  "articles": [
+    {
+      "section": "usage",
+      "slug": "getting-started",
+      "title": "Getting started with Chemistry Studio",
+      "summary": "Open the studio, sign in, navigate, and save your first useful record.",
+      "source": "docs/usage/getting-started.md",
+      "order": 1
+    },
+    {
+      "section": "usage",
+      "slug": "projects-and-tasks",
+      "title": "Projects and research tasks",
+      "summary": "Create projects, define success criteria, and move research through review.",
+      "source": "docs/usage/projects-and-tasks.md",
+      "order": 5
+    },
+    {
+      "section": "usage",
+      "slug": "notebooks-and-editing",
+      "title": "Notebooks and editing",
+      "summary": "Edit notebook pages, recover drafts, resolve conflicts, and restore history.",
+      "source": "docs/usage/notebooks-and-editing.md",
+      "order": 6
+    },
+    {
+      "section": "usage",
+      "slug": "research-library",
+      "title": "Research library and saved sources",
+      "summary": "Find sources, retain originals, attach citations, and maintain research memory.",
+      "source": "docs/usage/research-library.md",
+      "order": 7
+    },
+    {
+      "section": "usage",
+      "slug": "agent-and-providers",
+      "title": "Agent and AI providers",
+      "summary": "Connect models, control private context, and manage bounded agent research.",
+      "source": "docs/usage/agent-and-providers.md",
+      "order": 8
+    },
+    {
+      "section": "usage",
+      "slug": "materials-and-candidates",
+      "title": "Materials and candidate editing",
+      "summary": "Maintain materials, formulation revisions, candidates, and human reviews.",
+      "source": "docs/usage/materials-and-candidates.md",
+      "order": 9
+    },
+    {
+      "section": "usage",
+      "slug": "experiments-and-evidence",
+      "title": "Experiments, measurements and evidence",
+      "summary": "Approve plans, capture actuals and measurements, review evidence, and close tasks.",
+      "source": "docs/usage/experiments-and-evidence.md",
+      "order": 10
+    },
+    {
+      "section": "usage",
+      "slug": "learning-and-models",
+      "title": "Learning, datasets and models",
+      "summary": "Import datasets, prepare model assets, run training, and evaluate results.",
+      "source": "docs/usage/learning-and-models.md",
+      "order": 11
+    },
+    {
+      "section": "usage",
+      "slug": "simulations-and-calculations",
+      "title": "Calculations and polymer simulations",
+      "summary": "Run local calculations and bounded simulations with provenance and recovery.",
+      "source": "docs/usage/simulations-and-calculations.md",
+      "order": 12
+    },
+    {
+      "section": "development",
+      "slug": "architecture",
+      "title": "Architecture and source ownership",
+      "summary": "Trace requests, persistence, workers, ownership, and application boundaries.",
+      "source": "docs/development/architecture.md",
+      "order": 1
+    },
+    {
+      "section": "development",
+      "slug": "local-development",
+      "title": "Local development and native builds",
+      "summary": "Set up a reproducible local development environment and its data directories.",
+      "source": "docs/development/local-development.md",
+      "order": 2
+    },
+    {
+      "section": "development",
+      "slug": "editing-the-studio",
+      "title": "Editing and extending the Studio frontend",
+      "summary": "Change frontend screens, navigation, save states, styling, and typed data access.",
+      "source": "docs/development/editing-the-studio.md",
+      "order": 3
+    },
+    {
+      "section": "development",
+      "slug": "backend-and-contracts",
+      "title": "Backend, API contracts and migrations",
+      "summary": "Change services, APIs, contracts, database models, migrations, and generated types.",
+      "source": "docs/development/backend-and-contracts.md",
+      "order": 4
+    },
+    {
+      "section": "development",
+      "slug": "workers-and-engines",
+      "title": "Workers, scientific engines and model runtimes",
+      "summary": "Extend worker backends, engine adapters, and agent tools with isolation and provenance.",
+      "source": "docs/development/workers-and-engines.md",
+      "order": 5
+    },
+    {
+      "section": "development",
+      "slug": "testing-and-docs",
+      "title": "Testing and documentation",
+      "summary": "Select meaningful checks, debug failures, and maintain this documentation.",
+      "source": "docs/development/testing-and-docs.md",
+      "order": 6
+    },
+    {
+      "section": "operations",
+      "slug": "installation",
+      "title": "Installation and first run",
+      "summary": "Install locked dependencies, start local services, and create the first owner.",
+      "source": "docs/operations/installation.md",
+      "order": 1
+    },
+    {
+      "section": "operations",
+      "slug": "configuration",
+      "title": "Configuration and stored state",
+      "summary": "Find configuration, active state directories, process ownership, and backup coverage.",
+      "source": "docs/operations/configuration.md",
+      "order": 2
+    },
+    {
+      "section": "operations",
+      "slug": "admin",
+      "title": "Administration",
+      "summary": "Manage access, background services, jobs, incidents, and maintenance.",
+      "source": "docs/operations/admin.md",
+      "order": 3
+    },
+    {
+      "section": "operations",
+      "slug": "troubleshooting",
+      "title": "Troubleshooting",
+      "summary": "Diagnose startup, sign-in, save, provider, learning, and recovery failures.",
+      "source": "docs/operations/troubleshooting.md",
+      "order": 4
+    },
+    {
+      "section": "operations",
+      "slug": "desktop-macos",
+      "title": "Native macOS app (local runtime)",
+      "summary": "Build and operate the checkout-dependent native macOS application.",
+      "source": "docs/operations/desktop-macos.md",
+      "order": 5
+    },
+    {
+      "section": "operations",
+      "slug": "inference-providers",
+      "title": "Research inference providers",
+      "summary": "Configure provider connections, credentials, models, consent, and pricing.",
+      "source": "docs/operations/inference-providers.md",
+      "order": 6
+    },
+    {
+      "section": "operations",
+      "slug": "agentic-research",
+      "title": "Agentic research and the private library",
+      "summary": "Operate private agent research, recurring work, retained sources, and background execution.",
+      "source": "docs/operations/agentic-research.md",
+      "order": 7
+    },
+    {
+      "section": "operations",
+      "slug": "learning-workspace",
+      "title": "Private learning workspace",
+      "summary": "Configure native and self-hosted learning runtimes, datasets, models, and evaluation.",
+      "source": "docs/operations/learning-workspace.md",
+      "order": 8
+    },
+    {
+      "section": "operations",
+      "slug": "scientific",
+      "title": "Scientific workflow operations",
+      "summary": "Operate scientific records, experiment approvals, measurements, and closeout.",
+      "source": "docs/operations/scientific.md",
+      "order": 9
+    },
+    {
+      "section": "operations",
+      "slug": "model-ops",
+      "title": "Engine and model operations",
+      "summary": "Install engine profiles and manage legacy model, training, and promotion workflows.",
+      "source": "docs/operations/model-ops.md",
+      "order": 10
+    },
+    {
+      "section": "operations",
+      "slug": "polymer-simulation",
+      "title": "Atomistic polymer simulation pilots",
+      "summary": "Configure and operate bounded polymer simulation stages, artifacts, and resumption.",
+      "source": "docs/operations/polymer-simulation.md",
+      "order": 11
+    },
+    {
+      "section": "operations",
+      "slug": "privacy",
+      "title": "Privacy, disclosure, and retention",
+      "summary": "Understand ownership, external disclosure, export review, revocation, and retention.",
+      "source": "docs/operations/privacy.md",
+      "order": 12
+    },
+    {
+      "section": "operations",
+      "slug": "backup-restore",
+      "title": "Backup and restore",
+      "summary": "Prepare consistent database/vault snapshots and restore into clean destinations.",
+      "source": "docs/operations/backup-restore.md",
+      "order": 13
+    },
+    {
+      "section": "operations",
+      "slug": "recovery",
+      "title": "Recovery and upgrades",
+      "summary": "Recover interrupted upgrades, restore state, and validate the recovered installation.",
+      "source": "docs/operations/recovery.md",
+      "order": 14
+    },
+    {
+      "section": "operations",
+      "slug": "cloud-security",
+      "title": "Confidential cloud execution \u2014 security posture (CS-1004)",
+      "summary": "Understand optional cloud-compute activation prerequisites and current limitations.",
+      "source": "docs/operations/cloud-security.md",
+      "order": 15
+    },
+    {
+      "section": "operations",
+      "slug": "eln",
+      "title": "External ELN bridge (eLabFTW) \u2014 ownership and operation",
+      "summary": "Operate manual-first lab records and understand the optional external ELN bridge.",
+      "source": "docs/operations/eln.md",
+      "order": 16
+    },
+    {
+      "section": "operations",
+      "slug": "user",
+      "title": "Studio usage",
+      "summary": "Find the current usage guides that replace the original daily workflow runbook.",
+      "source": "docs/operations/user.md",
+      "order": 17
+    },
+    {
+      "section": "reference",
+      "slug": "index",
+      "title": "Complete interface reference",
+      "summary": "Browse the complete generated API, GraphQL, command, and configuration reference.",
+      "source": "docs/reference/README.md",
+      "order": 1
+    },
+    {
+      "section": "reference",
+      "slug": "rest-overview",
+      "title": "REST transport, authentication and errors",
+      "summary": "Understand REST authentication, errors, payload contracts, and transport behavior.",
+      "source": "docs/reference/rest-overview.md",
+      "order": 2
+    },
+    {
+      "section": "reference",
+      "slug": "graphql-overview",
+      "title": "GraphQL transport and conventions",
+      "summary": "Understand GraphQL transport, IDs, pagination, revisions, and operation namespaces.",
+      "source": "docs/reference/graphql-overview.md",
+      "order": 3
+    },
+    {
+      "section": "reference",
+      "slug": "commands",
+      "title": "Development and operations command reference",
+      "summary": "Look up development, verification, packaging, and operations commands.",
+      "source": "docs/reference/commands.md",
+      "order": 4
+    },
+    {
+      "section": "reference",
+      "slug": "configuration",
+      "title": "Environment and build configuration reference",
+      "summary": "Look up application, worker, build, and test environment settings.",
+      "source": "docs/reference/configuration.md",
+      "order": 5
+    },
+    {
+      "section": "reference",
+      "slug": "graphql-query",
+      "title": "GraphQL query reference",
+      "summary": "Look up every GraphQL query field, arguments, and result types.",
+      "source": "docs/reference/graphql-query.md",
+      "order": 6
+    },
+    {
+      "section": "reference",
+      "slug": "graphql-mutation",
+      "title": "GraphQL mutation reference",
+      "summary": "Look up every callable mutation, including nested namespace operations.",
+      "source": "docs/reference/graphql-mutation.md",
+      "order": 7
+    },
+    {
+      "section": "reference",
+      "slug": "graphql-types",
+      "title": "GraphQL type catalog",
+      "summary": "Look up full GraphQL input, output, scalar, interface, and enum declarations.",
+      "source": "docs/reference/graphql-types.md",
+      "order": 8
+    },
+    {
+      "section": "reference",
+      "slug": "rest-agent",
+      "title": "Private agent API",
+      "summary": "Agent workspace: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-agent.md",
+      "order": 9
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-agent",
+      "title": "Private agent API \u2014 JSON contract details",
+      "summary": "Agent workspace: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-agent.md",
+      "order": 10
+    },
+    {
+      "section": "reference",
+      "slug": "rest-artifacts",
+      "title": "Artifact transfer API",
+      "summary": "Artifact transfers: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-artifacts.md",
+      "order": 11
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-artifacts",
+      "title": "Artifact transfer API \u2014 JSON contract details",
+      "summary": "Artifact transfers: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-artifacts.md",
+      "order": 12
+    },
+    {
+      "section": "reference",
+      "slug": "rest-auth",
+      "title": "Session and owner setup API",
+      "summary": "Authentication: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-auth.md",
+      "order": 13
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-auth",
+      "title": "Session and owner setup API \u2014 JSON contract details",
+      "summary": "Authentication: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-auth.md",
+      "order": 14
+    },
+    {
+      "section": "reference",
+      "slug": "rest-background",
+      "title": "Background service API",
+      "summary": "Background service: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-background.md",
+      "order": 15
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-background",
+      "title": "Background service API \u2014 JSON contract details",
+      "summary": "Background service: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-background.md",
+      "order": 16
+    },
+    {
+      "section": "reference",
+      "slug": "rest-events",
+      "title": "Event stream API",
+      "summary": "Event streams: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-events.md",
+      "order": 17
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-events",
+      "title": "Event stream API \u2014 JSON contract details",
+      "summary": "Event streams: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-events.md",
+      "order": 18
+    },
+    {
+      "section": "reference",
+      "slug": "rest-learning",
+      "title": "Local learning and worker API",
+      "summary": "Learning workspace: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-learning.md",
+      "order": 19
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-learning",
+      "title": "Local learning and worker API \u2014 JSON contract details",
+      "summary": "Learning workspace: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-learning.md",
+      "order": 20
+    },
+    {
+      "section": "reference",
+      "slug": "rest-library",
+      "title": "Private library API",
+      "summary": "Private library: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-library.md",
+      "order": 21
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-library",
+      "title": "Private library API \u2014 JSON contract details",
+      "summary": "Private library: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-library.md",
+      "order": 22
+    },
+    {
+      "section": "reference",
+      "slug": "rest-simulations",
+      "title": "Polymer simulation API",
+      "summary": "Simulations: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-simulations.md",
+      "order": 23
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-simulations",
+      "title": "Polymer simulation API \u2014 JSON contract details",
+      "summary": "Simulations: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-simulations.md",
+      "order": 24
+    },
+    {
+      "section": "reference",
+      "slug": "rest-system",
+      "title": "Health, readiness and desktop API",
+      "summary": "System and desktop: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-system.md",
+      "order": 25
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-system",
+      "title": "Health, readiness and desktop API \u2014 JSON contract details",
+      "summary": "System and desktop: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-system.md",
+      "order": 26
+    },
+    {
+      "section": "reference",
+      "slug": "rest-workflows",
+      "title": "Research workflow API",
+      "summary": "Research workflows: every endpoint, parameters, availability, outcomes, and examples.",
+      "source": "docs/reference/rest-workflows.md",
+      "order": 27
+    },
+    {
+      "section": "reference",
+      "slug": "contracts-workflows",
+      "title": "Research workflow API \u2014 JSON contract details",
+      "summary": "Research workflows: source-backed dynamic payload validation and serialization contracts.",
+      "source": "docs/reference/contracts-workflows.md",
+      "order": 28
+    },
+    {
+      "section": "reference",
+      "slug": "graphql-contracts",
+      "title": "GraphQL command state and validation contracts",
+      "summary": "Source-backed domain validation, capability, state and response contracts for GraphQL operations.",
+      "source": "docs/reference/graphql-contracts.md",
+      "order": 29
+    },
+    {
+      "section": "usage",
+      "slug": "chemistry-basics",
+      "title": "Chemistry basics for using the Studio",
+      "summary": "Build intuition for molecules, formulations, units, evidence, controls, source rights, and base models with bounded analogies.",
+      "source": "docs/usage/chemistry-basics.md",
+      "order": 2
+    },
+    {
+      "section": "usage",
+      "slug": "guided-first-research",
+      "title": "A guided first research exercise",
+      "summary": "Create a practice project, calculate the built-in ethanol structure, write a cited note, and practice fictional composition arithmetic without lab work or training.",
+      "source": "docs/usage/guided-first-research.md",
+      "order": 3
+    },
+    {
+      "section": "usage",
+      "slug": "chemistry-glossary",
+      "title": "Chemistry and Studio glossary",
+      "summary": "Look up plain-language chemistry, quantity, evidence, workflow, and model-learning terms.",
+      "source": "docs/usage/chemistry-glossary.md",
+      "order": 4
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { selectVisibleOption } from "./ux-helpers";
 import { expect, request, test, type BrowserContext } from "@playwright/test";
 
 const API = "http://127.0.0.1:8790";
@@ -252,7 +253,7 @@ test("closeout: eligible evaluation → human close (AT-0503-3)", async ({
   });
 
   // human confirmation required — button stays disabled without it
-  await page.locator("#closure-decision").selectOption("supported_success");
+  await selectVisibleOption(page, page.locator("#closure-decision"), "supported_success");
   const closeBtn = page.getByRole("button", { name: "close task" });
   await expect(closeBtn).toBeDisabled();
   await page
@@ -306,7 +307,7 @@ test("closeout: unmeasured metric stays inconclusive (AT-0503-1)", async ({
   await expect(option).toBeDisabled();
 
   // …and the service would refuse it anyway — close honestly instead
-  await page.locator("#closure-decision").selectOption("inconclusive");
+  await selectVisibleOption(page, page.locator("#closure-decision"), "inconclusive");
   await page
     .locator("text=I confirm this closure as the human reviewer")
     .click();

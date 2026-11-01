@@ -12,7 +12,8 @@ describe("focused workspace navigation", () => {
     for (const name of ["Home", "Projects", "Notebooks", "Research library", "Local learning"]) expect(screen.getByRole("link", { name })).toBeVisible();
     expect(screen.queryByRole("link", { name: "Downloads" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "More" }));
-    expect(screen.getAllByRole("link")).toHaveLength(14);
+    expect(screen.getAllByRole("link")).toHaveLength(15);
+    expect(screen.getByRole("link", { name: "Help & documentation" })).toHaveAttribute("href", "/help");
     await userEvent.click(screen.getByRole("link", { name: "Providers" }));
     expect(onNavigate).toHaveBeenCalledTimes(1);
   });

@@ -1,3 +1,4 @@
+import { selectVisibleOption } from "./ux-helpers";
 import { expect, request, test, type BrowserContext } from "@playwright/test";
 
 const API = "http://127.0.0.1:8790";
@@ -179,12 +180,10 @@ async function recordMeasurement(
 
 async function openResults(page: import("@playwright/test").Page, tag: string) {
   await page.goto("/lab");
-  await page
-    .locator("#lab-project")
-    .selectOption({ label: `E2E 0502 ${tag}` });
-  await page
-    .locator("#lab-task")
-    .selectOption({ label: `results task ${tag}` });
+  await selectVisibleOption(page, page
+    .locator("#lab-project"), { label: `E2E 0502 ${tag}` });
+  await selectVisibleOption(page, page
+    .locator("#lab-task"), { label: `results task ${tag}` });
 }
 
 /** AT-0502-1 — three repeat readings on one aliquot are observations,
@@ -250,7 +249,7 @@ test("incompatible unit yields inconclusive + finding (AT-0502-2)", async ({
   await item.locator('[data-field="contract-check"] > summary').click();
   await expect(item.getByRole("button", { name: "compare", exact: true })).toBeDisabled();
   await item.getByLabel("Comparison metric name", { exact: true }).fill("viscosity");
-  await item.getByRole("combobox", { name: "Comparison comparator", exact: true }).selectOption(">=");
+  await selectVisibleOption(page, item.getByRole("combobox", { name: "Comparison comparator", exact: true }), ">=");
   await item.getByLabel("Comparison bound", { exact: true }).fill("100");
   await item.getByLabel("Comparison unit", { exact: true }).fill("mPa·s");
   await item.getByRole("button", { name: "compare" }).click();

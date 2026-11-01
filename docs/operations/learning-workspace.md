@@ -8,7 +8,7 @@ runtime is unavailable.
 ## Local Apple Silicon
 
 ```sh
-python3.12 -m venv .runtime/learning-mlx
+uv run python -m venv .runtime/learning-mlx
 .runtime/learning-mlx/bin/pip install -r workers/training/mlx/requirements.lock
 ```
 
@@ -98,15 +98,21 @@ polymer repeat-unit SMILES (including connection wildcards), UUID metadata and
 declared conditions. Each property fit uses one property/unit/method/condition
 context, rather than silently combining unlike measurements.
 
-## Self-hosted GPU workers
+## Self-hosted worker protocol
 
-Install the repository and the desired optional training/Chemprop/REINVENT
-dependencies on the worker host. A worker opens outbound connections only; the
-Studio server does not need access to the worker machine.
+The authenticated worker protocol is implemented, but the stock Studio server
+is loopback-only. The supported local test below connects on the same machine.
+A different host needs a separately designed secure HTTPS deployment and
+reachable authenticated service; changing a URL or origin allowlist alone does
+not provide supported LAN/remote hosting.
+
+Install the repository and desired training/Chemprop/REINVENT dependencies in
+the worker environment. A worker initiates its API connections; the server does
+not need inbound access to the worker machine.
 
 ```sh
 python -m workers.training.workspace_worker \
-  --api https://studio.example \
+  --api http://127.0.0.1:8787 \
   --backends transformers,chemprop \
   --work-dir /private/training
 ```
@@ -154,6 +160,21 @@ private active binding changes atomically. This remains separate from the older
 pico fixture registry and does not bypass its base/tokenizer compatibility
 rules. The agent cannot call the human activation action as a tool.
 
-The two-step local synthetic smoke is recorded under `.runtime/learning-smoke/`.
-It proves real LoRA updates, persisted checkpoints and reloadable inference, not
-model quality or a scientifically validated chemistry model.
+Historical synthetic smoke artifacts under `.runtime/learning-smoke/` demonstrate
+the tested training mechanism. Check current preflight, dependencies, hardware,
+and job outcomes on the machine being operated; those artifacts do not establish
+model quality or scientific qualification.
+
+## Files and recovery
+
+Private datasets/model/job metadata live in PostgreSQL. Catalog model downloads,
+local job outputs, adapters, checkpoints, and previews normally live inside the
+active vault's workspace/learning/owner tree and are included in a full vault
+backup. Imported model paths may point outside that tree. Worker-host files and
+explicit model mappings are also external. Preserve those separately and retain
+the exact base/model revisions needed to resume or load adapters.
+
+Quiesce running jobs before a database/vault snapshot. A restored database alone
+does not recover external model directories or optional Python environments.
+See [configuration](configuration.md), [backup and restore](backup-restore.md),
+and [recovery](recovery.md).

@@ -1,3 +1,4 @@
+import { selectVisibleOption } from "./ux-helpers";
 import { createServer, type Server } from "node:http";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -49,13 +50,13 @@ test("configure a provider and run precise, consented research tools", async ({ 
     await page.getByRole("button",{name:"Add provider",exact:true}).click();
     const sheet = page.getByRole("dialog",{name:"Add provider"});
     await sheet.getByLabel("Provider name").fill(title);
-    await sheet.getByLabel("Provider type").selectOption("openai_compatible");
+    await selectVisibleOption(page, sheet.getByLabel("Provider type"), { label: "OpenAI-compatible endpoint" });
     await sheet.getByLabel("API endpoint").fill(baseUrl);
     await sheet.getByLabel("Model ID").fill("synthetic-model");
     await sheet.getByLabel("New API key").fill(fakeKey);
     await sheet.getByLabel("Make available in research").check();
     await sheet.getByRole("button",{name:"Save provider"}).click();
-    const card = page.getByRole("article",{name:title});
+    const card = page.getByRole("article",{name:title,exact:true});
     await expect(card).toBeVisible();
     await expect(card).toContainText("Key stored securely");
     let providers = await gql(token,`query { inferenceProviders { id name revision hasApiKey } }`);
@@ -84,7 +85,7 @@ test("configure a provider and run precise, consented research tools", async ({ 
     await expect(stream).toBeVisible();
     if (!(await stream.evaluate((node:HTMLDetailsElement)=>node.open))) await stream.locator("summary").click();
     const composer = page.getByRole("form",{name:"research composer"});
-    await composer.getByLabel("Research model").selectOption(providerId!);
+    await selectVisibleOption(page, composer.getByLabel("Research model"), providerId!);
     await composer.getByLabel("ask the research agent").fill("Summarize the current task evidence.");
     await expect(composer.getByRole("button",{name:"send"})).toBeDisabled();
     expect(observed).toHaveLength(0);

@@ -45,6 +45,8 @@ export STUDIO_ALLOWED_ORIGINS="http://127.0.0.1:4173,http://127.0.0.1:8790,http:
 # budget — a real disconnect is exercised, not emulated timing luck
 export STUDIO_EVENT_MAX_SECONDS=2
 export STUDIO_VAULT_ROOT="$PWD/.runtime/e2e-vault"
-export STUDIO_DOWNLOADS_ROOT="$PWD/.runtime/e2e-downloads"
-exec env STUDIO_DATABASE_URL="$DB_URL" uv run uvicorn \
-  "studio.api.app:create_app" --factory --host 127.0.0.1 --port 8790
+export STUDIO_RESEARCH_DOWNLOADS_ROOT="$PWD/.runtime/e2e-downloads"
+# The test-only entry point installs an ephemeral secret-store fixture before
+# importing the API. Synthetic provider journeys therefore work on Linux too,
+# without writing test credentials into a developer's real macOS Keychain.
+exec env STUDIO_DATABASE_URL="$DB_URL" uv run python tests/e2e/serve_api.py

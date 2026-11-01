@@ -1,0 +1,69 @@
+.cs-help { max-width:1360px; margin:0 auto; }
+.cs-help-header { display:flex; justify-content:space-between; align-items:flex-start; gap:24px; padding-bottom:24px; border-bottom:1px solid var(--border); }
+.cs-help-header h1,.cs-help-header .cs-help-title { margin:0 0 8px; font-size:clamp(24px,3vw,32px); letter-spacing:-.03em; color:var(--text); font-weight:600; line-height:1.3; }
+.cs-help-header h1 { scroll-margin-top:140px; }
+.cs-help :is(h1,h2,h3,h4,h5,h6)[tabindex="-1"]:focus { outline:none; }
+.cs-help-header p { margin:0; color:var(--text-muted); }
+.cs-help-header .cs-eyebrow { margin-bottom:8px; }
+.cs-help-header .cs-help-local { max-width:190px; font-size:12px; line-height:1.6; }
+.cs-help-layout { display:grid; grid-template-columns:240px minmax(0,1fr); gap:40px; padding-top:24px; }
+.cs-help-sidebar { min-width:0; }
+.cs-help-sidebar .cs-field { margin-bottom:20px; }
+.cs-help-sidebar nav { display:grid; gap:4px; }
+.cs-help-sidebar nav a { color:var(--text-muted); padding:9px 12px; border-radius:7px; text-decoration:none; font-size:13px; }
+.cs-help-sidebar nav a:hover { background:var(--surface-raised); color:var(--text); }
+.cs-help-sidebar nav a[aria-current=page] { background:var(--accent-subtle); color:var(--accent); font-weight:600; }
+.cs-help-sidebar .cs-help-chapters { border-top:1px solid var(--border); margin-top:20px; padding-top:16px; }
+.cs-help-body { min-width:0; }
+.cs-help-categories { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.cs-help-categories > a { display:block; padding:24px; color:var(--text); border:1px solid var(--border); border-radius:12px; text-decoration:none; background:var(--surface); }
+.cs-help-categories > a:hover { border-color:var(--accent); }
+.cs-help-categories h2 { font-size:19px; margin:0 0 10px; }
+.cs-help-categories p { color:var(--text-muted); line-height:1.6; margin:0 0 18px; }
+.cs-help-categories span { color:var(--accent); font-size:13px; }
+.cs-help-start { margin-top:32px; }
+.cs-help-start h2,.cs-help-body > section > h2 { font-size:21px; margin:0 0 16px; }
+.cs-help-start ul,.cs-help-results { list-style:none; padding:0; margin:0; }
+.cs-help-start li { padding:16px 0; border-bottom:1px solid var(--border); }
+.cs-help-start a { font-weight:600; }
+.cs-help-start p { color:var(--text-muted); margin:6px 0 0; line-height:1.6; }
+.cs-help-note,.cs-help-count,.cs-help-empty,.cs-help-article-footer { color:var(--text-muted); font-size:13px; line-height:1.7; }
+.cs-help-note { margin-top:24px; }
+.cs-help-results li { border-bottom:1px solid var(--border); }
+.cs-help-results a { display:block; padding:18px 0; text-decoration:none; color:var(--text); overflow-wrap:anywhere; }
+.cs-help-results a:hover strong { color:var(--accent); text-decoration:underline; }
+.cs-help-results small { color:var(--text-muted); display:block; font-size:11px; margin-bottom:5px; }
+.cs-help-results strong { display:block; font-size:16px; }
+.cs-help-results p { font-size:13px; line-height:1.7; color:var(--text-muted); margin:8px 0 0; }
+.cs-help-results.is-compact strong { font-size:13px; }
+.cs-help-results.is-compact p { display:none; }
+.cs-help-breadcrumb { display:flex; gap:10px; font-size:12px; margin-bottom:20px; color:var(--text-muted); }
+.cs-help-toc { padding:14px 18px; border:1px solid var(--border); border-radius:8px; margin-bottom:24px; }
+.cs-help-toc summary { cursor:pointer; font-size:13px; font-weight:600; }
+.cs-help-toc nav { display:grid; gap:8px; padding-top:14px; max-height:320px; overflow:auto; }
+.cs-help-toc a { font-size:13px; }
+.cs-help-toc .is-nested { padding-left:16px; }
+.cs-help-prose { font-size:15px; line-height:1.85; overflow-wrap:anywhere; }
+.cs-help-prose h1 { font-size:30px; letter-spacing:-.025em; line-height:1.3; margin:0 0 24px; }
+.cs-help-prose h2 { font-size:22px; line-height:1.5; margin:36px 0 16px; border-top:1px solid var(--border); padding-top:24px; }
+.cs-help-prose h3 { font-size:17px; line-height:1.5; margin:28px 0 12px; }
+.cs-help-prose :is(h1,h2,h3,h4,h5,h6) { scroll-margin-top:100px; }
+.cs-help-anchor { margin-left:8px; font-weight:400; font-size:.7em; text-decoration:none; opacity:.4; }
+.cs-help-anchor:hover,.cs-help-anchor:focus-visible { opacity:1; }
+.cs-help-prose p { margin:0 0 16px; }
+.cs-help-prose li { margin:5px 0; }
+.cs-help-prose blockquote { padding:8px 18px; margin:20px 0; border-left:3px solid var(--accent); background:var(--surface-raised); }
+.cs-help-prose blockquote p:last-child { margin:0; }
+.cs-help-prose :not(pre) > code { font-size:.86em; padding:2px 5px; background:var(--surface-sunken); border-radius:4px; }
+.cs-help-code { position:relative; margin:20px 0; border:1px solid var(--border); border-radius:8px; background:var(--surface-sunken); overflow:hidden; }
+.cs-help-code > button { display:block; margin:6px 8px 0 auto; font-size:11px; min-height:30px; }
+.cs-help-code > span { position:absolute; left:14px; top:10px; font-size:11px; color:var(--text-muted); }
+.cs-help-code pre { overflow:auto; margin:0; padding:12px 18px 18px; font-size:12px; line-height:1.75; white-space:pre; }
+.cs-help-table { overflow:auto; max-width:100%; margin:20px 0; border:1px solid var(--border); border-radius:8px; }
+.cs-help-table table { border-collapse:collapse; width:100%; font-size:13px; line-height:1.7; }
+.cs-help-table th,.cs-help-table td { text-align:left; vertical-align:top; border-bottom:1px solid var(--border); padding:12px; min-width:110px; }
+.cs-help-table th { background:var(--surface-raised); }
+.cs-help-article-footer { margin:40px 0 0; padding:20px 0; border-top:1px solid var(--border); }
+.cs-help-article-footer code { overflow-wrap:anywhere; }
+@media(max-width:1100px) { .cs-help-layout { grid-template-columns:200px minmax(0,1fr); gap:24px; } }
+@media(max-width:760px) { .cs-help-layout { grid-template-columns:minmax(0,1fr); } .cs-help-sidebar > nav:first-of-type { grid-template-columns:repeat(2,minmax(0,1fr)); } .cs-help-sidebar .cs-help-chapters { max-height:180px; overflow:auto; } .cs-help-header { flex-direction:column; gap:12px; } .cs-help-header .cs-help-local { max-width:none; } .cs-help-categories { grid-template-columns:minmax(0,1fr); } }

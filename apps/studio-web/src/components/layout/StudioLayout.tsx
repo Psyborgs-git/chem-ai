@@ -23,6 +23,7 @@ export const SECONDARY_DESTINATIONS = [
     { to: "/models", label: "Model registry", icon: "models" },
     { to: "/compute", label: "Compute", icon: "compute" },
     { to: "/settings/providers", label: "Providers", icon: "providers" },
+    { to: "/help", label: "Help & documentation", icon: "help" },
   ] },
 ];
 export const WORKSPACE_DESTINATIONS = [...PRIMARY_DESTINATIONS, ...SECONDARY_DESTINATIONS.flatMap((group) => group.destinations)];
@@ -102,6 +103,7 @@ export function TechnicalDetails({ value, label = "Inspect exact record" }: { va
 
 export function StudioIcon({ name, className = "" }: { name: string; className?: string }) {
   const paths: Record<string, ReactNode> = {
+    help: <><circle cx="12" cy="12" r="9" /><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4m0 3v.5" /></>,
     home: <><path d="m3 10 9-7 9 7v10H3Z" /><path d="M9 20v-7h6v7" /></>,
     projects: <><path d="M3 6h6l2 2h10v12H3Z" /><path d="M3 6V4h7l2 2h9v2" /></>,
     materials: <><path d="m12 3 8 5v8l-8 5-8-5V8Z" /><path d="m4 8 8 5 8-5M12 13v8" /></>,

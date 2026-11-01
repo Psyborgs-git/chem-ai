@@ -39,3 +39,13 @@ test("application source still loads with private filesystem paths denied", asyn
   expect(response.ok()).toBeTruthy();
   expect(await response.text()).toContain("createRoot");
 });
+
+test("bundled help includes only registered manuals and excludes private runtime probes", async ({ request }) => {
+  const response = await request.get("/@id/__x00__virtual:studio-help");
+  expect(response.ok()).toBeTruthy();
+  const body = await response.text();
+  expect(body).toContain("docs/usage/getting-started.md");
+  expect(body).not.toContain(marker);
+  expect(body).not.toContain(Buffer.from(marker).toString("base64"));
+  expect(body).not.toContain("mulberry-silk-pilot-2026-11-01.md");
+});

@@ -28,6 +28,7 @@ from workers.inference.runtime import ANSWER_GRAMMAR, TURN_GRAMMAR
 
 from studio.application.agent_tools.registry import ToolDispatcher, ToolRegistry, default_registry
 from studio.application.inference.runtime import OpenAICompatibleRuntime, retain_response_state
+from studio.application.studio_docs import DOCS_GUIDANCE
 from studio.auth.context import ServiceContext
 from studio.domain.tasks.memory import TaskMemoryService
 from studio.errors import DomainError, ErrorCode, not_found
@@ -470,6 +471,7 @@ class AgentTurnRunner:
             "inventing a result; proposals are drafts for human review.\n"
             "When the user asks for task data, facts, or a summary, call a tool\n"
             "first — never answer from memory.\n"
+            f"{DOCS_GUIDANCE}\n"
             'Example tool reply: {"tool": "search_evidence", '
             '"arguments": {"query": "solubility data"}}\n'
             f"Use this task_id for task tools. Task ID: {task.id}\n"

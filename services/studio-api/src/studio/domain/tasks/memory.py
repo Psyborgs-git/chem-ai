@@ -137,7 +137,7 @@ class TaskMemoryService:
         records to a task's resumable context manifest.
         """
         self.ctx.require(CAP_READ_PROJECT, task.project_id)
-        linked = set()
+        linked: set[str] = set()
         for candidate in self.db.scalars(
             select(CandidateRevision).where(
                 CandidateRevision.workspace_id == self.ctx.workspace_id,

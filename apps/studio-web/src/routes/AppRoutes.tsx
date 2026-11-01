@@ -69,6 +69,7 @@ const ResearchLibraryPage = lazy(() => import("../features/notebooks/ResearchLib
 const LocalLearningPage = lazy(() => import("../features/learning/LocalLearningPage").then((module) => ({ default: module.LocalLearningPage })));
 const TaskWorkspace = lazy(() => import("../features/tasks/TaskWorkspace").then((module) => ({ default: module.TaskWorkspace })));
 const DevComponents = lazy(() => import("./DevComponents").then((module) => ({ default: module.DevComponents })));
+const HelpPage = lazy(() => import("../features/help/HelpPage").then((module) => ({ default: module.HelpPage })));
 
 type QueryFailureKind = "auth" | "forbidden" | "not_found" | "unknown";
 
@@ -230,6 +231,7 @@ function AppShell({
   const { pathname } = useLocation();
   const [navOpen, setNavOpen] = useState(false);
   const [finderOpen, setFinderOpen] = useState(false);
+  const finderTriggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => { const openFinder = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setNavOpen(false); setFinderOpen((value) => !value); } }; document.addEventListener("keydown", openFinder); return () => document.removeEventListener("keydown", openFinder); }, []);
   const sidebarRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLButtonElement>(null);
@@ -260,7 +262,7 @@ function AppShell({
       <a className="cs-skip-link" href="#main">
         Skip to content
       </a>
-      <WorkspaceFinder open={finderOpen} onClose={() => setFinderOpen(false)} />
+      <WorkspaceFinder open={finderOpen} onClose={() => setFinderOpen(false)} returnFocusRef={finderTriggerRef} />
       <aside ref={sidebarRef} className={`cs-sidebar cs-sidebar--focused${navOpen ? " is-open" : ""}`} aria-label="Workspace navigation">
         <Link to="/" className="cs-shell__brand">
           <span className="cs-brand-mark"><BrandMark size={35} className="cs-brand-logo" /></span> Chemistry Studio
@@ -273,7 +275,7 @@ function AppShell({
       <header className="cs-shell__header">
         <button ref={menuRef} type="button" className="cs-icon-button cs-menu-button" data-icon-only aria-label="Open navigation" aria-expanded={navOpen} aria-controls="primary-navigation" onClick={() => setNavOpen(true)}><StudioIcon name="menu" /></button>
         <div className="cs-shell__location"><span aria-hidden="true">Studio /</span><span>{location}</span></div>
-        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="cs-icon-button cs-find-trigger" data-icon-only aria-label="Find your work" aria-keyshortcuts="Meta+K Control+K" onClick={() => { setNavOpen(false); setFinderOpen(true); }}><StudioIcon name="research" /></Button></TooltipTrigger><TooltipContent>Find your work · ⌘K</TooltipContent></Tooltip>
+        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" ref={finderTriggerRef} className="cs-icon-button cs-find-trigger" data-icon-only aria-label="Find your work" aria-keyshortcuts="Meta+K Control+K" onClick={() => { setNavOpen(false); setFinderOpen(true); }}><StudioIcon name="research" /></Button></TooltipTrigger><TooltipContent>Find your work · ⌘K</TooltipContent></Tooltip>
         <span className="cs-shell__session"><span className="cs-avatar" aria-hidden="true">{displayName.split(/\s+/).map((name) => name[0]).slice(0,2).join("")}</span>{displayName}</span>
         <SignOutControl />
         <ThemeToggle />
@@ -398,6 +400,9 @@ function ShellContent() {
           <Route path="/memory" element={<ResearchLibraryPage view="memory" />} />
           <Route path="/compute" element={<ComputePanel />} />
           <Route path="/settings/providers" element={<ProvidersPage />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/help/:section/:article" element={<HelpPage />} />
+          <Route path="/help/*" element={<HelpPage />} />
           <Route path="/runs/:runId" element={<RunDetailsPage />} />
           <Route
             path="/compute/fallback/:runId"

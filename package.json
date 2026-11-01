@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "description": "Chemistry Studio workspace root (web app lives in apps/studio-web)",
   "scripts": {
+    "docs:check": "pnpm --filter studio-web docs:check",
     "dev:web": "pnpm --filter studio-web dev",
     "build:web": "pnpm --filter studio-web build",
     "typecheck": "pnpm --filter studio-web typecheck",

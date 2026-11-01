@@ -83,6 +83,9 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["services/studio-api/src/studio", "packages/policy/chem_studio_policy", "packages/engine-adapters/rdkit/engine_adapter_rdkit", "packages/engine-adapters/baybe/engine_adapter_baybe", "packages/engine-adapters/chemprop/engine_adapter_chemprop", "packages/engine-adapters/qcengine/engine_adapter_qcengine", "packages/engine-adapters/sft/engine_adapter_sft", "packages/engine-adapters/rl/engine_adapter_rl", "packages/engine-adapters/materials/engine_adapter_materials", "packages/engine-adapters/analytics/engine_adapter_analytics", "packages/engine-adapters/reinvent/engine_adapter_reinvent", "packages/engine-adapters/aizynthfinder/engine_adapter_aizynthfinder", "packages/engine-adapters/elabftw/engine_adapter_elabftw", "infra/cloud/broker/cloud_broker", "infra/cloud/providers/cloud_providers", "workers"]
 
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "infra/ci/build_help_bundle.py"
+
 [tool.uv]
 package = true
 

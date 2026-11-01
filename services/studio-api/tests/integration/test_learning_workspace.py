@@ -96,7 +96,8 @@ def test_property_preflight_records_actual_fixed_engine_schedule(session, tmp_pa
     }
 
 
-def test_catalog_repair_reuses_owned_pinned_model_path(session, tmp_path):
+@pytest.mark.parametrize("active_state", ["queued", "running"])
+def test_catalog_repair_reuses_owned_pinned_model_path(session, tmp_path, active_state):
     first, second = _env(session, tmp_path)
     registered = first.register_model({"catalogId": "qwen3-4b-instruct-mlx"})
     model = session.get(LearningModel, uuid.UUID(registered["id"]))
@@ -111,6 +112,12 @@ def test_catalog_repair_reuses_owned_pinned_model_path(session, tmp_path):
     assert repaired["id"] == registered["id"]
     assert repaired["location"] == registered["location"]
     assert repaired["downloadJobId"] != registered["downloadJobId"]
+    # Optional download dependencies or disk space can leave the new job blocked.
+    # Exercise the active-job guard independently of the host's download readiness.
+    new_job = session.get(LearningJob, uuid.UUID(repaired["downloadJobId"]))
+    assert new_job is not None
+    new_job.state = active_state
+    session.flush()
     with pytest.raises(DomainError, match="active job"):
         first.register_model(payload)
     with pytest.raises(DomainError, match="same pinned"):

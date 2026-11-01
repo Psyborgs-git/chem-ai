@@ -1,114 +1,82 @@
 # Chemistry Studio
 
-A **local-first** chemistry-research workspace: projects, research
-tasks with frozen success contracts, quarantined evidence intake,
-manual-first lab records, retrieval, scoped optimization/learning
-plumbing — all behind capability-based access on a single-machine
-PostgreSQL deployment.
+A local-first chemistry research workspace with projects and tasks, notebooks,
+source review, manual laboratory records, computed results, private research
+agents, and optional learning and simulation runtimes.
 
-## Honest status — read this first
+Read the [documentation home](docs/README.md) for usage, editing, backend,
+operations, and interface reference. After signing in, open **Help & documentation**
+(or `/help`) to read the bundled manuals inside the Studio. Repository Markdown
+remains available when the backend is down.
 
-This repository is a **verified pilot + release hardening**, not a
-finished scientific platform:
+## Start locally
 
-- **Live and verified:** persistence, artifact vault, capabilities +
-  loopback auth, GraphQL/Relay UI, import→review→claim pipeline,
-  research sessions, lab plans/executions/measurements/corrections,
-  evaluator-driven closeout, backup/restore with integrity checks,
-  streaming events, export-review machinery.
-- **Private research workspace:** tool-using agent sidebar, multiple models per
-  provider, private notebooks and sourced memory, retained Downloads, custom
-  datasets, durable learning jobs, and recurring research. Native MLX LoRA and
-  Chemprop regression/classification have real synthetic-data training smoke
-  evidence; this is software verification, not scientific model qualification.
-- **Legacy fixture-only / mechanism-verified:** optimization (BayBE), quantum/
-  materials/design/synthesis adapters, local inference (2B fixture
-  model), SFT/RL training, model registry + promotion gate. All real
-  containerized execution, all on synthetic data —
-  `scientificStatus = not_validated` everywhere.
-- **Not configured / blocked:** cloud science-compute egress (no approved provider —
-  U08/U09/U11), eLabFTW bridge (CS-0506, U16), team/LAN deployment
-  (U07), real training at scale (U08/U13), scientific thresholds
-  (U14), instrument control (by design — none exists).
+Requires Python 3.12 through `uv`, Node 24, pnpm 10.18.3, and Docker with Compose.
+From the repository root:
 
-Full evidence: [`docs/execution/release/release-matrix.md`](docs/execution/release/release-matrix.md)
-(per-ticket trace to merge PR + acceptance tests) and
-[`docs/execution/release/unknowns-register.md`](docs/execution/release/unknowns-register.md).
-
-## Quick start
-
-Requires Docker, `uv` (Python 3.12), Node ≥ 20 + `pnpm`.
-
-```bash
+```sh
 uv sync --python 3.12 --group dev --frozen
 pnpm install --frozen-lockfile
+export STUDIO_VAULT_ROOT="$PWD/.runtime/vault"
 docker compose -f infra/local/compose.yaml up -d postgres
+```
+
+Wait for `docker exec chem-studio-postgres pg_isready -h 127.0.0.1 -U studio -d studio`
+to succeed, then:
+
+```sh
 make migrate
-uv run --group dev uvicorn studio.api.app:create_app \
-  --factory --host 127.0.0.1 --port 8787     # API
-pnpm --filter studio-web dev                  # UI → http://127.0.0.1:5173
+uv run --group dev uvicorn studio.api.app:create_app   --factory --host 127.0.0.1 --port 8787
 ```
 
-Open the UI and create the first owner account using its setup form.
-Subsequent visits show the sign-in form. Details are in
-[`docs/operations/installation.md`](docs/operations/installation.md).
-`make verify-core` runs the
-deterministic check battery; `make help` lists the full command
-contract.
+In a second terminal run `pnpm --filter studio-web dev` and open
+`http://127.0.0.1:5173`. Create the first owner through the setup form. A model or
+paid provider is unnecessary for core records and manual workflows.
+[Installation](docs/operations/installation.md) explains paths, verification,
+optional RDKit, and the combined `make dev` launcher.
 
-For local molecular calculations, install the native RDKit profile:
+## Work on the Studio
 
-```bash
-uv sync --python 3.12 --group dev --extra engines --frozen
-make dev
-```
+- [Usage](docs/usage/getting-started.md): projects, notebooks, research, evidence, and editing records.
+- [Development](docs/development/local-development.md): architecture, frontend/backend changes, contracts, workers, and tests.
+- [Operations](docs/operations/README.md): configuration, desktop packaging, providers, backups, and recovery.
+- [Reference](docs/reference/README.md): endpoint, GraphQL operation, and environment inventories.
 
-Inside a task, choose **Run calculation**, enter a SMILES structure
-(for example, ethanol `CCO`), and select **Calculate properties**.
-The saved result includes descriptors, the input digest, engine version,
-and execution provenance. These are computed structural descriptors;
-laboratory evidence remains a separate class.
+`make help` lists the command contract. `make verify-core` runs lint, contracts,
+and unit tests; prepare the [engine test profile](docs/development/testing-and-docs.md#prepare-the-test-profile) first. `make docs-generate` refreshes the reference; `make docs-check`
+checks documentation and source coverage; `pnpm docs:check` runs the frontend
+content checks.
 
-## Agent and private library
+## Capability and evidence limits
 
-Open **Agent** in the header to research, use application tools, and manage
-learning jobs. Existing provider credentials are reused securely; each connection
-can have multiple models and role assignments. Configure private-context consent
-and bounded recurring work in Agent settings.
+Core persistence, artifact review, task contracts, manual lab records, and
+capability-based access are implemented. Private agents, retained Downloads,
+datasets, local training, and polymer simulations have their own optional
+runtime and consent requirements. Missing engines report unavailable rather
+than fabricated results.
 
-**Notebooks**, **Research library**, **Downloads**, **Research memory**, and
-**Local learning** are available in navigation. Research originals and cited files
-remain available for human review in the app's dedicated Downloads folder.
-See [agentic research](docs/operations/agentic-research.md) and
-[local/self-hosted learning](docs/operations/learning-workspace.md) for setup,
-ownership, model runtimes, and verification limits.
+Scientific calculations, training metrics, pilot execution, and synthetic test
+data do not establish scientific qualification, experimental outcomes, or
+material equivalence. Inspect each result's provenance and validation status.
+Confidential cloud science execution and the eLabFTW bridge have no configured
+live deployment. This is a trusted-machine loopback deployment; team/LAN hosting
+and production distribution remain separate work.
 
-## Documentation map
+The original handoff, design specifications, historical ticket evidence, and
+research pilots remain under `docs/chemistry-studio`, `docs/design`,
+`docs/execution`, and `docs/research`. Current manuals distinguish those records
+from current usage and operational instructions.
 
-- **Runbooks** — [`docs/operations/`](docs/operations/README.md):
-  installation, user, scientific, admin, model-ops, privacy,
-  backup/restore, recovery, cloud-security posture.
-- **Release evidence** — [`docs/execution/release/`](docs/execution/release/):
-  release matrix + unknowns register; per-ticket evidence in
-  `docs/execution/tickets/`; benchmarks in `docs/execution/benchmarks/`;
-  residual security register in `docs/execution/security/`.
-- **Specification** — `docs/chemistry-studio/` (handoff pack v1.0.1:
-  `CHEMISTRY_STUDIO_HANDOFF.md`, `WORK_PACKAGES.md`, `planning/`,
-  `contracts/`, `fixtures/`).
-
-## Layout
+## Repository layout
 
 | Path | Contents |
 |---|---|
-| `services/studio-api` | FastAPI + Strawberry GraphQL backend (`studio.*`) |
-| `apps/studio-web` | React + TypeScript + Relay web app (Vite) |
-| `workers/` | isolated worker packages (ingestion, inference, chemistry adapters, optimization, training) |
-| `packages/` | `contracts` (versioned DTOs), `policy` (capability vocabulary), `engine-adapters` |
-| `infra/` | `local/` (compose, backup/recovery/backfill tools), `ci/` checks, `cloud/` broker + providers, `images/` engine Dockerfiles |
-| `tests/` | e2e (Playwright), engines, eval, performance, recovery |
+| `apps/studio-web` | React, TypeScript, Relay, Vite, and Tauri desktop shell |
+| `services/studio-api` | FastAPI, Strawberry GraphQL, domain services, and migrations |
+| `workers` | Ingestion, inference, chemistry, optimization, learning, and simulation runtimes |
+| `packages` | Contracts, policy, and isolated engine adapters |
+| `infra` | Local scripts, Compose, image builds, cloud adapters, and CI helpers |
+| `tests` | Browser, engine, evaluation, performance, and recovery checks |
+| `docs` | Current manuals, generated reference, specifications, and evidence |
 
-## License / proprietary note
-
-Internal implementation repository. Specification contents and fixtures
-are synthetic — no real formulations or executable procedures ship in
-this repo.
+Internal proprietary repository. Shipped specification fixtures are synthetic.

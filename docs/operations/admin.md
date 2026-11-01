@@ -1,132 +1,142 @@
-# Runbook — administration (access, jobs, incidents, dependencies)
+# Administration
 
-Audience: workspace owner (`administer_workspace` capability) on the
-loopback single-workspace deployment.
+Administer the trusted-machine, single-workspace installation using an owner
+account. Capability checks protect shared records; private notebooks, research,
+learning jobs, and simulations additionally enforce their author's ownership.
+Workspace administrator grants do not grant access to another author's private
+content. See [privacy](privacy.md) for the boundaries.
 
-## 1. Access model — read this first
+## Access and accounts
 
-- **One workspace, one owner** (E04): `POST /api/auth/setup` creates
-  the owner once and then refuses. The owner role holds every
-  capability (§21.1 vocabulary in
-  `packages/policy/chem_studio_policy/capabilities.py`).
-- **No multi-user UI/API exists.** Additional principals are created
-  only through the service layer — in a `uv run python` shell:
+First-owner setup is one-time. The browser setup form creates the human owner
+and then closes; subsequent access uses sign-in. Sessions expire and can be
+ended with **Sign out** or the authenticated logout interface.
 
-```python
-# uv run python  (from repo root, STUDIO_DATABASE_URL honored)
-from studio.auth.setup import grant_capabilities, hash_password
-from studio.config.settings import get_settings
-from studio.persistence.engine import make_engine, make_session_factory
-from studio.persistence.models import Principal, Workspace
+There is no delivered multi-user account-management screen or general user
+provisioning API. Additional principals/grants are service-layer maintenance,
+using `studio.auth.setup.grant_capabilities` and the persistence models, with
+an explicitly identified workspace and granting owner. Back up first, verify
+that scope, and use password prompting rather than embedding passwords in shell
+history. Do not improvise direct grant strings or treat this as supported LAN
+multi-user hosting.
 
-db = make_session_factory(make_engine(get_settings().database_url))()
-ws = db.query(Workspace).order_by(Workspace.created_at).first()
-p = Principal(workspace_id=ws.id, kind="user", login="analyst",
-              display_name="Analyst",
-              credential_hash=hash_password("<≥10 chars>"))
-db.add(p); db.flush()
-grant_capabilities(db, ws.id, p, "researcher", granted_by=owner_id)
-db.commit()
+The defined roles are `owner`, `researcher`, `lab_operator`,
+`scientific_reviewer`, `data_steward`, `viewer`, `agent`, and `service`.
+`packages/policy/chem_studio_policy/capabilities.py` is authoritative for their
+capability sets. Agent-kind principals have approval/service capability ceilings;
+forging grant rows does not give an agent human approval authority.
+
+Revoking a grant sets its revocation timestamp; disabling a principal and ending
+a session preserve history. These actions are distinct: removing one grant does
+not erase that principal's records or credentials. There is no delivered
+self-service password-reset flow. Avoid disabling the only verified owner
+without a tested access-recovery procedure.
+
+## Processes and background work
+
+The API starts the private agent supervisor and the private learning/simulation
+dispatchers. They own durable leases, progress, cancellation, and recovery for
+their own job families. A browser tab or open sidebar is not required for work
+to continue, but the backend must remain running and the machine awake.
+
+Older generic task runs and their caller-driven reconciliation are a separate
+mechanism. Do not apply the older “no scheduler” description to the private
+supervisors, or assume their restart behavior applies to every generic run.
+
+On macOS, the optional background service is an explicit host-owner action:
+
+```sh
+bash infra/local/background.sh status
+bash infra/local/background.sh install
 ```
 
-Roles map to fixed capability sets (`capabilities_for_role`):
-`owner`, `researcher`, `lab_operator`, `scientific_reviewer`,
-`data_steward`, `viewer`, `agent`, `service`. Grant *roles*, not ad-hoc
-capability strings — unknown capability strings never evaluate true
-(CS-1101 `TestCapabilityCeilings`).
+The service uses label `com.chemistrystudio.research`, waits for an existing
+healthy 8787 service to finish, starts the local PostgreSQL/API runtime, and
+writes `.runtime/background/service.log`. It does not keep the computer awake.
+It runs against the checkout recorded in its LaunchAgent; after moving a
+checkout, uninstall and reinstall from the intended checkout:
 
-- **Revocation:** set `PrincipalCapability.revoked_at` (rows stay as
-  history; `load_context` excludes them), disable a principal via
-  `disabled_at`, end a session via `POST /api/auth/logout` or
-  `revoke_session`. Grant revocation is lazy — no cascade required.
-- **Agent ceiling:** `approval`/`service`-class capabilities are
-  stripped from agent principals at context load — a forged grant row
-  does not confer them (CS-1101 verified).
-
-## 2. Jobs, queue and cancellation
-
-- Run lifecycle lives on the `runs` tab + `/compute` (see
-  `user.md` §8). Procrastinate bridges to Postgres; attempts execute
-  through the §13.3 isolation profiles.
-- **Cancel:** `runsRequestCancelMutation` records the request;
-  `confirm_cancelled` is the explicit termination marker — never
-  trust acknowledgment alone.
-- **Reconciliation:** stale `running` rows are reconciled by callers
-  (`reconcile` with staleness threshold — CS-0401); there is no
-  background scheduler. After an API restart, re-run reconcile before
-  trusting run state.
-- **Backfills:** `infra/local/resumable_backfill.py` —
-  `run`/`status`/`verify` subcommands (checkpointed, idempotent,
-  append-only; see `recovery.md` §2 for kill-resume semantics).
-
-## 3. Incident response
-
-1. **Contain:** revoke the session/principal (§1). For suspect source
-   content, revoke the artifact — `privacy.md` §3 (the cascade marks
-   chunks/records/claims/derived artifacts consistently).
-2. **Inspect:** audit rows are append-only in Postgres; the outbox
-   table (`outbox_events` + `outbox_deliveries`) is the event ledger —
-   nothing published outside it appears in streams.
-3. **Preserve evidence:** take a backup before remediation
-   (`backup-restore.md`); revoked-state bytes stay recoverable in the
-   vault/backups by design.
-4. **Verify integrity after the fact:**
-   `uv run python infra/local/recovery_check.py --dsn <dsn> --vault <dir>`
-   enumerates every missing/broken item (12 checks — alembic head,
-   blobs, lineage, digests, approvals, grants, sessions…).
-5. **Never** `alembic downgrade` a populated install (`recovery.md` §1).
-
-## 4. Dependency updates
-
-- Python: bump in `pyproject.toml`, `uv lock`, `uv sync --frozen`;
-  keep `docs/dependencies.lock.md` notes current (license/platform
-  caveats live there).
-- JS: `pnpm update` per workspace package, keep `--frozen-lockfile`
-  green.
-- Engine/worker images: rebuild the pinned Dockerfiles
-  (`model-ops.md` §2) and re-run that lane's engine tests — image tags
-  are content-versioned (`-vN`), so a new build is a new tag.
-- **Verification battery after any dependency change:**
-
-```bash
-make verify-core && make typecheck
-make test-integration && make test-security
-pnpm --filter studio-web test && pnpm --filter studio-web typecheck
-pnpm --filter studio-web exec playwright install chromium && make test-e2e
+```sh
+bash infra/local/background.sh uninstall
 ```
 
-- Upstream drift rule (§28): pin tested versions, isolate adapters,
-  read official docs — never swap a maintained engine for a homemade
-  solver out of convenience.
+Disable recurring work and this service before a consistent backup or migration.
+The desktop app terminates only a backend child it owns; hiding its window,
+quitting it, and stopping a separate background backend have different effects.
+See [desktop](desktop-macos.md).
 
-## 5. Observability
+## Jobs, admission, and cancellation
 
-- Structured audit events write to Postgres (sensitive keys dropped at
-  any nesting depth — CS-1101 `TestAuditRedaction`); there is no
-  metrics/tracing exporter in the core profile.
-- SSE streams (`/api/events`) carry message-level events with sequence
-  ids; the outbox is authoritative — direct DB writes never stream.
+Inspect persisted status, events, attempt history, resource budget, and errors
+in the relevant task, Agent, Local learning, or simulation surface. A queued or
+cancel-requested state is not proof that a process has completed or stopped.
 
-## Failure symptoms
+- Generic runs record cancellation requests and explicit terminal outcomes.
+  Stale generic run reconciliation remains caller-driven.
+- Private agent cancellation stops further agent steps at checkpoints. Existing
+  learning/simulation jobs retain their independent controls and checkpoints.
+- Private learning cancellation stops its process group; resume behavior depends
+  on backend. MLX adapter resume is a warm start, while Transformers can restore
+  optimizer checkpoints.
+- Simulation cancellation/timeout stops its process group. Resumption uses the
+  last completed stage and the original cumulative time allowance.
+- Remote worker leases and heartbeats are owner-authenticated; recover missing
+  uploaded checkpoints/model mappings before resuming interrupted work.
 
-| Symptom | Cause | Recovery |
-|---|---|---|
-| `workspace already has an owner` on setup | normal — bootstrap is one-time | log in; provision users via §1 |
-| Run stuck `running` after API restart | reconcile is caller-driven | run reconcile with staleness threshold (CS-0401) |
-| `FORBIDDEN` despite grant row | agent-kind ceiling / revoked_at set | expected behavior — check principal kind + revocation |
-| `recovery_check` lists missing items | incomplete restore/sabotage | do not trust the install; restore again or investigate |
+Private autopilot is off by default. Balanced defaults limit time, document
+fetches, training concurrency, and paid spend. Configure actual model token
+prices and an explicit paid budget before paid autopilot. Inspect the owner's
+usage/reservations rather than assuming each retry starts a fresh allowance.
 
-## Privacy concerns
+## Incident response
 
-- Admin inspection touches all workspace data — the loopback
-  deployment assumes a single trusted owner; any multi-tenant need is
-  a redesign, not a config change (U07).
-- Audit/outbox are append-only without cryptographic tamper-proofing
-  (residual R11) — treat DB access as in-threat-model.
+1. Stop suspicious work and revoke the affected session/grant/principal as
+   appropriate. Disable recurring activity if it could continue the incident.
+2. For source-content concerns, revoke the source through the quality workflow;
+   preserve the cascade report and original provenance.
+3. Preserve relevant audit, outbox, job, and process logs privately. Take a
+   quiesced backup before repairing state.
+4. Run the [recovery checks](recovery.md), inspect the reported item IDs, and
+   validate newer private states separately.
+5. Recover into clean destinations if integrity is uncertain. Do not downgrade a
+   populated schema or delete vault files to make an error disappear.
 
-## Evidence location
+Audit and outbox data are append-only through application paths, but are not a
+cryptographically tamper-proof defense against a database administrator. SSE
+uses the outbox ledger; a raw database write does not automatically become a
+correct application event.
 
-`docs/execution/tickets/CS-0102.md` (principals/capabilities),
-`CS-0105.md` (outbox/audit), `CS-0401/0402/0403.md` (runs/admission/
-isolation), `CS-1101.md` (adversarial review),
-`CS-1102.md` (lifecycle verification).
+## Dependencies and verification
+
+Update Python constraints with `pyproject.toml` and regenerate `uv.lock`; update
+JavaScript dependencies and `pnpm-lock.yaml` in their owning workspace. Optional
+worker requirement locks, Dockerfiles, image tags, licenses, and platform notes
+must agree. Preserve isolated optional environments rather than importing heavy
+runtime packages into the API process.
+
+After a dependency or runtime change, run checks appropriate to the changed
+layer. A broad release verification normally includes:
+
+```sh
+make verify-core
+make typecheck
+make test-integration
+make test-security
+pnpm --filter studio-web test
+pnpm build:web
+make test-e2e
+```
+
+Install Playwright Chromium before browser tests if needed. Engine, native,
+backup, and heavy training/simulation checks have additional prerequisites and
+are required only for claims about those lanes. Record missing prerequisites;
+a skipped or fixture-only check is not evidence of live scientific capability.
+Documentation changes use the [documentation checks](../development/testing-and-docs.md).
+
+## Observability and maintenance
+
+There is no general metrics/tracing exporter configured. Use structured API
+logs, application audit/outbox rows, and persisted job events. Preserve logs
+with the same privacy controls as research data. The [configuration inventory](configuration.md)
+lists file locations. Explicit maintenance backfills are documented in
+[recovery](recovery.md); they are not autonomous background cleanups.

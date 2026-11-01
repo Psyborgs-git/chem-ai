@@ -1,109 +1,101 @@
-# Runbook — privacy: export review, source revocation, retention
+# Privacy, disclosure, and retention
 
-Audience: owner / `review_export` + `approve_export` holders.
-Current posture: **no live cloud provider is configured** (U08/U09/U11
-open — `docs/operations/cloud-security.md`); every egress byte in the
-verified evidence went through the in-process double only.
+The Studio is a local-first application, but optional features can make network
+requests. Local storage, a loopback URL, and a configured provider do not imply
+the same disclosure policy. Review the selected workflow and source rights.
 
-## 1. Cloud export review (CS-1001→CS-1004)
+## Private and shared records
 
-Pipeline, all gated:
+Projects/tasks, approved scientific records, and their capability-scoped evidence
+are separate from owner-private notebooks, source copies, memory, conversations,
+private datasets/models/jobs, and simulations. A project link does not publish a
+private notebook, and workspace administration does not widen private author
+scope. Notebook AI/training opt-outs and current source permissions are checked
+again when content is used.
 
-1. **Infeasibility report** — a run that cannot proceed locally gets a
-   `RunFeasibilityReport` (`/compute/fallback/:runId`,
-   `fallbackRequestMutation`). It names the missing dimensions —
-   it is a report, never an action.
-2. **Export proposal** — `exportPrepareMutation` produces an
-   `ExportProposal` bound by digest (`bound_inputs`/`bound_digest`);
-   the minimal transformed payload (CS-1002) carries a manifest of
-   exactly what leaves, reviewed per-field.
-3. **Disclosure review** — `/privacy/exports/:proposalId`
-   (`exportDecideMutation`): reviewer sees the payload manifest;
-   `approve_export` approval binds `provider/account/region/
-   environment`, recipient, bytes, expiry — exact-equality checked at
-   the gate, not similarity.
-4. **Broker execution** (CS-1003): one-shot permits — denied ⇒ the
-   provider sees zero bytes; revoke mid-transfer stops further
-   transfer while already-sent bytes stay honestly recorded as
-   `exposed`; callbacks converge idempotently; cancel/reconcile/
-   delete record what the provider still holds.
-5. **Confidential environment** (CS-1004): attestation gate fails
-   closed on any absent check; `confidential_capability()` reports
-   `not_configured` until owner approval + a live `ConfidentialBackend`
-   exist — today it does not.
+Source text, tool results, and model output are untrusted research material.
+A citation or successful execution does not establish scientific truth. Human
+scientific approvals and model activation remain separate decisions.
 
-```bash
-# verify: provider registry is empty without configuration (executed —
-# prints `providers: [] (none configured)`)
-uv run python - <<'PY'
-import sys
-sys.path.insert(0, "infra/cloud/broker")
-from cloud_broker.providers import PROVIDERS
-print("providers:", list(PROVIDERS) if PROVIDERS else "[] (none configured)")
-PY
-```
+## Network paths and consent
 
-## 2. Source revocation and derived artifacts (CS-0305/CS-1101)
+| Path | What to review |
+|---|---|
+| Configured HTTP inference provider | Destination, provider revision, selected model/protocol, disclosure consent, and source export rights |
+| Direct local model subprocess | Authorized private context and local runtime/files; no HTTP provider transfer is needed |
+| Scholarly/chemical/web search | Search terms reach the configured public services or trusted SearXNG instance |
+| Source retrieval | Selected public URL is fetched and may expose access metadata to its host |
+| Catalog model download | Explicit pinned model repository/revision and license; download uses network access |
+| Self-hosted learning worker | Explicit remote execution target and owner-authorized data/model/checkpoint transfers |
+| Older cloud science export broker | Separate reviewed payload/recipient/approval manifest; no live science provider is configured by default |
 
-`qualitySourceRevokeMutation` (data-steward level) on a source
-artifact triggers the verified cascade:
+An inference provider, including a loopback endpoint that can forward elsewhere,
+requires the applicable consent and rights. Private Agent consent is stored per
+owner/destination/revision; task Research turns use explicit revision-bound
+consent. A changed destination requires a new decision. Provider connection
+testing fetches model metadata and sends no research completion prompt.
+See [provider details](inference-providers.md) for exactly what task turns send
+and how current source restrictions withhold content.
 
-- source row stays, `review_state='revoked'`; `source_revocations`
-  tombstone rows record the impact report;
-- chunks leave the retrieval index (index-version bump + fetch-layer
-  status filter — revoked content can't be served from cache);
-- extracted records → `rejected` (`source_revoked`); proposed/accepted
-  claims → `superseded` (still queryable, with provenance);
-- derived artifacts → `retention.lineage_review='required'` — suspended
-  visibly, not silently deleted;
-- historical exposure (`exposedManifestIds`/`exposedPrincipalIds`) is
-  **recorded, not erased**.
+Keyed providers store secrets in macOS Keychain. There is no plaintext fallback
+when secure storage is unavailable. Database/vault backups do not include those
+keys. Local training workers receive scrubbed environments; native subprocess
+execution does not claim OS-enforced network denial. Restricted container
+profiles provide a different, stronger execution boundary.
 
-Honest limits: revocation is per-artifact — re-uploaded identical bytes
-are a new artifact and need fresh review (residual R6);
-dataset/model-release impact fields are honestly empty where no
-registry rows exist (R7).
+## Reviewed cloud science export
 
-## 3. Retention posture (CS-1102, recovery.md §4)
+The older science-compute export workflow creates a feasibility report, prepares
+a transformed payload manifest, obtains human disclosure approval, and gates
+broker transfer with exact bound recipient/environment/bytes/expiry checks.
+A proposal is not a transfer. Revocation stops further transfer but cannot
+retract bytes already exposed; cancellation/deletion reconciliation records
+what a provider still retains.
 
-There are **no retention-window policies configured** — nothing ages
-out on a timer; "deletion" surfaces are soft marks everywhere:
+The confidential-cloud adapter has only synthetic double-backed verification
+and no configured live backend. This status does **not** mean configured
+research inference cannot make an authorized outbound request. The provider
+connection mechanism and the older science broker are separate. See
+[cloud posture](cloud-security.md).
 
-| Surface | Delete does | Backups retain |
-|---|---|---|
-| artifact revoke | mark + tombstones; index/cache exclusion | everything incl. blob bytes |
-| grant/session/principal | `revoked_at`/`disabled_at` | full history |
-| workspace purge | `delete_workspace_tree` exists, never wired to requests | n/a |
-| vault blob | `remove_blob` primitive, no request-path callers | blobs are never deleted by the app |
+## Revocation and source impact
 
-Implication: revoke ≠ delete — plan backups accordingly; a real purge
-policy needs `recovery_check` extended to expect-absent semantics.
+Revoking a shared source artifact preserves its row/tombstone and records an
+impact report. Retrieval excludes its chunks; extracted records are rejected,
+claims are superseded, and derived lineage requires review. Historical exposure
+records remain. Current rights also govern retained private copies.
 
-## 4. Periodic privacy verification
+Revocation is per artifact: uploading identical bytes as a new artifact is not
+an automatic global revocation. Existing trained weights are not unlearned by
+revoking a source, forgetting memory, or disabling notebook training. Review
+impacted datasets/model use separately.
 
-```bash
-uv run python tests/integration/recovery/no_egress_check.py   # AT-0505-2
-uv run python infra/local/pilot_gate.py                        # AT-0505-3
-make test-security                                             # CS-1101 suite
-```
+## Retention and deletion
 
-- `no_egress_check`: static scan of app src + socket guard — expected
-  `no_egress_check: OK`. (Whole-repo egress scan incl. `workers/` +
-  `infra/` is in `test_cs1101_loaders.py::TestEgressWholeRepo`.)
-- `pilot_gate.py` regenerates `docs/operations/pilot-gate.md`.
+There is no configured universal age-based retention window or secure erasure
+policy. Revocation preserves original bytes and history, so later backups can
+still contain revoked sources. Notebook trash/restoration, source deletion,
+memory forgetting, grant/session revocation, and model/job lifecycle actions
+have their own record-specific semantics.
 
-## Failure symptoms
+Human-review Downloads and exported citation files can outlive the protected
+source record. External model directories, worker-host outputs, backups, and
+copies made outside the Studio require their own retention handling. Removing
+a UI item does not securely erase all those copies or undo previous disclosure.
 
-| Symptom | Cause | Recovery |
-|---|---|---|
-| proposal exists but transfer never runs | approval absent/expired/mismatched | re-review; permit gate is exact-match, fail-closed |
-| revoked content still in a fresh backup | by design — tombstone + bytes retained | document retention expectation; no purge exists |
-| `confidential_capability() = not_configured` | no approved provider | expected until §1.5 prerequisites land |
+The application does not provide general at-rest application encryption,
+cryptographic audit tamper-proofing, or guaranteed SSD/cloud erasure. Protect
+the trusted machine and backup storage accordingly. [Backup and restore](backup-restore.md)
+explains coverage and [configuration](configuration.md) lists state stores.
 
-## Evidence location
+## Verify the boundary you changed
 
-`docs/execution/tickets/CS-0305.md`, `CS-0505.md`,
-`CS-1001…CS-1004.md`, `CS-1101.md`, `CS-1102.md`;
-`docs/operations/cloud-security.md`, `backup-restore.md`,
-`recovery.md`; residual register
-`docs/execution/security/cs1101-residual-threat-register.md`.
+Use security tests for shared capabilities and private ownership; provider tests
+for consent/transport/redaction; library tests for rights/revocation; worker tests
+for artifact and credential boundaries. The older core `no_egress_check.py` and
+generated pilot report cover a narrower historical core posture and are not
+proof that today's optional research/learning paths cannot use the network.
+
+Do not disable source gates or widen Vite filesystem access to repair research
+or documentation issues. Use [troubleshooting](troubleshooting.md) and inspect the
+specific denied operation.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import uuid
+from collections.abc import Callable
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, File, Form, Query, Request, Response, UploadFile
@@ -296,11 +297,12 @@ def structure_preview(
     molecule = Chem.MolFromSmiles(smiles)
     if molecule is None:
         return {"smiles": smiles, "error": "The supplied SMILES could not be parsed"}
+    draw_svg: Callable[..., str] = Draw.MolsToGridImage
     return {
         "smiles": smiles,
         "canonicalSmiles": Chem.MolToSmiles(molecule),
         "formula": rdMolDescriptors.CalcMolFormula(molecule),
-        "svg": Draw.MolsToGridImage(  # type: ignore[no-untyped-call]
+        "svg": draw_svg(
             [molecule], molsPerRow=1, subImgSize=(420, 300), useSVG=True
         ),
     }

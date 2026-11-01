@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 import relay from "vite-plugin-relay";
 import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath, URL } from "node:url";
+import { helpContentPlugin } from "./scripts/help-content.mjs";
 
 // node types are not a workspace dep; the config file runs in node.
 declare const process: { env: Record<string, string | undefined> };
@@ -19,11 +20,14 @@ export default defineConfig({
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   plugins: [
     tailwindcss(),
+    helpContentPlugin(),
     react(),
     // graphql`` tag → generated artifact (reads relay.config.json).
     relay,
   ],
   test: {
+    // Build-time content validation uses node:test, separately from browser components.
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
     maxWorkers: 4,

@@ -1,7 +1,8 @@
 # Agentic research and the private library
 
-See [verification results and remaining execution coverage](agentic-research-verification.md)
-for the recorded software, live-provider, local-training, and native-app checks.
+Use this guide for current operation. Historical verification is recorded in
+`docs/operations/agentic-research-verification.md`; it does not establish the
+current machine's provider, hardware, or scientific readiness.
 
 Open **Agent** in the app header to start an owner-private conversation from any
 screen. Select an existing provider and one of its models, a private local model,
@@ -61,7 +62,7 @@ URLs themselves cannot access loopback/private addresses or redirect into them.
 **Downloads** retains originals, extracted text, citation metadata, and readable
 review copies. It supports uploaded files and sources cited from existing
 evidence artifacts. The default review folder is
-`~/Downloads/Chemistry Studio/<workspace>/<owner>/`; `STUDIO_DOWNLOADS_ROOT`
+`~/Downloads/Chemistry Studio/<workspace>/<owner>/`; `STUDIO_RESEARCH_DOWNLOADS_ROOT`
 changes its root. The protected source copies remain under the artifact vault.
 Use **Open in Finder**, **Open original**, or citation JSON/BibTeX exports for
 human review.
@@ -113,8 +114,8 @@ independent evaluation for that exact candidate.
 
 ## Updating an existing installation
 
-Apply additive migrations through `0034_inference_api_styles`, rebuild the web or
-native app, and restart its API process:
+Back up first, apply the current migration head, rebuild the web or native app,
+and restart its API process with the existing database and vault configuration:
 
 ```sh
 .venv/bin/alembic -c services/studio-api/migrations/alembic.ini upgrade head
@@ -126,3 +127,13 @@ tasks, shared research sessions, and the older reviewed model registry remain
 available. New private GraphQL roots are `privateLibrary`, `privateAgent`, and
 `privateLearning`; their operations call the same services as the authenticated
 `/api/library`, `/api/agent-workspace`, and `/api/learning-workspace` interfaces.
+
+## Maintenance and recovery
+
+A conversation cancellation stops further agent steps; learning and simulation
+jobs have their own cancellation controls. Check those jobs separately before
+stopping the backend or taking a consistent snapshot. Review the
+[stored-state inventory](configuration.md) and [backup procedure](backup-restore.md)
+for protected originals, human-review Downloads, private checkpoints/models, and
+provider keys. The background service must be deliberately stopped during
+maintenance so it cannot restart a writer.

@@ -334,7 +334,19 @@ test("chat history searches older message bodies, switches sessions, and restore
     await older.scrollIntoViewIfNeeded();
     await expect.poll(() => scrollArea.evaluate((node) => node.scrollTop)).toBeLessThan(1);
     await scrollArea.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-    const readingAnchor = current.getByText("Review the measurement protocol before the next experiment.", { exact: true });
+    const readingAnchor = current.locator(".cs-notebook-prose:not([aria-busy=true])").getByText("Review the measurement protocol before the next experiment.", { exact: true });
+    await expect(readingAnchor).toBeVisible();
+    await readingAnchor.evaluate(async (node) => {
+      const item = node.closest("[data-slot=message-scroller-item]")!;
+      await Promise.all(item.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => undefined)));
+    });
+    expect(await readingAnchor.evaluate((node) => {
+      const item = node.closest("[data-slot=message-scroller-item]")!;
+      return {
+        anchorTransform: getComputedStyle(item).transform,
+        entranceAnimation: getComputedStyle(item.firstElementChild!).animationName,
+      };
+    }), "Entrance motion must not transform the element used to preserve the reader's scroll position").toEqual({ anchorTransform: "none", entranceAnimation: "cs-chat-turn-in" });
     const anchorBefore = await readingAnchor.evaluate((node) => node.getBoundingClientRect().top);
     const earlierPage = page.waitForResponse((response) => {
       const url = new URL(response.url());
@@ -343,8 +355,16 @@ test("chat history searches older message bodies, switches sessions, and restore
     await older.click();
     await earlierPage;
     await expect(current.getByRole("log")).toContainText(bodyOnlyTerm);
+    await readingAnchor.evaluate(async (node) => {
+      const item = node.closest("[data-slot=message-scroller-item]")!;
+      await Promise.all(item.getAnimations({ subtree: true }).map((animation) => animation.finished.catch(() => undefined)));
+      for (let frame = 0; frame < 3; frame += 1) {
+        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      }
+    });
     await expect.poll(async () => Math.abs(await readingAnchor.evaluate((node) => node.getBoundingClientRect().top) - anchorBefore), { message: "Prepending the real older page should preserve the reader's message position at 390px" }).toBeLessThan(8);
-    await page.screenshot({ animations: "disabled", path: test.info().outputPath("agent-history-mobile-prepend-position.png"), fullPage: true });
+    await page.screenshot({ animations: "disabled", path: test.info().outputPath("agent-history-mobile-prepend-position.png") });
+    expect(Math.abs(await readingAnchor.evaluate((node) => node.getBoundingClientRect().top) - anchorBefore), "The reader's message position must remain preserved after painting the settled older page").toBeLessThan(8);
     await page.setViewportSize({ width: 1280, height: 900 });
     await expect(current.getByRole("log")).toContainText("Saved research response 2.");
     await page.getByRole("button", { name: "History", exact: true }).click();

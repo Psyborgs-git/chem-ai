@@ -3,10 +3,20 @@ import { cn } from "cn"
 import { Select as SelectPrimitive } from "radix-ui"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
+const SelectPortalContext = React.createContext<{
+  container: HTMLDialogElement | null
+  setContainer: React.Dispatch<React.SetStateAction<HTMLDialogElement | null>>
+} | null>(null)
+
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+  const [container, setContainer] = React.useState<HTMLDialogElement | null>(null)
+  return (
+    <SelectPortalContext.Provider value={{ container, setContainer }}>
+      <SelectPrimitive.Root data-slot="select" {...props} />
+    </SelectPortalContext.Provider>
+  )
 }
 
 function SelectGroup({
@@ -32,12 +42,23 @@ function SelectTrigger({
   className,
   size = "default",
   children,
+  ref,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
   size?: "sm" | "default"
 }) {
+  const trigger = React.useRef<HTMLButtonElement>(null)
+  const portal = React.useContext(SelectPortalContext)
+  React.useImperativeHandle(ref, () => trigger.current!, [])
+  React.useLayoutEffect(() => {
+    // A body portal is outside a native modal's top layer and becomes inert.
+    // Resolve the trigger's actual nearest dialog, including dialogs that do
+    // not use CreateSheet, instead of depending on global focus or z-index.
+    portal?.setContainer(trigger.current?.closest("dialog") ?? null)
+  }, [portal?.setContainer])
   return (
     <SelectPrimitive.Trigger
+      ref={trigger}
       data-slot="select-trigger"
       data-size={size}
       className={cn(
@@ -59,10 +80,14 @@ function SelectContent({
   children,
   position = "item-aligned",
   align = "center",
+  container,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: React.ComponentProps<typeof SelectPrimitive.Content> & {
+  container?: React.ComponentProps<typeof SelectPrimitive.Portal>["container"]
+}) {
+  const portal = React.useContext(SelectPortalContext)
   return (
-    <SelectPrimitive.Portal>
+    <SelectPrimitive.Portal container={container === undefined ? portal?.container : container}>
       <SelectPrimitive.Content
         data-slot="select-content"
         data-align-trigger={position === "item-aligned"}

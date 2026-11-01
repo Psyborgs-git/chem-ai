@@ -38,7 +38,8 @@
 .cs-chat-transcript { padding:24px; }
 .cs-chat-transcript-content { gap:24px; }
 .cs-chat-transcript-content > * { max-width:100%; }
-.cs-chat-turn { animation:cs-chat-turn-in 180ms cubic-bezier(.2,.7,.2,1) both; }
+/* The scroller measures each turn's outer box to preserve reading position. */
+.cs-chat-turn > * { animation:cs-chat-turn-in 180ms cubic-bezier(.2,.7,.2,1) both; }
 .cs-chat-message [data-slot=message-content] { gap:8px; }
 .cs-chat-message [data-slot=bubble-content] { font-size:14px; line-height:24px; }
 .cs-chat-message--user [data-slot=bubble] { max-width:90%; }
@@ -112,8 +113,6 @@
 @media(min-width:1001px) {
  .has-agent-panel .cs-shell { padding-right:var(--agent-panel-width); }
  .has-agent-panel .cs-shell__session { display:none; }
- .has-agent-panel .cs-workspace-finder { width:auto; min-width:40px; }
- .has-agent-panel .cs-workspace-finder span,.has-agent-panel .cs-workspace-finder kbd { display:none; }
  .has-agent-panel .cs-content { container-type:inline-size; }
  .cs-chat-panel.is-expanded { width:calc(100vw - var(--sidebar-width)); max-width:none; }
  .has-agent-panel.has-expanded-chat .cs-shell { padding-right:0; }
@@ -130,7 +129,7 @@
 @media(max-width:1000px) { .cs-agent-backdrop { display:block; position:fixed; inset:0; border:0; background:rgb(0 0 0 / 18%); z-index:59; animation:cs-chat-backdrop 180ms ease-out both; } .cs-agent-backdrop[data-state=closed] { opacity:0; transition:opacity 140ms ease-in; } .cs-agent-panel { width:min(480px,100vw); } .cs-agent-panel .cs-chat-expand-button { display:none; } }
 @keyframes cs-chat-backdrop { from { opacity:0; } to { opacity:1; } }
 @media(max-width:500px) { .cs-agent-panel { width:100vw; } .cs-agent-launcher span { display:none; } .cs-chat-toolbar { padding:8px 16px; } .cs-chat-current { padding:16px; } .cs-chat-transcript { padding:16px; } .cs-chat-composer { padding:16px; } .cs-chat-composer-hint { font-size:10px; } }
-@media(prefers-reduced-motion:reduce) { .cs-agent-panel,.cs-agent-panel[data-state=closed],.cs-chat-turn,.cs-agent-backdrop,.cs-chat-send-pending { animation:none; transition:none; } }
+@media(prefers-reduced-motion:reduce) { .cs-agent-panel,.cs-agent-panel[data-state=closed],.cs-chat-turn > *,.cs-agent-backdrop,.cs-chat-send-pending { animation:none; transition:none; } }
 
 .cs-provider-model-workspace { margin-top:32px; }
 .cs-provider-model-group { padding:24px; border:1px solid var(--border); border-radius:12px; background:var(--surface); margin:16px 0; }

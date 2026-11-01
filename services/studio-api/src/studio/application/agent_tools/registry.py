@@ -21,6 +21,7 @@ import jsonschema
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from studio.application.studio_docs import get_studio_documentation
 from studio.auth.context import ServiceContext
 from studio.domain.candidates.service import CandidateService
 from studio.domain.candidates.verification import VerificationService
@@ -366,10 +367,74 @@ def _task_evidence_summary(
 _OBJECT = {"type": "object", "additionalProperties": True}
 
 
+def _search_studio_docs(db: Session, ctx: ServiceContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Public bundled manuals require no workspace database reads or egress."""
+    return get_studio_documentation().search(
+        args["query"], section=args.get("section"), limit=args.get("limit", 5)
+    )
+
+
+def _read_studio_doc(db: Session, ctx: ServiceContext, args: dict[str, Any]) -> dict[str, Any]:
+    return get_studio_documentation().read(
+        args["article_id"],
+        heading=args.get("heading"),
+        offset=args.get("offset", 0),
+        max_chars=args.get("max_chars", 4000),
+        heading_offset=args.get("heading_offset", 0),
+    )
+
+
 def default_registry() -> ToolRegistry:
     """The closed catalog — every name is a domain operation."""
     return ToolRegistry(
         [
+            AgentTool(
+                name="search_studio_docs",
+                description=(
+                    "Search bundled Chemistry Studio Help for using screens, editing notes, "
+                    "setup, training and troubleshooting. Use this first for app/how-to questions; "
+                    "returns article IDs, excerpts and stable /help links. "
+                    "No private workspace data."
+                ),
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "minLength": 1, "maxLength": 200},
+                        "section": {
+                            "type": "string",
+                            "enum": ["usage", "development", "operations", "reference"],
+                        },
+                        "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+                    },
+                    "required": ["query"],
+                    "additionalProperties": False,
+                },
+                handler=_search_studio_docs,
+            ),
+            AgentTool(
+                name="read_studio_doc",
+                description=(
+                    "Read an allowlisted Studio Help article/heading "
+                    "returned by search_studio_docs. Cite its /help URL "
+                    "and explain the actual documented UI steps. Use next_offset "
+                    "with the same article/heading to continue text; next_heading_offset pages "
+                    "the table of contents. Manuals describe behavior, "
+                    "not live readiness or job success."
+                ),
+                input_schema={
+                    "type": "object",
+                    "properties": {
+                        "article_id": {"type": "string", "minLength": 1, "maxLength": 160},
+                        "heading": {"type": "string", "minLength": 1, "maxLength": 1024},
+                        "offset": {"type": "integer", "minimum": 0, "maximum": 2097152},
+                        "max_chars": {"type": "integer", "minimum": 1, "maximum": 6000},
+                        "heading_offset": {"type": "integer", "minimum": 0, "maximum": 10000},
+                    },
+                    "required": ["article_id"],
+                    "additionalProperties": False,
+                },
+                handler=_read_studio_doc,
+            ),
             AgentTool(
                 name="search_evidence",
                 description="Lexical search over scoped, rights-gated sources.",

@@ -176,7 +176,16 @@ plaintext reasoning and reasoning summaries do not enter UI messages or logs.
 Changes to source permissions, provider revisions or effective model protocol
 discard the prior checkpoint context before another outbound model call.
 
-The transport follows the [official OpenAI function calling guide](https://developers.openai.com/api/docs/guides/function-calling)
-and [Responses migration guide](https://developers.openai.com/api/docs/guides/migrate-to-responses).
-Local mock providers verify protocol and application behavior; they are not
-evidence of any hosted model's scientific accuracy or account access.
+## Recovery and maintenance
+
+Provider metadata and opaque credential references are stored in PostgreSQL.
+API keys remain in the macOS login Keychain and are not exported by the
+DB/vault backup tool. After recovery on another machine, re-enter keys through
+Providers, inspect cleanup status, and deliberately test the selected connection.
+There is no plaintext key fallback on Linux or when Keychain is unavailable.
+
+Rebuilding the web/native frontend is necessary after changing provider UI or
+bundled documentation; restart the backend after changing runtime behavior.
+Provider kind/destination/revision changes invalidate the relevant consent and
+checkpoint assumptions. See [backup coverage](backup-restore.md),
+[privacy](privacy.md), and [troubleshooting](troubleshooting.md).

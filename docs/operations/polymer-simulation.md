@@ -1,14 +1,15 @@
 # Atomistic polymer simulation pilots
 
-The private simulation workspace runs actual RadonPy 0.2.11, GAFF2, Gasteiger
-charges and native ARM64 LAMMPS 22 July 2025 Update 4. These are amorphous,
+The private simulation workspace targets RadonPy 0.2.11, GAFF2, Gasteiger
+charges and native ARM64 LAMMPS 22 July 2025 Update 4. Check its capability probe
+on the current machine before creating work. These are amorphous,
 finite-chain all-atom computational pilots. Their output does not establish
 silk equivalence, fabric hand, drape, tensile properties or experimental results.
 
 ## Isolated runtime
 
 ```sh
-python3.12 -m venv .runtime/simulation-radonpy
+uv run python -m venv .runtime/simulation-radonpy
 .runtime/simulation-radonpy/bin/python -m pip install -r workers/simulation/requirements.lock
 ```
 
@@ -94,26 +95,31 @@ from the last completed stage, rather than claiming a bit-exact binary restart.
 An API lease watchdog stops orphaned workers after a backend crash. Insufficient
 storage blocks new work or stops a running job without evicting old artifacts.
 
-## Verification
+## Verification and recovery
 
-A native PET fixture with two repeats, two chains, two seeds and 106 atoms
-completed real packing, 21-step compression/decompression and NPT sampling.
-Both trajectories were numerically stable; both failed RadonPy convergence and
-remained ineligible for training labels. The fixture used a 0.001 scale and
-5,000 sampling steps, and proves execution rather than material quality.
-Retained local evidence is `.runtime/simulation-smoke-pet-capped/`.
+Use the capability probe and actual job events to confirm runtime availability,
+versions, parameterization, convergence, and eligibility. Historical native PET
+pilot artifacts under `.runtime/simulation-smoke-pet-capped/` demonstrate execution
+on their recorded inputs; they do not establish current runtime readiness,
+material quality, convergence, or an eligible training label.
 
-Unit tests cover input bounds, neutral structures, end-cap orientation and
-thermo warning parsing. PostgreSQL integration checks cover owner isolation,
-artifact path boundaries, heavy-job exclusion, and actual native cancellation
-and stage-checkpoint resumption. To include the optional real MD test:
+Unit tests cover input bounds, neutral structures, end-cap orientation, and
+thermo warning parsing. Integration tests cover owner isolation, artifact paths,
+heavy-job exclusion, cancellation, and stage-checkpoint resumption. The optional
+real MD check requires the isolated runtime and performs actual compute:
 
 ```sh
 STUDIO_SIMULATION_REAL_TEST=1 .venv/bin/python -m pytest \
   services/studio-api/tests/integration/test_simulations.py
 ```
 
-Primary implementation references: [RadonPy 0.2.11](https://pypi.org/project/radonpy-pypi/0.2.11/),
-[RadonPy source](https://github.com/RadonPy/RadonPy/tree/v0.2.11),
-[LAMMPS wheel](https://pypi.org/project/lammps/2025.7.22.4.0/), and
-[LAMMPS documentation](https://docs.lammps.org/).
+The owning runtime contract is `workers/simulation/requirements.lock` and
+`workers/simulation`; backend behavior is under `studio.domain.simulations`.
+Keep raw logs and method/parameter provenance when reviewing outputs. Do not
+replace a blocked force-field assignment with invented charges or constants.
+
+All job files are under the active vault's workspace/simulations/owner/job tree.
+They are included by a full vault backup when paired consistently with the DB.
+Quiesce workers before copying; preserve completed stage files for resume.
+See [backup and restore](backup-restore.md), [recovery](recovery.md), and the
+[usage guide](../usage/simulations-and-calculations.md).

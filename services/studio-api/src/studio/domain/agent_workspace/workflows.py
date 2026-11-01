@@ -36,6 +36,8 @@ class ResearchWorkflow(Base, UUIDPrimaryKey, WorkspaceScoped, Timestamped):
 
 
 PUBLIC_TOOLS = {
+    "search_studio_docs",
+    "read_studio_doc",
     "merge_datasets",
     "prepare_polymer_research_dataset",
     "search_resources",

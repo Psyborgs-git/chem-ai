@@ -1,4 +1,4 @@
-import { openCriteriaEditor, openTaskTool } from "./ux-helpers";
+import { selectVisibleOption, openCriteriaEditor, openTaskTool } from "./ux-helpers";
 import { expect, test } from "@playwright/test";
 
 import { decodeGlobalId, gql, signIn } from "./at-1103-helpers";
@@ -49,9 +49,9 @@ test.describe("PAR-01 contract editor ↔ evaluator parity", () => {
     // author the contract through the real controls
     await editor.getByLabel("metric label").first().fill("viscosity");
     await editor.getByLabel("metric id").first().fill("metric.viscosity");
-    await editor.getByLabel("operator").first().selectOption("gte");
+    await selectVisibleOption(page, editor.getByLabel("operator").first(), "gte");
     await editor.getByLabel("target value(s)").first().fill("500");
-    await editor.getByLabel("unit").first().selectOption("mPa·s");
+    await selectVisibleOption(page, editor.getByLabel("unit").first(), { label: "mPa·s" });
     await editor.getByLabel("conditions").first().fill("25 °C, spindle A");
     await expect(page.locator("[data-save-state='unsaved']")).toBeVisible();
 
@@ -73,7 +73,7 @@ test.describe("PAR-01 contract editor ↔ evaluator parity", () => {
     await expect(editor2.getByLabel("target value(s)").first()).toHaveValue(
       "500",
     );
-    await expect(editor2.getByLabel("unit").first()).toHaveValue("mPa·s");
+    await expect(editor2.getByLabel("unit").first()).toHaveText("mPa·s");
     await expect(editor2.getByLabel("conditions").first()).toHaveValue(
       "25 °C, spindle A",
     );
@@ -190,7 +190,7 @@ test.describe("PAR-01 contract editor ↔ evaluator parity", () => {
     await editor.getByLabel("metric label").first().fill("tack");
     await editor.getByLabel("metric id").first().fill("metric.tack");
     await editor.getByLabel("target value(s)").first().fill("10");
-    await editor.getByLabel("unit").first().selectOption("dimensionless");
+    await selectVisibleOption(page, editor.getByLabel("unit").first(), { label: "dimensionless" });
     await editor.getByRole("button", { name: "save draft" }).click();
     await expect(page.locator("[data-save-state='saved']")).toBeVisible();
     await editor.getByRole("button", { name: "freeze contract" }).click();
