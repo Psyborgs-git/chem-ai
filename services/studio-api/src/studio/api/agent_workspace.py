@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Query, Response
 
 from studio.api.deps import Ctx, DbSession
 from studio.domain.agent_workspace.service import AgentWorkspaceService
@@ -64,8 +64,14 @@ def save_policy(db: DbSession, ctx: Ctx, body: dict[str, Any]) -> dict[str, Any]
 
 
 @agent_router.get("/threads")
-def threads(db: DbSession, ctx: Ctx) -> dict[str, Any]:
-    return {"threads": AgentWorkspaceService(db, ctx).list_threads()}
+def threads(
+    db: DbSession,
+    ctx: Ctx,
+    q: str = Query(default="", max_length=200),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+) -> dict[str, Any]:
+    return AgentWorkspaceService(db, ctx).list_threads_page(q=q, offset=offset, limit=limit)
 
 
 @agent_router.post("/threads")
@@ -76,8 +82,14 @@ def create_thread(db: DbSession, ctx: Ctx, body: dict[str, Any]) -> dict[str, An
 
 
 @agent_router.get("/threads/{thread_id}")
-def thread(thread_id: uuid.UUID, db: DbSession, ctx: Ctx) -> dict[str, Any]:
-    return AgentWorkspaceService(db, ctx).thread_detail(thread_id)
+def thread(
+    thread_id: uuid.UUID,
+    db: DbSession,
+    ctx: Ctx,
+    before: uuid.UUID | None = None,
+    limit: int = Query(default=1000, ge=1, le=1000),
+) -> dict[str, Any]:
+    return AgentWorkspaceService(db, ctx).thread_detail(thread_id, before=before, limit=limit)
 
 
 @agent_router.put("/threads/{thread_id}/automation")

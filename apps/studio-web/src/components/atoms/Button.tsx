@@ -1,16 +1,17 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ComponentProps } from "react";
+import { Button as SharedButton } from "../ui/button";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
 
 export function Button({
   variant = "secondary",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
+}: Omit<ComponentProps<typeof SharedButton>, "variant"> & { variant?: Variant }) {
   return (
-    <button
+    <SharedButton
       type="button"
       {...props}
-      className={`cs-btn cs-btn--${variant} ${props.className ?? ""}`.trim()}
+      variant={{ primary: "default", secondary: "outline", danger: "destructive", ghost: "ghost" }[variant] as "default" | "outline" | "destructive" | "ghost"}
     />
   );
 }

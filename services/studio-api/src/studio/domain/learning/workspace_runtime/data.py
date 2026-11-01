@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import csv
 import hashlib
 import io
@@ -13,6 +14,62 @@ from typing import Any
 MAX_DATASET_BYTES = 20 * 1024 * 1024
 MAX_ROWS = 50_000
 MAX_CELL = 64_000
+
+
+def chat_record(value: Any) -> list[dict[str, Any]]:
+    """Validate persisted training conversations without executing their tools."""
+    if isinstance(value, str):
+        value = json.loads(value)
+    if not isinstance(value, list) or not 2 <= len(value) <= 128:
+        raise ValueError("messages must contain 2-128 chat turns")
+    result = []
+    calls: set[str] = set()
+    assistant = False
+    for item in value:
+        if not isinstance(item, dict) or item.get("role") not in {
+            "system",
+            "user",
+            "assistant",
+            "tool",
+        }:
+            raise ValueError("messages contain an unsupported role")
+        role, content = item["role"], item.get("content")
+        if content is not None and not isinstance(content, str):
+            raise ValueError("message content must be text or null")
+        turn: dict[str, Any] = {"role": role, "content": content}
+        if role == "assistant":
+            assistant = True
+            tool_calls = item.get("tool_calls")
+            if tool_calls:
+                if not isinstance(tool_calls, list) or len(tool_calls) > 32:
+                    raise ValueError("tool_calls must be a bounded list")
+                for call in tool_calls:
+                    if not isinstance(call, dict) or not isinstance(call.get("function"), dict):
+                        raise ValueError("tool calls require a function")
+                    identifier, function = call.get("id"), call["function"]
+                    if not isinstance(identifier, str) or not identifier or identifier in calls:
+                        raise ValueError("tool call IDs must be unique nonempty strings")
+                    if not isinstance(function.get("name"), str) or not function["name"]:
+                        raise ValueError("tool calls require a function name")
+                    arguments = function.get("arguments", "{}")
+                    if isinstance(arguments, str):
+                        arguments = json.loads(arguments)
+                    if not isinstance(arguments, dict):
+                        raise ValueError("tool arguments must be JSON objects")
+                    calls.add(identifier)
+                turn["tool_calls"] = copy.deepcopy(tool_calls)
+        if role == "tool":
+            if item.get("tool_call_id") not in calls:
+                raise ValueError("tool turn must refer to an earlier assistant call")
+            turn["tool_call_id"] = item["tool_call_id"]
+        result.append(turn)
+    if not assistant or not any(item["role"] == "user" for item in result):
+        raise ValueError("messages require both user and assistant turns")
+    if result[-1]["role"] != "assistant":
+        raise ValueError("training conversations must finish with an assistant target")
+    if len(json.dumps(result)) > MAX_CELL:
+        raise ValueError("messages exceed the row context limit")
+    return result
 
 
 def digest(value: Any) -> str:
@@ -107,6 +164,16 @@ def validate_import(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], dict
                 "unit",
                 "method",
                 "documentId",
+                "psmiles",
+                "polymerId",
+                "property",
+                "sourceId",
+                "metadata",
+                "conditions",
+                "sourceRefs",
+                "evaluation",
+                "messages",
+                "tools",
             ):
                 source_key = mapping.get(key, key)
                 if source_key and source_key in original and original[source_key] is not None:
@@ -114,6 +181,31 @@ def validate_import(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], dict
                     if len(str(value)) > MAX_CELL:
                         raise ValueError(f"{key} exceeds {MAX_CELL} characters")
                     record[key] = value
+            for key in ("metadata", "conditions", "sourceRefs", "evaluation", "tools"):
+                if key in record and isinstance(record[key], str):
+                    record[key] = json.loads(record[key])
+            if "messages" in record:
+                record["messages"] = chat_record(record["messages"])
+            if "tools" in record and (
+                not isinstance(record["tools"], list) or len(record["tools"]) > 128
+            ):
+                raise ValueError("tools must be a bounded list")
+            metadata_columns = payload.get("metadataColumns", [])
+            if not isinstance(metadata_columns, list) or len(metadata_columns) > 30:
+                raise ValueError("metadataColumns must contain at most 30 columns")
+            if metadata_columns:
+                record["metadata"] = {
+                    **(record.get("metadata") or {}),
+                    **{str(key): original[key] for key in metadata_columns if key in original},
+                }
+            defaults = payload.get("defaults") or {}
+            if not isinstance(defaults, dict):
+                raise ValueError("defaults must be a metadata object")
+            for key in ("unit", "method", "property", "conditions"):
+                if key not in record and key in defaults:
+                    record[key] = copy.deepcopy(defaults[key])
+            if not record.get("smiles") and record.get("psmiles"):
+                record["smiles"] = str(record["psmiles"])
             if record.get("smiles"):
                 record["originalSmiles"] = str(record["smiles"])
                 record.update(canonical_structure(str(record["smiles"])))
@@ -124,8 +216,8 @@ def validate_import(payload: dict[str, Any]) -> tuple[list[dict[str, Any]], dict
                 record["target"] = value
             elif "target" in record:
                 del record["target"]
-            if not record.get("smiles") and not record.get("prompt"):
-                raise ValueError("A row needs a valid SMILES structure or a prompt")
+            if not record.get("smiles") and not record.get("prompt") and not record.get("messages"):
+                raise ValueError("A row needs a valid SMILES structure, prompt or conversation")
             if record.get("chosen") and not record.get("rejected"):
                 raise ValueError("Preference data requires both chosen and rejected responses")
             # Equal records retain exactly one identity; conflicting measurements remain visible.
@@ -170,6 +262,13 @@ def split_rows(rows: list[dict[str, Any]], seed: int = 0) -> dict[str, str]:
                 grouping.append(f"{name}:{row[name]}")
         if row.get("prompt"):
             grouping.append(f"prompt:{digest(str(row['prompt']).strip())}")
+        if row.get("messages"):
+            user_turns = [
+                str(turn.get("content", "")).strip()
+                for turn in row["messages"]
+                if turn.get("role") == "user"
+            ]
+            grouping.append(f"conversation:{digest(user_turns)}")
         for key in grouping:
             if key in keys:
                 parents[find(index)] = find(keys[key])
@@ -179,10 +278,22 @@ def split_rows(rows: list[dict[str, Any]], seed: int = 0) -> dict[str, str]:
         {find(i) for i in range(len(rows))}, key=lambda i: digest([seed, rows[i]["id"]])
     )
     assigned = {group: "train" for group in groups}
-    if len(groups) >= 3:
-        heldout = max(1, int(len(groups) * 0.1))
-        for group in groups[:heldout]:
-            assigned[group] = "final"
-        for group in groups[heldout : heldout * 2]:
-            assigned[group] = "development"
+    tool_groups = {
+        find(i) for i, row in enumerate(rows) if row.get("evaluation", {}).get("expectedToolCalls")
+    }
+    # Keep actual tool-call tasks represented in evaluation without splitting
+    # any connected source/conversation group or selecting on model outcomes.
+    strata = [groups]
+    if len(tool_groups) >= 3 and len(groups) - len(tool_groups) >= 3:
+        strata = [
+            [g for g in groups if g in tool_groups],
+            [g for g in groups if g not in tool_groups],
+        ]
+    for stratum in strata:
+        if len(stratum) >= 3:
+            heldout = max(1, int(len(stratum) * 0.1))
+            for group in stratum[:heldout]:
+                assigned[group] = "final"
+            for group in stratum[heldout : heldout * 2]:
+                assigned[group] = "development"
     return {str(row["id"]): assigned[find(i)] for i, row in enumerate(rows)}

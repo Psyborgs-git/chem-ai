@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import csv
+import hashlib
 import importlib.util
+import io
 import json
 import os
 import platform
@@ -34,6 +37,7 @@ CATALOG: list[dict[str, Any]] = [
         "id": "qwen3-0.6b-mlx",
         "name": "Qwen3 0.6B · MLX 4-bit",
         "repo": "mlx-community/Qwen3-0.6B-4bit",
+        "revision": "73e3e38d981303bc594367cd910ea6eb48349da8",
         "backend": "mlx",
         "license": "apache-2.0",
         "sizeHint": "~0.5 GB",
@@ -44,11 +48,24 @@ CATALOG: list[dict[str, Any]] = [
         "id": "qwen3-0.6b",
         "name": "Qwen3 0.6B · Transformers",
         "repo": "Qwen/Qwen3-0.6B",
+        "revision": "c1899de289a04d12100db370d81485cdf75e47ca",
         "backend": "transformers",
         "license": "apache-2.0",
         "sizeHint": "~1.3 GB",
         "estimatedBytes": 1_300_000_000,
         "tasks": ["sft", "dpo", "grpo", "evaluate"],
+    },
+    {
+        "id": "qwen3-4b-instruct-mlx",
+        "name": "Qwen3 4B Instruct 2507 · MLX 4-bit",
+        "repo": "mlx-community/Qwen3-4B-Instruct-2507-4bit",
+        "revision": "50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b",
+        "backend": "mlx",
+        "license": "apache-2.0",
+        "sizeHint": "~2.28 GB",
+        "estimatedBytes": 2_278_972_236,
+        "tasks": ["sft", "evaluate"],
+        "description": "Instruction and tool-use adaptation on Apple Silicon",
     },
 ]
 KINDS = {
@@ -92,6 +109,10 @@ def job_storage_requirement(kind: str, config: dict[str, Any]) -> int:
         return 64 * 1024**2
     factor = 32 if config.get("backend") == "mlx" else 64
     return max(128, int(config.get("rank", 8)) * factor) * 1024**2
+
+
+def _workflow_storage(payload: dict[str, Any], required_bytes: int) -> int:
+    return required_bytes + (5 * 1024**3 if payload.get("workflowId") else 0)
 
 
 def runtime_python(backend: str) -> str:
@@ -178,6 +199,28 @@ def runtime_capability(backend: str) -> dict[str, Any]:
     }
 
 
+def selected_device_available(backend: str, device: str) -> bool:
+    if backend == "mlx" or device in {"auto", "cpu"}:
+        return True
+    try:
+        probe = subprocess.run(  # noqa: S603 — fixed dependency/hardware probe
+            [
+                runtime_python(backend),
+                "-c",
+                "import torch,sys; print(torch.cuda.is_available() "
+                "if sys.argv[1] == 'cuda' else torch.backends.mps.is_available())",
+                device,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+        return probe.returncode == 0 and probe.stdout.strip() == "True"
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
 def _uuid(value: str) -> uuid.UUID:
     try:
         return uuid.UUID(str(value))
@@ -234,6 +277,21 @@ class LearningWorkspaceService:
             "privacy": "Datasets, jobs and trained models are private to their owner",
             "formats": ["csv", "jsonl", "smi", "sdf"],
             "jobKinds": sorted(KINDS),
+            "taskParameters": {
+                "sft": {
+                    "stepLabel": "Optimizer steps",
+                    "requires": ["messages or prompt/response", "assistant model"],
+                },
+                "chemprop": {
+                    "stepLabel": "Epochs",
+                    "maxSteps": 300,
+                    "requires": ["SMILES and target", "property/unit/method"],
+                },
+                "evaluate": {
+                    "stepLabel": "Held-out evaluation",
+                    "requires": ["trained candidate", "final partition"],
+                },
+            },
             "limits": {"datasetBytes": 20 * 1024 * 1024, "datasetRows": 50_000},
             "storage": storage_preflight(self.settings, 128 * 1024**2),
             "hardwareProfiles": [
@@ -284,6 +342,156 @@ class LearningWorkspaceService:
         self.db.flush()
         return self._dataset(row, full=True)
 
+    def import_retained_dataset(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Import external computed values from immutable retained bytes, never agent labels."""
+        from studio.domain.library.service import LibraryService
+
+        library = LibraryService(self.db, self.ctx, vault_root=self.settings.vault_root)
+        source = library.get_source(_uuid(str(payload.get("sourceId", ""))))
+        rights = (source.get("citation") or {}).get("rights", {})
+        if rights.get("training") not in {"owned", "allowed"}:
+            raise DomainError(
+                ErrorCode.DATA_RIGHTS_UNKNOWN, "Retained source must explicitly allow training"
+            )
+        path, _media_type, _filename = library.source_file(source["id"])
+        if path.stat().st_size > 20 * 1024**2:
+            raise DomainError(
+                ErrorCode.VALIDATION, "Retained dataset exceeds the 20 MiB import limit"
+            )
+        original = path.read_bytes()
+        checksum = hashlib.sha256(original).hexdigest()
+        if checksum != source["checksum"]:
+            raise DomainError(ErrorCode.VALIDATION, "Retained dataset checksum no longer matches")
+        try:
+            content = original.decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            raise DomainError(
+                ErrorCode.VALIDATION, "Retained datasets require UTF-8 CSV or JSONL"
+            ) from exc
+        fmt = payload.get("format", "csv")
+        if fmt not in {"csv", "jsonl"}:
+            raise DomainError(
+                ErrorCode.VALIDATION, "Retained computed datasets support CSV and JSONL"
+            )
+        filters = payload.get("filters") or {}
+        if not isinstance(filters, dict) or len(filters) > 10:
+            raise DomainError(
+                ErrorCode.VALIDATION, "filters must contain at most ten exact column matches"
+            )
+        if filters:
+            try:
+                originals = (
+                    list(csv.DictReader(io.StringIO(content)))
+                    if fmt == "csv"
+                    else [json.loads(line) for line in content.splitlines() if line.strip()]
+                )
+                selected = [
+                    row
+                    for row in originals
+                    if all(str(row.get(key)) == str(value) for key, value in filters.items())
+                ]
+                content = "\n".join(json.dumps(row) for row in selected)
+                fmt = "jsonl"
+            except (ValueError, TypeError) as exc:
+                raise DomainError(
+                    ErrorCode.VALIDATION, "Source dataset could not be parsed"
+                ) from exc
+        unit = _text(payload.get("unit"), "Property unit", 64)
+        method = _text(payload.get("method"), "Computation method", 300)
+        property_name = _text(payload.get("property"), "Property name", 96)
+        return self.import_dataset(
+            {
+                "name": payload.get("name") or source["title"],
+                "format": fmt,
+                "content": content,
+                "dataKind": "computed",
+                "rights": "allowed",
+                "mapping": payload.get("mapping") or {},
+                "metadataColumns": payload.get("metadataColumns") or [],
+                "defaults": {
+                    "unit": unit,
+                    "method": method,
+                    "property": property_name,
+                    "conditions": payload.get("conditions") or {},
+                },
+                "source": {
+                    "kind": "external_computed",
+                    "sourceIds": [source["id"]],
+                    "sourceRefs": [
+                        {
+                            "sourceId": source["id"],
+                            "revision": source["revision"],
+                            "checksum": checksum,
+                        }
+                    ],
+                    "citation": source.get("citation"),
+                    "filters": filters,
+                    "externalComputation": {
+                        "property": property_name,
+                        "unit": unit,
+                        "method": method,
+                        "conditions": payload.get("conditions") or {},
+                    },
+                    "scientificStatus": "not_validated",
+                    "importMeaning": "source_bytes_not_generated_labels",
+                },
+            }
+        )
+
+    def merge_datasets(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Compile owned assistant shards while retaining their live source lineage."""
+        identifiers = payload.get("datasetIds")
+        if not isinstance(identifiers, list) or not 2 <= len(identifiers) <= 10:
+            raise DomainError(ErrorCode.VALIDATION, "Select between two and ten dataset shards")
+        if len(set(map(str, identifiers))) != len(identifiers):
+            raise DomainError(ErrorCode.VALIDATION, "Dataset shard IDs must be distinct")
+        parents = [self._owned(LearningDataset, str(identifier)) for identifier in identifiers]
+        records = []
+        for parent in parents:
+            if parent.data_kind != "synthetic":
+                raise DomainError(
+                    ErrorCode.VALIDATION, "Assistant shard merges require synthetic data throughout"
+                )
+            if parent.rights not in {"owned", "allowed"}:
+                raise DomainError(
+                    ErrorCode.DATA_RIGHTS_UNKNOWN,
+                    "Resolve every shard's training rights before merging",
+                )
+            if not parent.rows or parent.state not in {"validated", "frozen"}:
+                raise DomainError(ErrorCode.VALIDATION, "Each shard must contain accepted rows")
+            self.authorize_dataset_training(str(parent.id))
+            for row in parent.rows:
+                if not row.get("messages") and not (row.get("prompt") and row.get("response")):
+                    raise DomainError(
+                        ErrorCode.VALIDATION,
+                        "Assistant shards require complete conversations or prompt/response rows",
+                    )
+            records.extend(parent.rows)
+        content = "\n".join(json.dumps(record, ensure_ascii=False) for record in records)
+        return self.import_dataset(
+            {
+                "name": payload.get("name") or "Compiled assistant research",
+                "format": "jsonl",
+                "content": content,
+                "dataKind": "synthetic",
+                "rights": "owned"
+                if all(parent.rights == "owned" for parent in parents)
+                else "allowed",
+                "source": {
+                    "kind": "merged_datasets",
+                    "validationMeaning": "Source-linked synthetic training examples",
+                    "parents": [
+                        {
+                            "datasetId": str(parent.id),
+                            "digest": parent.digest,
+                            "rowCount": len(parent.rows),
+                        }
+                        for parent in parents
+                    ],
+                },
+            }
+        )
+
     def _dataset(self, row: LearningDataset, *, full: bool = False) -> dict[str, Any]:
         value = {
             "id": str(row.id),
@@ -315,14 +523,38 @@ class LearningWorkspaceService:
         return self._dataset(self._owned(LearningDataset, identifier), full=True)
 
     def authorize_dataset_egress(
-        self, identifier: str, *, provider_bound: bool = True, training: bool = False
+        self,
+        identifier: str,
+        *,
+        provider_bound: bool = True,
+        training: bool = False,
+        _ancestry: frozenset[str] = frozenset(),
     ) -> bool:
         """Recheck retained source ACLs/rights before rows enter a provider or remote worker."""
         from studio.domain.library.artifacts import authorize_retained_artifact
         from studio.domain.library.service import LibraryService
 
         dataset = self._owned(LearningDataset, identifier)
+        if str(dataset.id) in _ancestry or len(_ancestry) > 12:
+            raise DomainError(
+                ErrorCode.VALIDATION, "Dataset source lineage contains a cycle or is too deep"
+            )
+        ancestry = _ancestry | {str(dataset.id)}
         check_dataset_sources(self.db, dataset)
+        if dataset.source.get("kind") == "merged_datasets":
+            for reference in dataset.source.get("parents", []):
+                parent = self._owned(LearningDataset, str(reference.get("datasetId", "")))
+                if training and parent.rights not in {"owned", "allowed"}:
+                    raise DomainError(
+                        ErrorCode.DATA_RIGHTS_UNKNOWN,
+                        "Current parent dataset rights do not permit training",
+                    )
+                self.authorize_dataset_egress(
+                    str(parent.id),
+                    provider_bound=provider_bound,
+                    training=training,
+                    _ancestry=ancestry,
+                )
         library = LibraryService(self.db, self.ctx, vault_root=self.settings.vault_root)
         seen: set[str] = set()
 
@@ -364,6 +596,13 @@ class LearningWorkspaceService:
                     if key not in seen:
                         seen.add(key)
                         source = library.get_source(_uuid(str(source_id)))
+                        if training and (source.get("citation") or {}).get("rights", {}).get(
+                            "training"
+                        ) not in {"owned", "allowed"}:
+                            raise DomainError(
+                                ErrorCode.DATA_RIGHTS_UNKNOWN,
+                                "Current retained source rights do not permit training",
+                            )
                         check(source.get("citation", {}), depth + 1)
                 for nested in value.values():
                     if isinstance(nested, (dict, list)):
@@ -390,7 +629,7 @@ class LearningWorkspaceService:
             {
                 "dataDigest": row.digest,
                 "splits": row.splits,
-                "splitPolicy": "identity_scaffold_document/v1",
+                "splitPolicy": "identity_scaffold_document_tool_strata/v2",
             }
         )
         row.state = "frozen"
@@ -589,6 +828,26 @@ class LearningWorkspaceService:
 
     def register_model(self, payload: dict[str, Any]) -> dict[str, Any]:
         catalog = next((item for item in CATALOG if item["id"] == payload.get("catalogId")), None)
+        if "catalogId" in payload and catalog is None:
+            raise DomainError(ErrorCode.VALIDATION, "Unknown curated model catalog entry")
+        repair = (
+            self._owned(LearningModel, str(payload["repairModelId"]))
+            if payload.get("repairModelId")
+            else None
+        )
+        if repair and (
+            not catalog
+            or repair.details.get("catalogId") != catalog["id"]
+            or repair.details.get("revision") != catalog["revision"]
+        ):
+            raise DomainError(ErrorCode.VALIDATION, "Repair requires the same pinned catalog asset")
+        if repair and any(
+            job.model_id == repair.id and job.state in {"queued", "running"}
+            for job in self._list(LearningJob)
+        ):
+            raise DomainError(
+                ErrorCode.VALIDATION, "Wait for this model's active job before repair"
+            )
         backend = catalog["backend"] if catalog else payload.get("backend", "transformers")
         if backend not in {"mlx", "transformers", "reinvent"}:
             raise DomainError(
@@ -609,7 +868,12 @@ class LearningWorkspaceService:
                 / str(model_id)
             )
             details.update(
-                {"catalogId": catalog["id"], "repo": catalog["repo"], "state": "downloading"}
+                {
+                    "catalogId": catalog["id"],
+                    "repo": catalog["repo"],
+                    "revision": catalog["revision"],
+                    "state": "downloading",
+                }
             )
         else:
             location = (
@@ -634,7 +898,7 @@ class LearningWorkspaceService:
                     ErrorCode.VALIDATION,
                     "Local model requires safetensors weights; pickle weights are not accepted",
                 )
-        row = LearningModel(
+        row = repair or LearningModel(
             id=model_id,
             workspace_id=self.ctx.workspace_id,
             owner_id=self.ctx.principal_id,
@@ -645,12 +909,15 @@ class LearningWorkspaceService:
             location=str(location),
             details=details,
         )
+        if repair:
+            row.details = {**row.details, "state": "downloading"}
         self.db.add(row)
         self.db.flush()
         if catalog:
             capability = runtime_capability("download")
             storage = storage_preflight(
-                self.settings, int(catalog["estimatedBytes"] * 1.25) + 64 * 1024**2
+                self.settings,
+                _workflow_storage(payload, int(catalog["estimatedBytes"] * 1.25) + 64 * 1024**2),
             )
             download_ready = capability["available"] and storage["available"]
             if not download_ready:
@@ -665,8 +932,15 @@ class LearningWorkspaceService:
                 config={
                     "backend": "download",
                     "repo": catalog["repo"],
+                    "revision": catalog["revision"],
+                    "license": catalog["license"],
                     "maxSeconds": 1800,
                     "requiredFreeBytes": storage["requiredFreeBytes"],
+                    **(
+                        {"workflowId": str(payload["workflowId"])}
+                        if payload.get("workflowId")
+                        else {}
+                    ),
                 },
                 error=None
                 if download_ready
@@ -687,6 +961,15 @@ class LearningWorkspaceService:
         return [self._job(row) for row in self._list(LearningJob)]
 
     def _job(self, row: LearningJob) -> dict[str, Any]:
+        elapsed = row.result.get("elapsedSeconds")
+        if row.state == "running" and row.result.get("attemptStartedAt"):
+            try:
+                started = datetime.fromisoformat(row.result["attemptStartedAt"])
+                elapsed = float(row.result.get("elapsedBeforeAttempt", 0)) + max(
+                    0, (datetime.now(UTC) - started).total_seconds()
+                )
+            except (TypeError, ValueError):
+                pass
         return {
             "id": str(row.id),
             "name": row.name,
@@ -702,6 +985,7 @@ class LearningWorkspaceService:
             "cancelRequested": row.cancel_requested,
             "createdAt": _time(row.created_at),
             "updatedAt": _time(row.updated_at),
+            "elapsedSeconds": elapsed,
         }
 
     def get_job(self, identifier: str) -> dict[str, Any]:
@@ -719,7 +1003,9 @@ class LearningWorkspaceService:
             raise DomainError(ErrorCode.NOT_FOUND, "Job artifact not found")
         return path
 
-    def create_job(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _prepare_job(
+        self, payload: dict[str, Any]
+    ) -> tuple[str, LearningDataset, LearningModel | None, dict[str, Any]]:
         kind = payload.get("kind", "sft")
         if kind not in KINDS:
             raise DomainError(ErrorCode.VALIDATION, "Unknown learning job kind")
@@ -739,7 +1025,14 @@ class LearningWorkspaceService:
             raise DomainError(
                 ErrorCode.DATA_RIGHTS_UNKNOWN, "Declare the base model's license before training"
             )
-        config = dict(payload.get("config") or {})
+        raw_config = payload.get("config") or {}
+        if not isinstance(raw_config, dict):
+            raise DomainError(ErrorCode.VALIDATION, "config must be a JSON object")
+        config = dict(raw_config)
+        if config.get("executionTarget", "local") not in {"local", "remote"}:
+            raise DomainError(ErrorCode.VALIDATION, "executionTarget must be local or remote")
+        if kind == "chemprop" and "epochs" in config:
+            config["maxSteps"] = config["epochs"]
         backend = "chemprop" if kind == "chemprop" else (model.backend if model else "transformers")
         config["backend"] = backend
         device = config.get("device", "auto")
@@ -759,6 +1052,9 @@ class LearningWorkspaceService:
                 ("seed", 0, 0, 2**31 - 1),
                 ("rank", 8, 1, 128),
                 ("numGenerations", 2, 2, 16),
+                ("ensembleSize", 2, 1, 8),
+                ("hiddenDim", 64, 32, 2048),
+                ("depth", 2, 1, 12),
             ]:
                 value = int(config.get(name, default))
                 if not lower <= value <= upper:
@@ -784,8 +1080,19 @@ class LearningWorkspaceService:
             raise DomainError(
                 ErrorCode.VALIDATION, f"{kind} is unsupported by the selected backend"
             )
+        if kind == "molecular_transfer" and config["maxSteps"] > 1000:
+            raise DomainError(
+                ErrorCode.VALIDATION, "Molecular transfer supports at most 1000 epochs"
+            )
         training_rows = [r for r in dataset.rows if dataset.splits.get(r["id"]) == "train"]
         if kind == "chemprop":
+            if len(training_rows) > 20_000 or any(
+                len(str(row.get("smiles", ""))) > 512 for row in dataset.rows
+            ):
+                raise DomainError(
+                    ErrorCode.VALIDATION,
+                    "Property jobs support at most 20,000 train rows and 512-character SMILES",
+                )
             task = config.get("propertyTask", "regression")
             if task not in {"regression", "classification"}:
                 raise DomainError(
@@ -810,10 +1117,110 @@ class LearningWorkspaceService:
             "molecular_transfer": ("smiles",),
             "molecular_rl": ("smiles",),
         }.get(kind, ())
-        if needed and not any(all(key in row for key in needed) for row in training_rows):
+        if kind == "sft":
+            compatible_rows = [
+                row
+                for row in training_rows
+                if row.get("messages") or (row.get("prompt") and row.get("response"))
+            ]
+        else:
+            compatible_rows = [row for row in training_rows if all(key in row for key in needed)]
+        if needed and (not training_rows or len(compatible_rows) != len(training_rows)):
             raise DomainError(
                 ErrorCode.VALIDATION, f"Train rows require fields: {', '.join(needed)}"
             )
+        if kind in {"chemprop", "predict"} or (kind == "evaluate" and backend == "chemprop"):
+            for key in ("unit", "method", "property"):
+                values = {str(row[key]) for row in dataset.rows if row.get(key)}
+                if len(values) > 1:
+                    raise DomainError(
+                        ErrorCode.VALIDATION, f"One property job cannot mix {key} contexts"
+                    )
+            if dataset.source.get("kind") == "external_computed":
+                computation = dataset.source["externalComputation"]
+                for config_key, source_key in (
+                    ("target", "property"),
+                    ("unit", "unit"),
+                    ("method", "method"),
+                ):
+                    if config_key in config and str(config[config_key]) != str(
+                        computation[source_key]
+                    ):
+                        raise DomainError(
+                            ErrorCode.VALIDATION,
+                            f"{config_key} must match the retained dataset property context",
+                        )
+                    config[config_key] = computation[source_key]
+            conditions = {
+                json.dumps(row["conditions"], sort_keys=True)
+                for row in dataset.rows
+                if row.get("conditions")
+            }
+            if len(conditions) > 1:
+                raise DomainError(
+                    ErrorCode.VALIDATION,
+                    "One property model requires consistent temperature, "
+                    "pressure and process conditions",
+                )
+            if not re.fullmatch(
+                r"[A-Za-z][A-Za-z0-9_.-]{0,95}", str(config.get("target", "property"))
+            ):
+                raise DomainError(
+                    ErrorCode.VALIDATION,
+                    "Property name must be an identifier of at most 96 characters",
+                )
+            for field, maximum in (("unit", 64), ("method", 300)):
+                if (
+                    not 1
+                    <= len(str(config.get(field, "1" if field == "unit" else "custom_dataset")))
+                    <= maximum
+                ):
+                    raise DomainError(
+                        ErrorCode.VALIDATION, f"{field} exceeds the property context limit"
+                    )
+            if kind == "chemprop" and config["maxSteps"] > 300:
+                raise DomainError(ErrorCode.VALIDATION, "Property training supports 1-300 epochs")
+            if model is not None and backend == "chemprop":
+                scope = model.details.get("scope") or {}
+                for field, scope_key in (
+                    ("property", "name"),
+                    ("unit", "unit"),
+                    ("method", "method"),
+                ):
+                    actual = {str(row[field]) for row in dataset.rows if row.get(field)}
+                    if actual and actual != {str(scope.get(scope_key))}:
+                        raise DomainError(
+                            ErrorCode.MODEL_INCOMPATIBLE,
+                            f"Dataset {field} differs from the trained property model",
+                        )
+                trained_conditions = {
+                    json.dumps(value, sort_keys=True)
+                    for value in model.details.get("trainingConditions", [])
+                }
+                if (
+                    conditions
+                    and trained_conditions
+                    and not conditions.issubset(trained_conditions)
+                ):
+                    raise DomainError(
+                        ErrorCode.MODEL_INCOMPATIBLE,
+                        "Dataset conditions differ from the trained property model",
+                    )
+        if kind == "evaluate":
+            final_rows = [row for row in dataset.rows if dataset.splits.get(row["id"]) == "final"]
+            required = ("smiles", "target") if backend == "chemprop" else ()
+            if not final_rows or any(not all(key in row for key in required) for row in final_rows):
+                raise DomainError(
+                    ErrorCode.VALIDATION, "Evaluation requires compatible labelled final rows"
+                )
+            if backend != "chemprop" and any(
+                not row.get("messages")
+                and not (row.get("prompt") and (row.get("response") or row.get("expected")))
+                for row in final_rows
+            ):
+                raise DomainError(
+                    ErrorCode.VALIDATION, "Assistant final rows need prompts and reference answers"
+                )
         if kind == "molecular_rl":
             if config.get("reward", "qed") not in {"qed", "molecular_weight", "logp"}:
                 raise DomainError(
@@ -854,14 +1261,162 @@ class LearningWorkspaceService:
             "propertyTask",
         }
         config = {k: v for k, v in config.items() if k in allowed}
+        if backend == "chemprop":
+            # The narrow Chemprop adapter uses its pinned engine schedule. Do not
+            # record an assistant trainer's learning-rate field as if it were used.
+            config.pop("learningRate", None)
+            config["learningRateSchedule"] = {
+                "engine": "chemprop-2.3.1-default",
+                "initial": 0.0001,
+                "maximum": 0.001,
+                "final": 0.0001,
+                "warmupEpochs": 2,
+            }
         if config.get("executionTarget") == "remote":
             self.authorize_dataset_egress(str(dataset.id))
+        return str(kind), dataset, model, config
+
+    def preflight_job(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """The UI, agent and dispatcher share the same admission checks."""
+        checks: list[dict[str, Any]] = []
+        try:
+            kind, dataset, model, config = self._prepare_job(payload)
+        except DomainError as exc:
+            return {
+                "ready": False,
+                "checks": [{"id": "inputs", "status": "fail", "message": exc.message}],
+                "normalizedConfig": payload.get("config")
+                if isinstance(payload.get("config"), dict)
+                else {},
+            }
+        backend = str(config["backend"])
+        counts = Counter(dataset.splits.values())
+        checks.append(
+            {
+                "id": "inputs",
+                "status": "pass",
+                "message": "Dataset rights, model compatibility and parameter validation passed",
+            }
+        )
+        heldout = counts.get("final", 0) > 0 and counts.get("train", 0) > 0
+        if kind not in {"predict"}:
+            checks.append(
+                {
+                    "id": "heldout",
+                    "status": "pass" if heldout else "fail",
+                    "message": "Independent train and final groups are present"
+                    if heldout
+                    else "Add at least three independent source/structure groups "
+                    "and freeze again to create held-out partitions",
+                }
+            )
+        if kind in {"sft", "dpo", "grpo"} and not counts.get("development"):
+            checks.append(
+                {
+                    "id": "development",
+                    "status": "fail",
+                    "message": "Assistant training requires a development partition",
+                }
+            )
+        remote = config.get("executionTarget") == "remote"
         capability = runtime_capability(backend)
-        ready = capability["available"] and (model is None or model.details.get("state") == "ready")
-        if config.get("executionTarget") == "remote":
-            ready = True
-        storage = storage_preflight(self.settings, job_storage_requirement(str(kind), config))
+        available = remote or capability["available"]
+        checks.append(
+            {
+                "id": "runtime",
+                "status": "pass" if available else "fail",
+                "message": "Self-hosted worker selected; a compatible worker must claim the job"
+                if remote
+                else "Local runtime is available"
+                if available
+                else "Runtime unavailable: "
+                + (", ".join(capability["missing"]) or "selected hardware is unavailable"),
+            }
+        )
+        if not remote and available:
+            device = str(config.get("device", "auto"))
+            device_ready = selected_device_available(backend, device)
+            checks.append(
+                {
+                    "id": "device",
+                    "status": "pass" if device_ready else "fail",
+                    "message": f"Selected {device} device is available"
+                    if device_ready
+                    else f"Selected {device} accelerator is unavailable; "
+                    "select CPU/auto or a compatible worker",
+                }
+            )
+        model_ready = model is None or model.details.get("state") == "ready" or remote
+        checks.append(
+            {
+                "id": "model",
+                "status": "pass" if model_ready else "fail",
+                "message": "Model asset is ready"
+                if model_ready
+                else "Wait for the selected model download to complete",
+            }
+        )
+        storage = storage_preflight(
+            self.settings, _workflow_storage(payload, job_storage_requirement(kind, config))
+        )
+        checks.append(
+            {
+                "id": "disk",
+                "status": "pass" if storage["available"] else "fail",
+                "message": "Output storage is available"
+                if storage["available"]
+                else "Insufficient free disk space for job outputs",
+            }
+        )
+        if dataset.data_kind in {"computed", "synthetic"}:
+            checks.append(
+                {
+                    "id": "data_origin",
+                    "status": "warn",
+                    "message": f"{dataset.data_kind.capitalize()} labels retain their data origin; "
+                    "training does not establish experimental properties",
+                }
+            )
+        return {
+            "ready": not any(item["status"] == "fail" for item in checks),
+            "checks": checks,
+            "normalizedConfig": config,
+            "estimated": storage,
+            "dataset": {
+                "id": str(dataset.id),
+                "state": dataset.state,
+                "trainingRows": counts.get("train", 0),
+                "developmentRows": counts.get("development", 0),
+                "finalRows": counts.get("final", 0),
+            },
+            "model": {
+                "id": str(model.id) if model else None,
+                "backend": backend,
+                "state": model.details.get("state") if model else "new_fit",
+            },
+        }
+
+    def preflight(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return self.preflight_job(payload)
+
+    def create_job(self, payload: dict[str, Any]) -> dict[str, Any]:
+        kind, dataset, model, config = self._prepare_job(payload)
+        preflight = self.preflight_job(payload)
+        ready = preflight["ready"]
+        storage = preflight["estimated"]
         ready = ready and storage["available"]
+        if payload.get("workflowId"):
+            config["workflowId"] = str(payload["workflowId"])
+            config["requiredFreeBytes"] = storage["requiredFreeBytes"]
+        from studio.domain.agent_workspace.workflows import admit_job, record_job
+
+        workflow, seconds = (
+            admit_job(self.db, self.ctx, payload, "training")
+            if ready
+            else (None, int(config["maxSeconds"]))
+        )
+        if workflow is not None:
+            config = {**config, "workflowId": str(workflow.id), "maxSeconds": seconds}
         row = LearningJob(
             workspace_id=self.ctx.workspace_id,
             owner_id=self.ctx.principal_id,
@@ -876,28 +1431,18 @@ class LearningWorkspaceService:
                 "dataKind": dataset.data_kind,
                 "scientificStatus": "not_validated",
                 "storagePreflight": storage,
+                "preflight": preflight,
             },
             events=[],
             error=None
             if ready
-            else (
-                "Insufficient free disk space for job outputs"
-                if not storage["available"]
-                else "Selected model is not ready"
-                if model and model.details.get("state") != "ready"
-                else "Runtime unavailable: "
-                + (
-                    ", ".join(capability["missing"])
-                    or (
-                        "Metal GPU unavailable to this process"
-                        if not capability["deviceAvailable"]
-                        else "unsupported platform"
-                    )
-                )
+            else "; ".join(
+                item["message"] for item in preflight["checks"] if item["status"] == "fail"
             ),
         )
         self.db.add(row)
         self.db.flush()
+        record_job(self.db, workflow, row.id, "training", seconds)
         return self._job(row)
 
     def cancel_job(self, identifier: str) -> dict[str, Any]:
@@ -918,13 +1463,50 @@ class LearningWorkspaceService:
             raise DomainError(
                 ErrorCode.ENGINE_UNAVAILABLE, "Install the selected runtime before resuming"
             )
+        if row.kind != "download_model":
+            inputs = {
+                "kind": row.kind,
+                "datasetId": str(row.dataset_id),
+                "modelId": str(row.model_id) if row.model_id else None,
+                "config": row.config,
+                "workflowId": row.config.get("workflowId"),
+            }
+            preflight = self.preflight_job(inputs)
+            if not preflight["ready"]:
+                raise DomainError(
+                    ErrorCode.VALIDATION,
+                    "; ".join(
+                        item["message"] for item in preflight["checks"] if item["status"] == "fail"
+                    ),
+                )
+        from studio.domain.agent_workspace.workflows import admit_job, record_job
+
+        workflow, seconds = (
+            admit_job(
+                self.db,
+                self.ctx,
+                {"workflowId": row.config.get("workflowId"), "config": row.config},
+                "training",
+            )
+            if row.kind != "download_model"
+            else (None, int(row.config.get("maxSeconds", 1800)))
+        )
+        if workflow is not None:
+            row.config = {**row.config, "maxSeconds": seconds}
         row.state, row.cancel_requested, row.error = "queued", False, None
         row.lease_owner, row.lease_expires_at = None, None
         self.db.flush()
+        record_job(self.db, workflow, row.id, "training", seconds)
         return self._job(row)
 
     def preview_model(self, identifier: str, payload: dict[str, Any]) -> dict[str, Any]:
         model = self._owned(LearningModel, identifier)
+        if model.backend not in {"mlx", "transformers"} or model.details.get("state") != "ready":
+            raise DomainError(
+                ErrorCode.MODEL_INCOMPATIBLE,
+                "Text preview requires a ready assistant model; "
+                "use a prediction job for molecular property models",
+            )
         prompt = _text(payload.get("prompt"), "Preview prompt", 16_000)
         from studio.domain.learning.workspace_runtime.dispatcher import run_preview
 
@@ -933,8 +1515,31 @@ class LearningWorkspaceService:
         )
 
 
-def check_dataset_sources(db: Session, dataset: LearningDataset) -> None:
+def check_dataset_sources(
+    db: Session, dataset: LearningDataset, _ancestry: frozenset[str] = frozenset()
+) -> None:
     """Opt-outs apply to frozen notebook snapshots as well as new exports."""
+    if str(dataset.id) in _ancestry or len(_ancestry) > 12:
+        raise DomainError(
+            ErrorCode.VALIDATION, "Dataset source lineage contains a cycle or is too deep"
+        )
+    if dataset.source.get("kind") == "merged_datasets":
+        ancestry = _ancestry | {str(dataset.id)}
+        for reference in dataset.source.get("parents", []):
+            parent = db.get(LearningDataset, _uuid(str(reference.get("datasetId", ""))))
+            if (
+                parent is None
+                or parent.owner_id != dataset.owner_id
+                or parent.workspace_id != dataset.workspace_id
+            ):
+                raise DomainError(ErrorCode.FORBIDDEN, "A parent dataset is unavailable")
+            if parent.rights not in {"owned", "allowed"}:
+                raise DomainError(
+                    ErrorCode.DATA_RIGHTS_UNKNOWN,
+                    "Current parent dataset rights do not permit training",
+                )
+            check_dataset_sources(db, parent, ancestry)
+        return
     if dataset.source.get("kind") != "private_notebook":
         return
     from studio.domain.library.models import Notebook, NotebookPage

@@ -35,6 +35,61 @@ def _tool(
 STRING = {"type": "string"}
 OBJECT = {"type": "object"}
 ARRAY = {"type": "array", "items": OBJECT}
+NOTE_CONTENT = {
+    "type": "object",
+    "description": "Note body, usually {markdown: '...'}; formulae may use latex/smiles/variables.",
+    "properties": {
+        "markdown": STRING,
+        "latex": STRING,
+        "smiles": STRING,
+        "variables": {"type": "object", "additionalProperties": {"type": ["string", "number"]}},
+        "steps": {"type": "array", "items": STRING},
+        "ingredients": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": STRING,
+                    "amount": {"type": ["string", "number"]},
+                    "unit": STRING,
+                },
+                "required": ["name"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "additionalProperties": False,
+}
+NOTE_CITATIONS = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "sourceId": STRING,
+            "artifactId": STRING,
+            "url": STRING,
+            "title": STRING,
+            "locator": OBJECT,
+            "archiveStatus": STRING,
+        },
+        "additionalProperties": False,
+    },
+}
+MEMORY_REFERENCES = {
+    "type": "array",
+    "minItems": 1,
+    "maxItems": 100,
+    "items": {
+        "type": "object",
+        "properties": {
+            "kind": {"type": "string", "enum": ["page", "source"]},
+            "id": {"type": "string", "description": "The saved page or retained source ID."},
+            "revision": {"type": "integer", "minimum": 1},
+        },
+        "required": ["kind", "id"],
+        "additionalProperties": False,
+    },
+}
 
 
 def catalog() -> list[dict[str, Any]]:
@@ -77,8 +132,8 @@ def catalog() -> list[dict[str, Any]]:
                 "notebookId": STRING,
                 "title": STRING,
                 "kind": {"type": "string", "enum": ["note", "recipe", "formula"]},
-                "content": OBJECT,
-                "citations": ARRAY,
+                "content": NOTE_CONTENT,
+                "citations": NOTE_CITATIONS,
             },
             ["notebookId", "title", "content"],
         ),
@@ -89,8 +144,8 @@ def catalog() -> list[dict[str, Any]]:
                 "id": STRING,
                 "expectedRevision": {"type": "integer", "minimum": 1},
                 "title": STRING,
-                "content": OBJECT,
-                "citations": ARRAY,
+                "content": NOTE_CONTENT,
+                "citations": NOTE_CITATIONS,
             },
             ["id", "expectedRevision"],
         ),
@@ -100,7 +155,7 @@ def catalog() -> list[dict[str, Any]]:
                 "Save source-backed research memory for continuing this work later; preserve"
                 " uncertainty and open questions."
             ),
-            {"title": STRING, "body": STRING, "sourceRefs": ARRAY},
+            {"title": STRING, "body": STRING, "sourceRefs": MEMORY_REFERENCES},
             ["title", "body", "sourceRefs"],
         ),
         _tool(
@@ -134,7 +189,11 @@ def catalog() -> list[dict[str, Any]]:
         _tool(
             "read_resource",
             "Read a previously fetched private research source.",
-            {"id": STRING},
+            {
+                "id": STRING,
+                "offset": {"type": "integer", "minimum": 0},
+                "maxChars": {"type": "integer", "minimum": 100, "maximum": 20000},
+            },
             ["id"],
         ),
         _tool(
@@ -149,7 +208,13 @@ def catalog() -> list[dict[str, Any]]:
         _tool(
             "read_dataset",
             "Inspect a private custom dataset and validation report.",
-            {"id": STRING},
+            {
+                "id": STRING,
+                "offset": {"type": "integer", "minimum": 0},
+                "maxRows": {"type": "integer", "minimum": 1, "maximum": 50},
+                "rejectionOffset": {"type": "integer", "minimum": 0},
+                "maxRejections": {"type": "integer", "minimum": 1, "maximum": 50},
+            },
             ["id"],
         ),
         _tool(
@@ -182,11 +247,86 @@ def catalog() -> list[dict[str, Any]]:
         _tool(
             "register_local_model",
             (
-                "Register a local model asset by approved local path and model metadata; "
-                "this does not download a model."
+                "Register a local model asset, or download a curated pinned Hugging Face "
+                "model by catalogId. Downloads return a durable job reference. To verify and "
+                "repair missing files in an existing catalog asset, include its repairModelId "
+                "with the same catalogId; cached valid weights are reused."
             ),
             {"payload": OBJECT},
             ["payload"],
+        ),
+        _tool(
+            "import_retained_dataset",
+            "Import original retained public computed data with "
+            "verified source rights and property/method provenance. Values come from the "
+            "saved source, never agent-written replacements.",
+            {"payload": OBJECT},
+            ["payload"],
+        ),
+        _tool(
+            "prepare_polymer_research_dataset",
+            "Compile approximately 400 auditable assistant "
+            "teaching examples from this workflow's imported property datasets and actually "
+            "executed tools. Origin stays synthetic; source measurements are not invented.",
+            {"payload": OBJECT},
+            ["payload"],
+        ),
+        _tool(
+            "merge_datasets",
+            "Merge two to ten owned synthetic assistant dataset shards, "
+            "preserving source lineage, tool conversations and evaluation groups. Current "
+            "parent rights are rechecked; no measured labels are generated.",
+            {"payload": OBJECT},
+            ["payload"],
+        ),
+        _tool(
+            "training_preflight",
+            "Check task, model, dataset, runtime, held-out partitions, "
+            "storage and budget before queueing a real job.",
+            {"payload": OBJECT},
+            ["payload"],
+        ),
+        _tool("simulation_capabilities", "Inspect the actual atomistic simulation runtime.", {}),
+        _tool(
+            "start_simulation_job",
+            "Queue a bounded owner-private RadonPy/LAMMPS polymer "
+            "MD pilot. Returns a durable job ID; no fabric properties are inferred from "
+            "mere structure validity.",
+            {"payload": OBJECT},
+            ["payload"],
+        ),
+        _tool(
+            "simulation_job_status",
+            "Read numerical stability, equilibration status and artifacts from a real simulation.",
+            {"id": STRING},
+            ["id"],
+        ),
+        _tool(
+            "await_simulation_job",
+            "Wait durably for an atomistic simulation job, releasing "
+            "the agent worker while computation continues.",
+            {"id": STRING},
+            ["id"],
+        ),
+        _tool(
+            "cancel_simulation_job",
+            "Stop an owned simulation while preserving checkpoints.",
+            {"id": STRING},
+            ["id"],
+        ),
+        _tool(
+            "resume_simulation_job",
+            "Resume a stopped owned simulation from its retained "
+            "checkpoint within the remaining workflow budget.",
+            {"id": STRING},
+            ["id"],
+        ),
+        _tool(
+            "resume_training_job",
+            "Resume a stopped owned download/training/evaluation job "
+            "from its saved state, enforcing current rights and remaining workflow budget.",
+            {"id": STRING},
+            ["id"],
         ),
         _tool("list_training_jobs", "List persistent local training and evaluation jobs.", {}),
         _tool(
@@ -363,6 +503,11 @@ def execute(
             result = service.get_source(ident(args["id"]))
             if provider_bound:
                 require_provider_context(db, ctx, settings, "source", result["id"])
+            text = result.get("extractedText", "")
+            offset, limit = args.get("offset", 0), args.get("maxChars", 12000)
+            result["extractedText"] = text[offset : offset + limit]
+            result["textLength"], result["offset"] = len(text), offset
+            result["nextOffset"] = offset + limit if len(text) > offset + limit else None
             return result
     if name == "search_resources":
         from studio.domain.library.research import search_resources
@@ -371,6 +516,29 @@ def execute(
     from studio.domain.learning.workspace import LearningWorkspaceService
 
     learning = LearningWorkspaceService(db, ctx, settings)
+    if name == "prepare_polymer_research_dataset":
+        from studio.domain.agent_workspace.textile_examples import prepare_examples
+
+        return prepare_examples(db, ctx, settings, args["payload"])
+    if name in {
+        "simulation_capabilities",
+        "start_simulation_job",
+        "simulation_job_status",
+        "cancel_simulation_job",
+        "resume_simulation_job",
+    }:
+        from studio.domain.simulations.service import SimulationService
+
+        simulations = SimulationService(db, ctx, settings)
+        if name == "simulation_capabilities":
+            return simulations.capabilities()
+        if name == "start_simulation_job":
+            return simulations.create_job(args["payload"])
+        if name == "cancel_simulation_job":
+            return simulations.cancel_job(args["id"])
+        if name == "resume_simulation_job":
+            return simulations.resume_job(args["id"])
+        return simulations.get_job(args["id"])
     if name == "create_dataset":
         from studio.domain.agent_workspace.datasets import guard_agent_dataset
 
@@ -379,6 +547,27 @@ def execute(
         return learning.import_notebook({**args, "forAgent": True})
     if provider_bound and name == "read_dataset":
         learning.authorize_dataset_egress(args["id"])
+    if name == "read_dataset":
+        result = learning.get_dataset(args["id"])
+        rows = result.get("rows", [])
+        offset, limit = args.get("offset", 0), args.get("maxRows", 20)
+        result["rows"] = rows[offset : offset + limit]
+        report = dict(result.get("report") or {})
+        rejected = report.get("rejections", [])
+        rejection_offset, rejection_limit = (
+            args.get("rejectionOffset", 0),
+            args.get("maxRejections", 10),
+        )
+        report["rejections"] = rejected[rejection_offset : rejection_offset + rejection_limit]
+        result["report"] = report
+        result["nextRejectionOffset"] = (
+            rejection_offset + rejection_limit
+            if len(rejected) > rejection_offset + rejection_limit
+            else None
+        )
+        result["offset"] = offset
+        result["nextOffset"] = offset + limit if len(rows) > offset + limit else None
+        return result
     if provider_bound and name == "list_datasets":
         visible = []
         for dataset in learning.list_datasets():
@@ -390,6 +579,9 @@ def execute(
         return visible
     methods: dict[str, tuple[Callable[..., Any], list[Any]]] = {
         "learning_catalog": (learning.catalog, []),
+        "import_retained_dataset": (learning.import_retained_dataset, [args.get("payload")]),
+        "training_preflight": (learning.preflight, [args.get("payload")]),
+        "merge_datasets": (learning.merge_datasets, [args.get("payload")]),
         "list_datasets": (learning.list_datasets, []),
         "read_dataset": (learning.get_dataset, [args.get("id")]),
         "create_dataset": (learning.import_dataset, [args.get("payload")]),
@@ -400,6 +592,7 @@ def execute(
         "start_training_job": (learning.create_job, [args.get("payload")]),
         "training_job_status": (learning.get_job, [args.get("id")]),
         "cancel_training_job": (learning.cancel_job, [args.get("id")]),
+        "resume_training_job": (learning.resume_job, [args.get("id")]),
         "preview_local_model": (learning.preview_model, [args.get("id"), args.get("payload")]),
     }
     if name not in methods:
@@ -506,11 +699,87 @@ def filter_private_context(
     return result
 
 
+def result_summary(name: str, value: Any) -> Any:
+    """Keep mutation receipts useful; large content has explicit read tools."""
+    if not isinstance(value, dict):
+        return value
+    value = dict(value)
+    if name == "fetch_resource":
+        value["textLength"] = len(value.pop("extractedText", ""))
+        value["readTool"] = "read_resource"
+    if name in {
+        "create_dataset",
+        "import_retained_dataset",
+        "prepare_polymer_research_dataset",
+        "merge_datasets",
+        "freeze_dataset",
+    }:
+        value.pop("rows", None)
+        value.pop("splits", None)
+        value["readTool"] = "read_dataset"
+        if isinstance(value.get("report"), dict):
+            report = dict(value["report"])
+            rejections = report.get("rejections", [])
+            if isinstance(rejections, list) and len(rejections) > 10:
+                report["rejections"] = rejections[:10]
+                report["rejectionsTruncated"] = True
+                report["nextRejectionOffset"] = 10
+            value["report"] = report
+    if name in {
+        "training_job_status",
+        "await_training_job",
+        "resume_training_job",
+        "simulation_job_status",
+        "await_simulation_job",
+        "resume_simulation_job",
+    } and isinstance(value.get("events"), list):
+        value["eventCount"] = len(value["events"])
+        value["events"] = value["events"][-20:]
+    if name in {
+        "training_job_status",
+        "await_training_job",
+        "simulation_job_status",
+        "await_simulation_job",
+    }:
+        for key in (None, "result"):
+            container = dict(value.get(key) or {}) if key else value
+            artifacts = container.get("artifacts")
+            if isinstance(artifacts, list) and len(artifacts) > 20:
+                container["artifactCount"] = len(artifacts)
+                container["artifacts"] = artifacts[:20]
+                container["artifactsTruncated"] = True
+            if key:
+                value[key] = container
+    return value
+
+
 def bounded_result(value: Any) -> str:
     encoded = json.dumps(
         {"ok": True, "data": value, "untrusted": True}, default=str, allow_nan=False
     )
     if len(encoded.encode()) > 64000:
+        if isinstance(value, dict) and isinstance(value.get("id"), str):
+            # Even unusually large metadata must not hide a successful mutation's
+            # resource ID and cause the model to repeat it.
+            receipt = {
+                key: value[key]
+                for key in ("id", "name", "title", "state", "kind", "readTool")
+                if key in value and isinstance(value[key], str) and len(value[key]) < 1000
+            }
+            return json.dumps(
+                {
+                    "ok": True,
+                    "untrusted": True,
+                    "data": {
+                        **receipt,
+                        "receiptTruncated": True,
+                        "note": (
+                            "Content exceeds the reply limit; "
+                            "use the read tool with a smaller selection."
+                        ),
+                    },
+                }
+            )
         # Preserve valid JSON, not a silently truncated JSON fragment.
         return json.dumps(
             {

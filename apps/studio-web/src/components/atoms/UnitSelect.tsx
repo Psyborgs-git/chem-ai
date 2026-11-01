@@ -1,4 +1,6 @@
 import { useId } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+const EMPTY_UNIT = "__studio_empty_unit__";
 
 /** Unit picker — options arrive with their dimension context from
  * domain services; the control is presentation only (§22.3). */
@@ -21,19 +23,16 @@ export function UnitSelect({
       <label htmlFor={id} className="cs-field__label">
         {label}
       </label>
-      <select
-        id={id}
-        className="cs-select"
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onValueChange?.(e.target.value)}
-      >
+      <Select value={value || (units.includes("") ? EMPTY_UNIT : "")} disabled={disabled} onValueChange={(unit) => onValueChange?.(unit === EMPTY_UNIT ? "" : unit)}>
+        <SelectTrigger id={id} className="w-full"><SelectValue placeholder="Choose a unit" /></SelectTrigger>
+        <SelectContent>
         {units.map((u) => (
-          <option key={u} value={u}>
-            {u}
-          </option>
+          <SelectItem key={u} value={u || EMPTY_UNIT}>
+            {u || "Not specified"}
+          </SelectItem>
         ))}
-      </select>
+        </SelectContent>
+      </Select>
     </div>
   );
 }

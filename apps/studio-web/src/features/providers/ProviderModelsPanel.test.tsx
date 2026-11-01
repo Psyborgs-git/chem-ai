@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ProviderModelsPanel } from "./ProviderModelsPanel";
+import userEvent from "@testing-library/user-event";
 
 const state = vi.hoisted(() => ({
   post: vi.fn(), refresh: vi.fn(),
@@ -45,23 +46,27 @@ describe("provider model management", () => {
   });
 
   it("discovers only on request and lets the user configure a reported ID", async () => {
-    state.post.mockResolvedValueOnce({ models: [{ modelId: "chem-7b" }] });
+    state.post.mockResolvedValueOnce({ models: [{ modelId: "chem-7b" }, { modelId: "chem-13b" }] });
     render(<ProviderModelsPanel canManage />);
     fireEvent.click(screen.getByRole("button", { name: "Discover models" }));
-    await waitFor(() => expect(screen.getByRole("option", { name: "chem-7b" })).toBeTruthy());
+    const chooser = await screen.findByRole("combobox", { name: "Models reported by this endpoint" });
+    expect(chooser).toHaveTextContent("chem-7b");
+    await userEvent.click(chooser);
+    await userEvent.click(await screen.findByRole("option", { name: "chem-13b" }));
     expect(state.post).toHaveBeenCalledWith("/api/agent-workspace/providers/provider-1/discover");
     fireEvent.click(screen.getByRole("button", { name: "Configure selected model" }));
-    expect((screen.getByLabelText("Model ID") as HTMLInputElement).value).toBe("chem-7b");
-    expect((screen.getByLabelText("This model supports function tools") as HTMLInputElement).checked).toBe(false);
-    expect((screen.getByLabelText("Model API protocol") as HTMLSelectElement).value).toBe("inherit");
+    expect(screen.getByLabelText("Model ID")).toHaveValue("chem-13b");
+    expect(screen.getByRole("checkbox", { name: "This model supports function tools" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("combobox", { name: "Model API protocol" })).toHaveTextContent("Inherit provider");
   });
 
   it("edits a model protocol without changing its model identity or credential", async () => {
     render(<ProviderModelsPanel canManage />);
     expect(screen.getByText("API: Responses API")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Edit Lab model" }));
-    expect((screen.getByLabelText("Model API protocol") as HTMLSelectElement).value).toBe("responses");
-    fireEvent.change(screen.getByLabelText("Model API protocol"), { target: { value: "chat_completions" } });
+    expect(screen.getByRole("combobox", { name: "Model API protocol" })).toHaveTextContent("Responses API");
+    await userEvent.click(screen.getByRole("combobox", { name: "Model API protocol" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Chat Completions" }));
     fireEvent.click(screen.getByRole("button", { name: "Save model" }));
     await waitFor(() => expect(state.post).toHaveBeenCalledWith("/api/agent-workspace/providers/provider-1/models", expect.objectContaining({ modelId: "lab-model", apiStyle: "chat_completions", supportsTools: true })));
     expect(state.post.mock.calls[0][1]).not.toHaveProperty("apiKey");

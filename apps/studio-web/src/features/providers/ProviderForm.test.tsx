@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
 
 const state = vi.hoisted(() => ({ commit: vi.fn() }));
 vi.mock("react-relay", () => ({ graphql: () => ({}), useMutation: () => [state.commit, false] }));
@@ -25,10 +26,11 @@ describe("provider credentials and intentional saves", () => {
     expect(state.commit).toHaveBeenCalledTimes(1);
   });
 
-  it("preserves an existing Responses protocol and lets the owner change it without replacing the key", () => {
+  it("preserves an existing Responses protocol and lets the owner change it without replacing the key", async () => {
     mount({ ...provider, apiStyle: "responses" });
-    expect(screen.getByLabelText("Provider API protocol")).toHaveValue("responses");
-    fireEvent.change(screen.getByLabelText("Provider API protocol"), { target: { value: "chat_completions" } });
+    expect(screen.getByRole("combobox", { name: "Provider API protocol" })).toHaveTextContent("Responses API");
+    await userEvent.click(screen.getByRole("combobox", { name: "Provider API protocol" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Chat Completions" }));
     save();
     expect(state.commit.mock.calls[0][0].variables.input).toMatchObject({ apiStyle: "chat_completions", baseUrl: provider.baseUrl, clearApiKey: false });
     expect(state.commit.mock.calls[0][0].variables.input).not.toHaveProperty("apiKey");
@@ -36,7 +38,7 @@ describe("provider credentials and intentional saves", () => {
 
   it("defaults a new OpenAI connection to Responses without sending a request until saved", () => {
     render(<ProviderForm onSaved={vi.fn()} onCancel={vi.fn()} />);
-    expect(screen.getByLabelText("Provider API protocol")).toHaveValue("responses");
+    expect(screen.getByRole("combobox", { name: "Provider API protocol" })).toHaveTextContent("Responses API");
     expect(state.commit).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("Provider name"), { target: { value: "OpenAI research" } });
     fireEvent.change(screen.getByLabelText("Model ID"), { target: { value: "configured-model" } });
@@ -65,10 +67,11 @@ describe("provider credentials and intentional saves", () => {
     expect(state.commit.mock.calls[0][0].variables.input).not.toHaveProperty("apiKey");
   });
 
-  it("can save a local compatible endpoint with no real key and without enabling it", () => {
+  it("can save a local compatible endpoint with no real key and without enabling it", async () => {
     render(<ProviderForm onSaved={vi.fn()} onCancel={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("Provider name"), { target: { value: "Local test model" } });
-    fireEvent.change(screen.getByLabelText("Provider type"), { target: { value: "openai_compatible" } });
+    await userEvent.click(screen.getByRole("combobox", { name: "Provider type" }));
+    await userEvent.click(await screen.findByRole("option", { name: "OpenAI-compatible endpoint" }));
     fireEvent.change(screen.getByLabelText("API endpoint"), { target: { value: "http://127.0.0.1:9999/v1" } });
     fireEvent.change(screen.getByLabelText("Model ID"), { target: { value: "local-test-model" } });
     save();

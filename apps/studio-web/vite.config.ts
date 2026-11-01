@@ -1,6 +1,8 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 import relay from "vite-plugin-relay";
+import tailwindcss from "@tailwindcss/vite";
+import { fileURLToPath, URL } from "node:url";
 
 // node types are not a workspace dep; the config file runs in node.
 declare const process: { env: Record<string, string | undefined> };
@@ -14,7 +16,9 @@ const proxy = {
 };
 
 export default defineConfig({
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   plugins: [
+    tailwindcss(),
     react(),
     // graphql`` tag → generated artifact (reads relay.config.json).
     relay,

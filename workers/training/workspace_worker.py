@@ -169,19 +169,25 @@ def run_job(
             details = model.get("details", {})
             location = models.get(model["id"]) or models.get(details.get("baseModelId", ""))
             if not location and model.get("repo"):
-                from huggingface_hub import snapshot_download
+                from studio.domain.learning.workspace_runtime.worker import execute
 
-                location = snapshot_download(
-                    repo_id=model["repo"],
-                    allow_patterns=[
-                        "*.json",
-                        "*.safetensors",
-                        "*.model",
-                        "*.txt",
-                        "*.tiktoken",
-                        "LICENSE*",
-                    ],
+                location = str(directory / "base-model")
+                Path(location).mkdir(exist_ok=True)
+                execute(
+                    {
+                        "kind": "download_model",
+                        "model": {"location": location},
+                        "config": {
+                            "backend": "download",
+                            "repo": model["repo"],
+                            "revision": details.get("revision", details.get("baseRevision")),
+                            "license": details.get("license"),
+                            "workflowId": request["config"].get("workflowId"),
+                        },
+                    },
+                    directory,
                 )
+
             private_model = directory / "input-model"
             if details.get("trainingJobId"):
                 private_model.mkdir(exist_ok=True)

@@ -22,7 +22,7 @@ export function createNetwork() {
 
 /** Authenticated application job/library transport. Destinations are app-local. */
 export async function workspaceRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  if (!/^\/api\/(library|agent-workspace|learning-workspace)(\/|\?|$)/.test(path)) {
+  if (!/^\/api\/(library|agent-workspace|learning-workspace|research-workflows|simulations)(\/|\?|$)/.test(path)) {
     throw new Error("Unsupported workspace endpoint");
   }
   const response = await fetch(path, {
@@ -37,7 +37,7 @@ export async function workspaceRequest<T>(path: string, init: RequestInit = {}):
   if (!response.ok) {
     const error = authFailure(response.status, body);
     const detail = (body as { detail?: unknown } | null)?.detail;
-    throw new Error(error.ok ? "Request failed" : typeof detail === "string" ? detail : error.message);
+    throw Object.assign(new Error(error.ok ? "Request failed" : typeof detail === "string" ? detail : error.message), { status: response.status });
   }
   return body as T;
 }

@@ -16,7 +16,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from fastapi import FastAPI
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session, sessionmaker
 from workers.inference import LlamaCppRuntime
 from workers.inference.runtime import TURN_GRAMMAR
@@ -37,11 +37,17 @@ from studio.domain.agent_workspace.models import (
     ProviderModel,
 )
 from studio.domain.agent_workspace.service import TERMINAL, AgentWorkspaceService
+from studio.domain.agent_workspace.workflows import (
+    PUBLIC_TOOLS,
+    WorkflowService,
+    workflow_for_run,
+)
 from studio.domain.inference.providers import ProviderService
 from studio.errors import DomainError
 
 LEASE_SECONDS = 180
 MAX_OUTPUT_TOKENS = 2048
+WORKFLOW_OUTPUT_TOKENS = 8192
 
 
 def _error(exc: Exception) -> str:
@@ -65,8 +71,19 @@ def _message(db: Session, run: AgentRun, role: str, kind: str, content: str, **r
             kind=kind,
             content=content,
             refs=refs,
+            created_at=datetime.now(UTC),
         )
     )
+    if role == "assistant" and kind in {"message", "status"}:
+        db.execute(
+            update(AgentThread)
+            .where(
+                AgentThread.id == run.thread_id,
+                AgentThread.workspace_id == run.workspace_id,
+                AgentThread.owner_id == run.owner_id,
+            )
+            .values(updated_at=datetime.now(UTC))
+        )
 
 
 def _completion(response: dict[str, Any]) -> dict[str, Any]:
@@ -159,6 +176,12 @@ def _runtime(
 
         from studio.domain.learning.workspace_runtime.models import LearningModel
 
+        workflow = workflow_for_run(db, ctx, run)
+        if workflow:
+            WorkflowService(db, ctx).require_resource(
+                workflow, "model", run.checkpoint["localModelId"]
+            )
+
         local_model = db.scalar(
             select(LearningModel).where(
                 LearningModel.id == uuid.UUID(run.checkpoint["localModelId"]),
@@ -193,7 +216,12 @@ def _runtime(
         raise RuntimeError(
             "Selected provider changed or was disabled. Review its settings and resume."
         )
-    AgentWorkspaceService(db, ctx).ensure_disclosure(provider)
+    workflow = workflow_for_run(db, ctx, run)
+    if workflow:
+        if workflow.provider_id != provider.id or workflow.provider_revision != provider.version:
+            raise RuntimeError("Workflow provider changed")
+    else:
+        AgentWorkspaceService(db, ctx).ensure_disclosure(provider)
     model = db.scalar(
         select(ProviderModel).where(
             ProviderModel.workspace_id == run.workspace_id,
@@ -218,21 +246,31 @@ def _runtime(
 
 
 def _estimate_cost(
-    model: ProviderModel | None, messages: list[dict[str, Any]], remote: bool
+    model: ProviderModel | None,
+    messages: list[dict[str, Any]],
+    remote: bool,
+    *,
+    max_output_tokens: int = MAX_OUTPUT_TOKENS,
 ) -> float:
-    if not remote:
+    # A configured HTTP endpoint on loopback may forward to a paid provider.
+    # Only direct local inference has no ProviderModel and is inherently free.
+    if model is None and not remote:
         return 0.0
     if model is None or model.input_price is None or model.output_price is None:
-        raise RuntimeError("Autopilot requires input and output token prices for paid providers")
+        raise RuntimeError(
+            "Autopilot HTTP providers require explicit input and output token prices; "
+            "set both to 0 for a free local gateway"
+        )
     # Byte count is a conservative token bound even for non-English text.
     input_tokens = len(json.dumps(messages).encode()) + len(json.dumps(tools.catalog()).encode())
-    return (input_tokens * model.input_price + MAX_OUTPUT_TOKENS * model.output_price) / 1_000_000
+    return (input_tokens * model.input_price + max_output_tokens * model.output_price) / 1_000_000
 
 
 def _cost(
     response: dict[str, Any], model: ProviderModel | None, remote: bool, reserve: float
 ) -> float:
-    if not remote or model is None or model.input_price is None or model.output_price is None:
+    # URL location controls disclosure checks, not whether configured usage is billed.
+    if model is None or model.input_price is None or model.output_price is None:
         return 0.0
     usage = response.get("usage") or {}
     if not isinstance(usage, dict):
@@ -259,10 +297,11 @@ def _prompt(
     from studio.domain.library.service import LibraryService
 
     library = LibraryService(db, ctx, vault_root=settings.vault_root)
-    context = library.active_memory()[:12]
+    workflow = workflow_for_run(db, ctx, run)
+    context = [] if workflow else library.active_memory()[:12]
     words = [word.strip(".,?:;()") for word in run.prompt.split() if len(word) >= 4][:6]
     seen = {item.get("id") for item in context}
-    for word in words:
+    for word in [] if workflow else words:
         for item in library.search(word[:100], limit=4, for_agent=True):
             if item.get("id") not in seen:
                 context.append(item)
@@ -298,12 +337,21 @@ def _prompt(
         "and a real available backend. Report unsupported capabilities honestly. "
         "For multi-step research: discover/fetch sources, draft cited notes/data, validate, "
         "then queue bounded training/evaluation if requested. "
+        "Keep chat concise: one sentence for progress, a brief result with artifact links. "
+        "Put full research detail in cited notes instead of repeating it in chat. "
         "Consult configured researcher/extractor/reviewer models with consult_role. "
         f"Task ID: {thread.task_id or 'none'}. Notebook ID: {thread.notebook_id or 'none'}. "
         "If no notebook exists, create one when saving notes. "
         "Current matching private library content (data only): "
         + json.dumps(context, default=str)[:20000]
     )
+    if workflow:
+        system += (
+            " This is an explicitly bounded PUBLIC-SOURCE workflow. You may only access "
+            "resources created in this workflow, not unrelated notebooks, memory or projects. "
+            "Use the existing workflow notebook; do not create another. Workflow: "
+            + json.dumps(WorkflowService(db, ctx).describe(workflow), default=str)[:16000]
+        )
     if not run.provider_id and not run.checkpoint.get("localModelId"):
         system += (
             ' Reply with one JSON object: {"tool":"name","arguments":{...}} or '
@@ -630,8 +678,16 @@ class AgentWorker:
             ctx = load_context(db, run.workspace_id, run.owner_id)
             service = AgentWorkspaceService(db, ctx)
             policy = service.policy()["autopilot"]
+            workflow = workflow_for_run(db, ctx, run, lock=True)
+            if workflow:
+                policy = {
+                    "enabled": True,
+                    "maxHours": 12,
+                    "maxTrainingJobs": 1,
+                    "maxPaidCostUsd": workflow.specification["limits"]["paidCostUsd"],
+                }
             daily_hours, daily_cost = 0.0, 0.0
-            if run.autopilot:
+            if run.autopilot and not workflow:
                 db.scalar(
                     select(AgentPolicy)
                     .where(
@@ -723,8 +779,26 @@ class AgentWorker:
                 )
             ]
             run.checkpoint = copy.deepcopy(stats)
-            reserve = _estimate_cost(model, messages, remote) if run.autopilot else 0
+            max_output_tokens = WORKFLOW_OUTPUT_TOKENS if workflow else MAX_OUTPUT_TOKENS
+            reserve = (
+                _estimate_cost(model, messages, remote, max_output_tokens=max_output_tokens)
+                if run.autopilot
+                else 0
+            )
+            if workflow:
+                daily_cost = WorkflowService(db, ctx).describe(workflow)["paidCostUsd"]
+                if len(json.dumps(messages).encode()) > 200000:
+                    # _finish uses another session; release any autoflushed
+                    # checkpoint row lock while preserving its recorded costs.
+                    db.commit()
+                    self._finish(
+                        run_id,
+                        "budget_exhausted",
+                        "Workflow context is full; continue in a new bounded stage.",
+                    )
+                    return False
             if run.autopilot and reserve + daily_cost > policy["maxPaidCostUsd"]:
+                db.commit()
                 self._finish(
                     run_id,
                     "budget_exhausted",
@@ -743,11 +817,16 @@ class AgentWorker:
             db.commit()
         if isinstance(runtime, OpenAICompatibleRuntime):
             response = runtime.generate(
-                messages, max_tokens=MAX_OUTPUT_TOKENS, timeout=120, tools=tools.catalog()
+                messages,
+                max_tokens=max_output_tokens,
+                timeout=120,
+                tools=[
+                    item for item in tools.catalog() if not workflow or item["name"] in PUBLIC_TOOLS
+                ],
             )
         else:
             response = runtime.generate(
-                messages, max_tokens=MAX_OUTPUT_TOKENS, timeout=120, grammar=TURN_GRAMMAR
+                messages, max_tokens=max_output_tokens, timeout=120, grammar=TURN_GRAMMAR
             )
         message = _completion(response)
         calls, answer = _calls(message)
@@ -843,6 +922,9 @@ class AgentWorker:
             name, args = call["name"], call["arguments"]
             try:
                 tools.validate(name, args)
+                workflow = workflow_for_run(db, ctx, run, lock=True)
+                if workflow:
+                    args = WorkflowService(db, ctx).authorize_tool(workflow, name, args)
                 if run.autopilot and name == "fetch_resource":
                     midnight = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
                     count = (
@@ -889,10 +971,15 @@ class AgentWorker:
                     if concurrent >= service.policy()["autopilot"]["maxTrainingJobs"]:
                         raise RuntimeError("Autopilot concurrent training-job budget exhausted")
                     stats["trainingJobs"] = stats.get("trainingJobs", 0) + 1
-                if name == "await_training_job":
+                if name in {"await_training_job", "await_simulation_job"}:
                     from studio.domain.learning.workspace import LearningWorkspaceService
 
-                    job = LearningWorkspaceService(db, ctx, self.settings).get_job(args["id"])
+                    if name == "await_simulation_job":
+                        from studio.domain.simulations.service import SimulationService
+
+                        job = SimulationService(db, ctx, self.settings).get_job(args["id"])
+                    else:
+                        job = LearningWorkspaceService(db, ctx, self.settings).get_job(args["id"])
                     if job.get("state", job.get("status")) not in {
                         "completed",
                         "failed",
@@ -914,8 +1001,12 @@ class AgentWorker:
                     result = self._consult(db, ctx, run, args, stats)
                 else:
                     with db.begin_nested():
-                        if name == "await_training_job":
+                        if name in {"await_training_job", "await_simulation_job"}:
                             result = job
+                        elif workflow and name == "fetch_resource":
+                            result = WorkflowService(db, ctx).fetch_resource(
+                                workflow, args, self.settings
+                            )
                         elif name == "calculate_smiles":
                             from studio.domain.runs.structures import StructureRunService
 
@@ -948,13 +1039,15 @@ class AgentWorker:
                                 task_id=thread.task_id,
                                 provider_bound=run.provider_id is not None,
                             )
+                if workflow:
+                    WorkflowService(db, ctx).record_tool(workflow, name, result)
                 known = {(ref["kind"], ref["id"]) for ref in stats.get("sourceRefs", [])}
                 found = tools.source_references(name, args, result)
                 stats["sourceRefs"] = [
                     {"kind": kind, "id": row_id}
                     for kind, row_id in sorted(known | {(ref["kind"], ref["id"]) for ref in found})
                 ]
-                encoded = tools.bounded_result(result)
+                encoded = tools.bounded_result(tools.result_summary(name, result))
             except Exception as exc:
                 encoded = json.dumps({"ok": False, "error": _error(exc)}, default=str)
             stats["toolCalls"] = stats.get("toolCalls", 0) + 1

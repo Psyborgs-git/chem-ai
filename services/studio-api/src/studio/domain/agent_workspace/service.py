@@ -7,9 +7,9 @@ import hashlib
 import json
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select, tuple_
 from sqlalchemy.orm import Session
 
 from studio.application.inference.runtime import OpenAICompatibleRuntime, is_loopback_url
@@ -349,16 +349,95 @@ class AgentWorkspaceService:
         }
 
     def list_threads(self) -> list[dict[str, Any]]:
-        rows = self.db.scalars(
-            select(AgentThread)
-            .where(
-                AgentThread.workspace_id == self.ctx.workspace_id,
-                AgentThread.owner_id == self.ctx.principal_id,
+        return cast(list[dict[str, Any]], self.list_threads_page(limit=100)["threads"])
+
+    def list_threads_page(self, *, q: str = "", offset: int = 0, limit: int = 50) -> dict[str, Any]:
+        if not isinstance(q, str) or len(q) > 200:
+            raise DomainError(
+                ErrorCode.VALIDATION, "Conversation search accepts at most 200 characters"
             )
-            .order_by(AgentThread.updated_at.desc())
-            .limit(100)
+        if isinstance(offset, bool) or not isinstance(offset, int) or offset < 0:
+            raise DomainError(
+                ErrorCode.VALIDATION, "Conversation offset must be a nonnegative integer"
+            )
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 100:
+            raise DomainError(
+                ErrorCode.VALIDATION, "Conversation page size must be between 1 and 100"
+            )
+        query = q.strip()
+        message_scope = (
+            AgentMessage.thread_id == AgentThread.id,
+            AgentMessage.workspace_id == self.ctx.workspace_id,
+            AgentMessage.owner_id == self.ctx.principal_id,
         )
-        return [self.thread_json(row) for row in rows]
+        visible_scope = (
+            *message_scope,
+            AgentMessage.kind == "message",
+            AgentMessage.role.in_(["user", "assistant"]),
+        )
+        count = (
+            select(func.count(AgentMessage.id))
+            .where(*visible_scope)
+            .correlate(AgentThread)
+            .scalar_subquery()
+        )
+        preview = (
+            select(func.substr(AgentMessage.content, 1, 160))
+            .where(*visible_scope)
+            .order_by(AgentMessage.created_at.desc(), AgentMessage.id.desc())
+            .limit(1)
+            .correlate(AgentThread)
+            .scalar_subquery()
+        )
+        status = (
+            select(AgentRun.status)
+            .where(
+                AgentRun.thread_id == AgentThread.id,
+                AgentRun.workspace_id == self.ctx.workspace_id,
+                AgentRun.owner_id == self.ctx.principal_id,
+            )
+            .order_by(AgentRun.created_at.desc(), AgentRun.id.desc())
+            .limit(1)
+            .correlate(AgentThread)
+            .scalar_subquery()
+        )
+        statement = select(AgentThread, count, preview, status).where(
+            AgentThread.workspace_id == self.ctx.workspace_id,
+            AgentThread.owner_id == self.ctx.principal_id,
+        )
+        if query:
+            escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            pattern = f"%{escaped}%"
+            matching_message = (
+                select(AgentMessage.id)
+                .where(*visible_scope, AgentMessage.content.ilike(pattern, escape="\\"))
+                .correlate(AgentThread)
+                .exists()
+            )
+            statement = statement.where(
+                or_(AgentThread.title.ilike(pattern, escape="\\"), matching_message)
+            )
+        rows = list(
+            self.db.execute(
+                statement.order_by(AgentThread.updated_at.desc(), AgentThread.id.desc())
+                .offset(offset)
+                .limit(limit + 1)
+            )
+        )
+        return {
+            "threads": [
+                {
+                    **self.thread_json(row),
+                    "messageCount": int(total),
+                    "lastMessagePreview": last_message or "",
+                    "lastRunStatus": last_status,
+                }
+                for row, total, last_message, last_status in rows[:limit]
+            ],
+            "nextOffset": offset + limit if len(rows) > limit else None,
+            "query": query,
+            "ownerScope": f"{self.ctx.workspace_id}:{self.ctx.principal_id}",
+        }
 
     def create_thread(self, payload: dict[str, Any]) -> dict[str, Any]:
         task_id = ident(payload["taskId"]) if payload.get("taskId") else None
@@ -397,18 +476,32 @@ class AgentWorkspaceService:
         self.db.flush()
         return self.thread_json(row)
 
-    def thread_detail(self, thread_id: uuid.UUID) -> dict[str, Any]:
+    def thread_detail(
+        self, thread_id: uuid.UUID, *, before: uuid.UUID | None = None, limit: int = 1000
+    ) -> dict[str, Any]:
         row = self._owned(AgentThread, thread_id)
-        messages = self.db.scalars(
-            select(AgentMessage)
-            .where(
-                AgentMessage.thread_id == row.id,
-                AgentMessage.workspace_id == self.ctx.workspace_id,
-                AgentMessage.owner_id == self.ctx.principal_id,
-            )
-            .order_by(AgentMessage.created_at, AgentMessage.id)
-            .limit(1000)
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 1000:
+            raise DomainError(ErrorCode.VALIDATION, "Message page size must be between 1 and 1000")
+        statement = select(AgentMessage).where(
+            AgentMessage.thread_id == row.id,
+            AgentMessage.workspace_id == self.ctx.workspace_id,
+            AgentMessage.owner_id == self.ctx.principal_id,
         )
+        if before is not None:
+            cursor = self._owned(AgentMessage, ident(before))
+            if cursor.thread_id != row.id:
+                raise not_found("conversation message cursor")
+            statement = statement.where(
+                tuple_(AgentMessage.created_at, AgentMessage.id) < (cursor.created_at, cursor.id)
+            )
+        recent = list(
+            self.db.scalars(
+                statement.order_by(AgentMessage.created_at.desc(), AgentMessage.id.desc()).limit(
+                    limit + 1
+                )
+            )
+        )
+        messages = list(reversed(recent[:limit]))
         runs = self.db.scalars(
             select(AgentRun)
             .where(
@@ -423,6 +516,8 @@ class AgentWorkspaceService:
             **self.thread_json(row),
             "automation": self.policy().get("schedules", {}).get(str(row.id)),
             "messages": [self.message_json(message) for message in messages],
+            "hasEarlierMessages": len(recent) > limit,
+            "oldestMessageId": str(messages[0].id) if messages else None,
             "runs": [self.run_json(run) for run in runs],
         }
 
@@ -486,6 +581,21 @@ class AgentWorkspaceService:
 
     def create_run(self, thread_id: uuid.UUID, payload: dict[str, Any]) -> dict[str, Any]:
         thread = self._owned(AgentThread, thread_id, lock=True)
+        from studio.domain.agent_workspace.workflows import ResearchWorkflow, WorkflowService
+
+        workflow = self.db.scalar(
+            select(ResearchWorkflow).where(
+                ResearchWorkflow.thread_id == thread_id,
+                ResearchWorkflow.workspace_id == self.ctx.workspace_id,
+                ResearchWorkflow.owner_id == self.ctx.principal_id,
+            )
+        )
+        if payload.get("workflowId"):
+            workflow = WorkflowService(self.db, self.ctx).get(payload["workflowId"])
+            if workflow.thread_id != thread_id:
+                raise DomainError(
+                    ErrorCode.FORBIDDEN, "Workflow belongs to a different conversation"
+                )
         existing = self.db.scalar(
             select(AgentRun.id).where(
                 AgentRun.thread_id == thread_id,
@@ -502,7 +612,11 @@ class AgentWorkspaceService:
         role = payload.get("role", "planner")
         if role not in ROLES:
             raise DomainError(ErrorCode.VALIDATION, "invalid agent role")
-        provider_id = ident(payload["providerId"]) if payload.get("providerId") else None
+        provider_id = (
+            ident(payload["providerId"])
+            if payload.get("providerId")
+            else (workflow.provider_id if workflow and not payload.get("localModelId") else None)
+        )
         model_id, provider_revision = None, None
         local_model_id = ident(payload["localModelId"]) if payload.get("localModelId") else None
         if provider_id and local_model_id:
@@ -512,6 +626,11 @@ class AgentWorkspaceService:
         local_fingerprint = None
         if local_model_id:
             from studio.domain.learning.workspace_runtime.models import LearningModel
+
+            if workflow:
+                WorkflowService(self.db, self.ctx).require_resource(
+                    workflow, "model", local_model_id
+                )
 
             local_model = self.db.scalar(
                 select(LearningModel).where(
@@ -538,7 +657,17 @@ class AgentWorkspaceService:
             provider = ProviderService(self.db, self.ctx).get(provider_id)
             if not provider.enabled:
                 raise DomainError(ErrorCode.CONFLICT, "provider is disabled")
-            self.ensure_disclosure(provider)
+            if workflow:
+                if (
+                    provider.id != workflow.provider_id
+                    or provider.version != workflow.provider_revision
+                ):
+                    raise DomainError(
+                        ErrorCode.FORBIDDEN,
+                        "Workflow provider changed; create a new reviewed workflow",
+                    )
+            else:
+                self.ensure_disclosure(provider)
             models = self.providers()
             selected = next((item for item in models if item["id"] == str(provider.id)), None)
             choices = selected["models"] if selected else []
@@ -557,8 +686,8 @@ class AgentWorkspaceService:
             if model is None:
                 raise DomainError(ErrorCode.VALIDATION, "select an enabled provider model")
             model_id, provider_revision = model["modelId"], provider.version
-        autopilot = payload.get("autopilot") is True
-        if autopilot and not self.policy()["autopilot"]["enabled"]:
+        autopilot = payload.get("autopilot") is True or workflow is not None
+        if autopilot and not workflow and not self.policy()["autopilot"]["enabled"]:
             raise DomainError(
                 ErrorCode.FORBIDDEN, "enable bounded autopilot in Agent settings first"
             )
@@ -582,6 +711,7 @@ class AgentWorkspaceService:
                 "messages": [],
                 "localModelId": str(local_model_id) if local_model_id else None,
                 "localModelFingerprint": local_fingerprint,
+                "workflowId": str(workflow.id) if workflow else None,
             },
             cancel_requested=False,
         )
@@ -597,6 +727,7 @@ class AgentWorkspaceService:
                 kind="message",
                 content=prompt.strip(),
                 refs={},
+                created_at=datetime.now(UTC),
             )
         )
         thread.updated_at = datetime.now(UTC)
@@ -637,9 +768,24 @@ class AgentWorkspaceService:
         row = self._owned(AgentRun, run_id, lock=True)
         if row.status not in {"failed", "cancelled", "budget_exhausted", "paused"}:
             raise DomainError(ErrorCode.CONFLICT, "only stopped runs can be resumed")
+        from studio.domain.agent_workspace.workflows import WorkflowService, workflow_for_run
+
+        workflow = workflow_for_run(self.db, self.ctx, row, lock=True)
+        if workflow and row.checkpoint.get("localModelId"):
+            WorkflowService(self.db, self.ctx).require_resource(
+                workflow, "model", row.checkpoint["localModelId"]
+            )
         if row.provider_id:
             provider = ProviderService(self.db, self.ctx).get(row.provider_id)
-            self.ensure_disclosure(provider)
+            if workflow:
+                if (
+                    provider.id != workflow.provider_id
+                    or provider.version != workflow.provider_revision
+                    or not provider.enabled
+                ):
+                    raise DomainError(ErrorCode.FORBIDDEN, "Workflow provider changed")
+            else:
+                self.ensure_disclosure(provider)
             row.provider_revision = provider.version
         row.status, row.error, row.cancel_requested = "queued", None, False
         if row.completed_at is not None:

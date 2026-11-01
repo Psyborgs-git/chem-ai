@@ -7,22 +7,56 @@ never downloaded/executed during training; assets are loaded locally without
 
 from __future__ import annotations
 
+import fnmatch
+import gc
 import hashlib
 import json
 import math
+import numbers
 import os
+import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 
 def emit(directory: Path, event: str, **data: Any) -> None:
+    payload = {"event": event, "at": time.time(), **data}
+    invalid = _non_finite_paths(payload)
+    if invalid:
+        raise ValueError(
+            f"Non-finite numeric metric in {event} at {', '.join(invalid[:5])}; "
+            "training stopped instead of persisting invalid metrics"
+        )
+    encoded = json.dumps(payload, default=str, allow_nan=False)
     with (directory / "events.jsonl").open("a") as handle:
-        handle.write(json.dumps({"event": event, "at": time.time(), **data}, default=str) + "\n")
+        handle.write(encoded + "\n")
         handle.flush()
+
+
+def _non_finite_paths(value: Any, path: str = "") -> list[str]:
+    if isinstance(value, dict):
+        return [
+            item
+            for key, child in value.items()
+            for item in _non_finite_paths(child, f"{path}.{key}" if path else str(key))
+        ]
+    if isinstance(value, (tuple, list)):
+        return [
+            item
+            for index, child in enumerate(value)
+            for item in _non_finite_paths(child, f"{path}[{index}]")
+        ]
+    if isinstance(value, numbers.Number):
+        try:
+            return [] if math.isfinite(float(cast(Any, value))) else [path or "$"]
+        except (ValueError, OverflowError, TypeError):
+            return [path or "$"]
+    return []
 
 
 def sha256_file(path: Path) -> str:
@@ -53,11 +87,91 @@ def _parts(request: dict[str, Any], partition: str) -> list[dict[str, Any]]:
     ]
 
 
-def _messages(row: dict[str, Any]) -> list[dict[str, str]]:
+def _messages(row: dict[str, Any]) -> list[dict[str, Any]]:
+    if row.get("messages"):
+        return list(row["messages"])
     return [
         {"role": "user", "content": str(row["prompt"])},
         {"role": "assistant", "content": str(row["response"])},
     ]
+
+
+def _mlx_training_records(
+    request: dict[str, Any], directory: Path
+) -> dict[str, list[dict[str, Any]]]:
+    """Export only train/development; final answers never enter the training loader."""
+    data = directory / "data"
+    data.mkdir(exist_ok=True)
+    partitions = {}
+    for partition, filename in (("train", "train"), ("development", "valid")):
+        records = [
+            {"messages": _messages(row), **({"tools": row["tools"]} if row.get("tools") else {})}
+            for row in _parts(request, partition)
+            if row.get("messages") or (row.get("prompt") and row.get("response"))
+        ]
+        partitions[partition] = records
+        (data / f"{filename}.jsonl").write_text(
+            "\n".join(json.dumps(row) for row in records) + "\n"
+        )
+    return partitions
+
+
+def _validate_mlx_tokens(partitions: dict[str, Any], max_tokens: int, directory: Path) -> None:
+    """Inspect every cached token/offset pair before MLX can truncate or optimize."""
+    summary = []
+    failures: list[str] = []
+    for partition, dataset in partitions.items():
+        maximum = 0
+        minimum_targets = None
+        overlong = no_targets = 0
+        for index in range(len(dataset)):
+            tokens, offset = dataset[index]
+            length = len(tokens)
+            supervised = length - 1 - int(offset)
+            maximum = max(maximum, length)
+            minimum_targets = (
+                supervised if minimum_targets is None else min(minimum_targets, supervised)
+            )
+            if length > max_tokens:
+                overlong += 1
+                if len(failures) < 10:
+                    failures.append(
+                        f"{partition} row {index + 1}: {length} tokens "
+                        f"exceeds maxTokens={max_tokens}"
+                    )
+            if int(offset) < 0 or int(offset) >= length - 1:
+                no_targets += 1
+                if len(failures) < 10:
+                    failures.append(
+                        f"{partition} row {index + 1}: prompt offset {offset} "
+                        "leaves no supervised target tokens"
+                    )
+        if not len(dataset):
+            failures.append(f"{partition} partition is empty")
+        summary.append(
+            {
+                "partition": partition,
+                "rows": len(dataset),
+                "maxSequenceTokens": maximum,
+                "minimumSupervisedTokens": minimum_targets,
+                "overlongRows": overlong,
+                "zeroTargetRows": no_targets,
+            }
+        )
+    emit(
+        directory,
+        "tokenization_preflight",
+        passed=not failures,
+        maxTokens=max_tokens,
+        partitions=summary,
+    )
+    if failures:
+        raise ValueError(
+            "MLX tokenization preflight failed before optimization: "
+            + "; ".join(failures[:3])
+            + ". Shorten examples or increase sequence length; "
+            "targets are never silently truncated."
+        )
 
 
 def _mlx_train(request: dict[str, Any], directory: Path) -> dict[str, Any]:
@@ -65,22 +179,12 @@ def _mlx_train(request: dict[str, Any], directory: Path) -> dict[str, Any]:
     import numpy as np
     from mlx.utils import tree_flatten
     from mlx_lm.lora import CONFIG_DEFAULTS, train_model
-    from mlx_lm.tuner.datasets import load_dataset
+    from mlx_lm.tuner.datasets import CacheDataset, create_dataset
     from mlx_lm.utils import load
 
     config = request["config"]
+    records = _mlx_training_records(request, directory)
     data = directory / "data"
-    data.mkdir(exist_ok=True)
-    for partition, filename in [("train", "train"), ("development", "valid"), ("final", "test")]:
-        records = [
-            _messages(row)
-            for row in _parts(request, partition)
-            if row.get("prompt") and row.get("response")
-        ]
-        if records:
-            (data / f"{filename}.jsonl").write_text(
-                "\n".join(json.dumps({"messages": row}) for row in records) + "\n"
-            )
     output = directory / "output"
     output.mkdir(exist_ok=True)
     previous = output / "adapters.safetensors"
@@ -116,7 +220,13 @@ def _mlx_train(request: dict[str, Any], directory: Path) -> dict[str, Any]:
     model, tokenizer = load(
         args.model, tokenizer_config={"trust_remote_code": False}, trust_remote_code=False
     )
-    train, valid, _test = load_dataset(args, tokenizer)
+    train = create_dataset(records["train"], tokenizer, args)
+    valid = create_dataset(records["development"], tokenizer, args)
+    _validate_mlx_tokens(
+        {"train": CacheDataset(train), "development": CacheDataset(valid)},
+        config["maxTokens"],
+        directory,
+    )
 
     class Progress:
         def on_train_loss_report(self, info: dict[str, Any]) -> None:
@@ -239,7 +349,14 @@ def _transformers_train(request: dict[str, Any], directory: Path) -> dict[str, A
     }
     if kind == "sft":
         train_data = Dataset.from_list(
-            [{"messages": _messages(row)} for row in rows if "response" in row]
+            [
+                {
+                    "messages": _messages(row),
+                    **({"tools": row["tools"]} if row.get("tools") else {}),
+                }
+                for row in rows
+                if row.get("messages") or "response" in row
+            ]
         )
         args = SFTConfig(**shared, max_length=config["maxTokens"], completion_only_loss=False)
         trainer = SFTTrainer(**common, args=args, train_dataset=train_data)
@@ -310,11 +427,10 @@ def _transformers_train(request: dict[str, Any], directory: Path) -> dict[str, A
     }
 
 
-def _generate(request: dict[str, Any], prompt: str, *, adapter: bool = True) -> str:
+def _load_generator(request: dict[str, Any], *, adapter: bool = True) -> Callable[..., str]:
+    """Load one immutable base/candidate session for an entire inference pass."""
     backend = request["model"]["backend"]
     details = request["model"].get("details", {})
-    messages = request.get("messages") or [{"role": "user", "content": prompt}]
-    tools = request.get("tools") or None
     if backend == "mlx":
         from mlx_lm import generate, load
 
@@ -323,86 +439,131 @@ def _generate(request: dict[str, Any], prompt: str, *, adapter: bool = True) -> 
             base,
             adapter_path=details.get("adapterPath") if adapter else None,
             tokenizer_config={"trust_remote_code": False},
+            trust_remote_code=False,
         )
-        text = tokenizer.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=False,
-            tools=tools,
-        )
-        return str(
-            generate(
-                model,
-                tokenizer,
-                prompt=text,
-                max_tokens=request["config"].get("maxTokens", 128),
-                verbose=False,
+
+        def mlx_generate(prompt: str, *, messages: Any = None, tools: Any = None) -> str:
+            text = tokenizer.apply_chat_template(
+                messages or [{"role": "user", "content": prompt}],
+                tokenize=False,
+                add_generation_prompt=True,
+                enable_thinking=False,
+                tools=tools,
             )
-        )
+            return str(
+                generate(
+                    model,
+                    tokenizer,
+                    prompt=text,
+                    max_tokens=request["config"].get("maxTokens", 128),
+                    verbose=False,
+                )
+            )
+
+        return mlx_generate
     import torch
 
     model, tokenizer = _hf_model(request, adapter=adapter)
     model.eval()
-    try:
+
+    def hf_generate(prompt: str, *, messages: Any = None, tools: Any = None) -> str:
         text = tokenizer.apply_chat_template(
-            messages,
+            messages or [{"role": "user", "content": prompt}],
             tokenize=False,
             add_generation_prompt=True,
             enable_thinking=False,
             tools=tools,
         )
-    except ValueError:
-        text = prompt
-    inputs = tokenizer(text, return_tensors="pt")
-    with torch.no_grad():
-        output = model.generate(
-            **inputs,
-            max_new_tokens=request["config"].get("maxTokens", 128),
-            do_sample=False,
-            pad_token_id=tokenizer.pad_token_id,
+        inputs = tokenizer(text, return_tensors="pt").to(model.device)
+        with torch.no_grad():
+            output = model.generate(
+                **inputs,
+                max_new_tokens=request["config"].get("maxTokens", 128),
+                do_sample=False,
+                pad_token_id=tokenizer.pad_token_id,
+            )
+        return str(
+            tokenizer.decode(output[0, inputs["input_ids"].shape[-1] :], skip_special_tokens=True)
         )
-    return str(
-        tokenizer.decode(output[0, inputs["input_ids"].shape[-1] :], skip_special_tokens=True)
+
+    return hf_generate
+
+
+def _generate(request: dict[str, Any], prompt: str, *, adapter: bool = True) -> str:
+    from studio.domain.learning.workspace_runtime.evaluation import visible_answer
+
+    return visible_answer(
+        _load_generator(request, adapter=adapter)(
+            prompt, messages=request.get("messages"), tools=request.get("tools")
+        )
     )
 
 
 def _evaluate(request: dict[str, Any], directory: Path) -> dict[str, Any]:
+    from studio.domain.learning.workspace_runtime.evaluation import aggregate_checks, answer_checks
+
     final = _parts(request, "final")
     if not final:
         raise ValueError(
             "A final held-out partition is required for evaluation; add independent data groups"
         )
     examples = []
+    tasks = []
     for row in final[:100]:
-        if not row.get("prompt"):
+        messages = row.get("messages")
+        if messages:
+            expected_turn = messages[-1]
+            expected = str(
+                expected_turn.get("content") or json.dumps(expected_turn.get("tool_calls", []))
+            )
+            context = messages[:-1]
+            prompt = ""
+        else:
+            expected = str(row.get("expected", row.get("response", "")))
+            prompt = str(row.get("prompt", ""))
+            context = None
+        if not expected or (not prompt and not context):
             continue
-        expected = str(row.get("expected", row.get("response", "")))
-        if not expected:
-            continue
-        base = _generate(request, str(row["prompt"]), adapter=False)
-        candidate = _generate(request, str(row["prompt"]), adapter=True)
-        examples.append(
-            {
-                "rowId": row["id"],
-                "expected": expected,
-                "base": base,
-                "candidate": candidate,
-                "baseExact": base.strip().casefold() == expected.strip().casefold(),
-                "candidateExact": candidate.strip().casefold() == expected.strip().casefold(),
-            }
-        )
-        emit(directory, "evaluation_example", completed=len(examples), total=min(100, len(final)))
+        tasks.append((row, prompt, context))
+        examples.append({"rowId": row["id"], "expected": expected})
     if not examples:
-        raise ValueError("Held-out rows require prompt and expected/response fields")
-    (directory / "output").mkdir(exist_ok=True)
-    (directory / "output" / "evaluation.json").write_text(json.dumps(examples))
+        raise ValueError(
+            "Held-out rows require prompts and expected/response fields or complete conversations"
+        )
+    for adapter, name in ((False, "base"), (True, "candidate")):
+        generate = _load_generator(request, adapter=adapter)
+        for index, (row, prompt, context) in enumerate(tasks):
+            answer = generate(prompt, messages=context, tools=row.get("tools"))
+            item = examples[index]
+            item[name] = answer
+            item[name + "Exact"] = answer.strip().casefold() == item["expected"].strip().casefold()
+            item[name + "Checks"] = answer_checks(answer, row)
+            emit(
+                directory,
+                "evaluation_example",
+                phase=name,
+                completed=index + 1,
+                total=len(examples),
+            )
+        del generate
+        gc.collect()
+        if request["model"]["backend"] == "mlx":
+            import mlx.core as mx
+
+            mx.clear_cache()
+    output = directory / "output"
+    output.mkdir(exist_ok=True)
+    (output / "evaluation.json").write_text(json.dumps(examples, indent=2))
     return {
         "matchedExamples": len(examples),
-        "baseExactMatch": sum(x["baseExact"] for x in examples) / len(examples),
-        "candidateExactMatch": sum(x["candidateExact"] for x in examples) / len(examples),
+        "baseExactMatch": sum(item["baseExact"] for item in examples) / len(examples),
+        "candidateExactMatch": sum(item["candidateExact"] for item in examples) / len(examples),
+        "metrics": {
+            "base": aggregate_checks(examples, "baseChecks"),
+            "candidate": aggregate_checks(examples, "candidateChecks"),
+        },
         "partition": "final",
-        "artifacts": artifact_manifest(directory / "output"),
+        "artifacts": artifact_manifest(output),
     }
 
 
@@ -445,14 +606,56 @@ def _chemprop(request: dict[str, Any], directory: Path) -> dict[str, Any]:
             raise ValueError("Unsafe model artifact name")
         file.write_bytes(value)
     (output / "train-spec.json").write_text(spec.model_dump_json())
+    training = [row for row in _parts(request, "train") if "target" in row and "smiles" in row]
+    training_mean = sum(float(row["target"]) for row in training) / len(training)
+    baseline = {
+        "strategy": "majority_class" if property_task == "classification" else "training_mean",
+        "value": float(training_mean >= 0.5)
+        if property_task == "classification"
+        else training_mean,
+        "unit": scope["unit"],
+        "fitPartition": "train",
+    }
+    domain: dict[str, Any] = {
+        "smiles": list(dict.fromkeys(str(row["smiles"]) for row in training)),
+        "scope": scope,
+        "conditions": [row["conditions"] for row in training if row.get("conditions")],
+        "baseline": baseline,
+    }
+    (output / "applicability.json").write_text(json.dumps(domain))
     result: dict[str, Any] = {
         "backend": "chemprop",
+        "learningRateSchedule": config.get(
+            "learningRateSchedule",
+            {
+                "engine": "chemprop-2.3.1-default",
+                "initial": 0.0001,
+                "maximum": 0.001,
+                "final": 0.0001,
+                "warmupEpochs": 2,
+            },
+        ),
         "propertyTask": property_task,
         "modelDigest": trained.model_digest,
         "scope": scope,
         "trainResult": trained.model_dump(mode="json"),
+        "trainingBaseline": baseline,
+        "trainingConditions": list(
+            {
+                json.dumps(row["conditions"], sort_keys=True): row["conditions"]
+                for row in training
+                if row.get("conditions")
+            }.values()
+        ),
+        "applicabilityDomain": {
+            "artifact": "applicability.json",
+            "trainingStructures": len(domain["smiles"]),
+            "method": "Morgan1024_radius2_Tanimoto",
+            "threshold": 0.25,
+            "calibrated": False,
+        },
     }
-    final = [row for row in _parts(request, "final") if "target" in row and "smiles" in row]
+    final = [row for row in _parts(request, "final") if "target" in row and "smiles" in row][:512]
     if final:
         predicted = adapter.predict(
             PredictSpec.model_validate(
@@ -497,6 +700,35 @@ def _chemprop(request: dict[str, Any], directory: Path) -> dict[str, Any]:
                 if len(set(actual)) == 2
                 else "Held-out partition contains one class",
             }
+        from studio.domain.learning.workspace_runtime.evaluation import (
+            applicability,
+            regression_metrics,
+        )
+
+        matched = [float(labels[item.row_id]) for item in predicted.predictions]
+        if property_task == "classification":
+            baseline_metrics = (
+                {
+                    "accuracy": sum(int(baseline["value"]) == value for value in matched)
+                    / len(matched)
+                }
+                if matched
+                else {}
+            )
+        else:
+            baseline_metrics = (
+                regression_metrics(matched, [float(baseline["value"])] * len(matched))
+                if matched
+                else {}
+            )
+        result["evaluation"]["baseline"] = baseline_metrics
+        result["evaluation"]["baselineStrategy"] = baseline["strategy"]
+        coverage = applicability(domain["smiles"], [row["smiles"] for row in final])
+        result["evaluation"]["applicability"] = {
+            "inDomain": sum(row["inDomain"] for row in coverage),
+            "total": len(coverage),
+            "calibrated": False,
+        }
     result["artifacts"] = artifact_manifest(output)
     return result
 
@@ -509,24 +741,86 @@ def _predict(request: dict[str, Any], directory: Path) -> dict[str, Any]:
     files = {
         item["path"]: (path / item["path"]).read_bytes()
         for item in details["artifacts"]
-        if item["path"] != "train-spec.json"
+        if item["path"] == "manifest.json" or item["path"].endswith(".pt")
     }
     for name, value in files.items():
         if Path(name).name != name:
             raise ValueError("Unsafe Chemprop artifact filename")
         (directory / name).write_bytes(value)
+    rows = _parts(request, "final") if request["kind"] == "evaluate" else request["rows"]
+    rows = rows[:512]
     spec = PredictSpec.model_validate(
         {
             "scope": details["scope"],
             "task_type": details.get("propertyTask", "regression"),
             "device": request["config"].get("device", "cpu"),
             "model_digest": details["modelDigest"],
-            "rows": [
-                {"row_id": row["id"], "smiles": row["smiles"]} for row in request["rows"][:512]
-            ],
+            "rows": [{"row_id": row["id"], "smiles": row["smiles"]} for row in rows],
         }
     )
-    return ChempropAdapter().predict(spec, files).model_dump(mode="json")
+    predicted = ChempropAdapter().predict(spec, files).model_dump(mode="json")
+    from studio.domain.learning.workspace_runtime.evaluation import (
+        applicability,
+        regression_metrics,
+    )
+
+    domain_path = path / "applicability.json"
+    if domain_path.is_file():
+        domain = json.loads(domain_path.read_text())
+    else:
+        old_spec = json.loads((path / "train-spec.json").read_text())
+        train = old_spec["rows"]
+        mean = sum(float(row["label"]) for row in train) / len(train)
+        domain = {
+            "smiles": [row["smiles"] for row in train],
+            "baseline": {"strategy": "training_mean", "value": mean},
+        }
+    coverage = applicability(domain["smiles"], [row["smiles"] for row in rows])
+    predicted["applicabilityDomain"] = {
+        row["id"]: result for row, result in zip(rows, coverage, strict=True)
+    }
+    if request["kind"] != "evaluate":
+        return predicted
+    lookup = {row["id"]: row for row in rows}
+    actual = [float(lookup[item["row_id"]]["target"]) for item in predicted["predictions"]]
+    values = [float(item["value"]) for item in predicted["predictions"]]
+    if not actual:
+        raise ValueError("Property evaluation produced no matched predictions")
+    baseline = domain["baseline"]
+    metrics: dict[str, Any]
+    if details.get("propertyTask") == "classification":
+        from sklearn.metrics import roc_auc_score
+
+        metrics = {
+            "accuracy": sum(
+                int(value >= 0.5) == label for value, label in zip(values, actual, strict=True)
+            )
+            / len(actual),
+            "auroc": float(roc_auc_score(actual, values)) if len(set(actual)) == 2 else None,
+        }
+        base_value = int(float(baseline["value"]) >= 0.5)
+        baseline_metrics = {"accuracy": sum(base_value == label for label in actual) / len(actual)}
+    else:
+        metrics = regression_metrics(actual, values)
+        baseline_metrics = regression_metrics(actual, [float(baseline["value"])] * len(actual))
+    output = directory / "output"
+    output.mkdir(exist_ok=True)
+    report = {
+        "partition": "final",
+        "matchedExamples": len(actual),
+        "metrics": metrics,
+        "baseline": baseline_metrics,
+        "baselineStrategy": baseline["strategy"],
+        "scope": details["scope"],
+        "predictions": predicted,
+        "coverage": {
+            "inDomain": sum(item["inDomain"] for item in coverage),
+            "total": len(coverage),
+            "calibrated": False,
+        },
+    }
+    (output / "evaluation.json").write_text(json.dumps(report, indent=2))
+    return {**report, "artifacts": artifact_manifest(output), "scientificStatus": "not_validated"}
 
 
 def _reinvent(request: dict[str, Any], directory: Path) -> dict[str, Any]:
@@ -645,26 +939,88 @@ def execute(request: dict[str, Any], directory: Path) -> dict[str, Any]:
     kind = request["kind"]
     emit(directory, "started", kind=kind, backend=request["config"]["backend"])
     if kind == "download_model":
-        from huggingface_hub import snapshot_download
+        from huggingface_hub import HfApi, snapshot_download
 
         location = request["model"]["location"]
-        snapshot_download(
-            repo_id=request["config"]["repo"],
-            local_dir=location,
-            allow_patterns=[
-                "*.json",
-                "*.safetensors",
-                "*.model",
-                "*.txt",
-                "*.tiktoken",
-                "LICENSE*",
-                "README.md",
-            ],
+        config = request["config"]
+        revision = config.get("revision")
+        if (
+            not isinstance(revision, str)
+            or len(revision) != 40
+            or any(character not in "0123456789abcdef" for character in revision)
+        ):
+            raise ValueError("Catalog model downloads require an immutable commit revision")
+        info = HfApi(token=False).model_info(config["repo"], revision=revision, files_metadata=True)
+        if info.sha != revision:
+            raise ValueError("Model repository did not resolve to the pinned revision")
+        patterns = [
+            "*.json",
+            "*.safetensors",
+            "*.model",
+            "*.txt",
+            "*.tiktoken",
+            "*.jinja",
+            "LICENSE*",
+            "README.md",
+        ]
+        remote_files = [
+            item
+            for item in info.siblings
+            if any(fnmatch.fnmatch(item.rfilename, pattern) for pattern in patterns)
+        ]
+        if not any(item.rfilename.endswith(".safetensors") for item in remote_files):
+            raise ValueError("The pinned model contains no safetensors weights")
+        if any(
+            Path(item.rfilename).is_absolute() or ".." in Path(item.rfilename).parts
+            for item in remote_files
+        ):
+            raise ValueError("Model manifest contains an unsafe relative path")
+        storage_path = Path(location)
+        while not storage_path.exists() and storage_path != storage_path.parent:
+            storage_path = storage_path.parent
+        required = (
+            int(sum(getattr(item, "size", 0) or 0 for item in remote_files) * 1.25) + 64 * 1024**2
         )
+        if config.get("workflowId"):
+            required += 5 * 1024**3
+        if shutil.disk_usage(storage_path).free < required:
+            raise ValueError(
+                "Insufficient free disk space for the pinned model and storage reserve"
+            )
+        snapshot_download(
+            repo_id=config["repo"],
+            revision=revision,
+            local_dir=location,
+            allow_patterns=[item.rfilename for item in remote_files],
+            token=False,
+        )
+        files = []
+        for item in remote_files:
+            path = Path(location) / item.rfilename
+            sha = sha256_file(path)
+            expected = getattr(item.lfs, "sha256", None) if item.lfs else None
+            if expected and sha != expected:
+                raise ValueError("Downloaded model failed its Hugging Face SHA-256 verification")
+            files.append(
+                {
+                    "path": item.rfilename,
+                    "bytes": path.stat().st_size,
+                    "sha256": sha,
+                    "hubSha256": expected,
+                }
+            )
+        manifest = {
+            "repo": config["repo"],
+            "revision": revision,
+            "license": config.get("license"),
+            "files": files,
+        }
+        (Path(location) / "studio-model-manifest.json").write_text(json.dumps(manifest, indent=2))
         return {
             "downloaded": True,
             "location": location,
-            "files": [path.name for path in Path(location).glob("*.safetensors")],
+            "files": [item["path"] for item in files],
+            "manifest": manifest,
         }
     if kind == "preview":
         return {
@@ -702,6 +1058,12 @@ def main() -> int:
     request = json.loads((directory / "request.json").read_text())
     try:
         result = {"ok": True, **execute(request, directory)}
+        invalid = _non_finite_paths(result)
+        if invalid:
+            raise ValueError(
+                "Worker result contains non-finite numeric values at " + ", ".join(invalid[:5])
+            )
+        encoded = json.dumps(result, default=str, allow_nan=False)
         emit(directory, "completed")
     except Exception as exc:
         # No traceback or example text enters the job response.
@@ -710,8 +1072,9 @@ def main() -> int:
             message = "Required training dependency is unavailable"
         result = {"ok": False, "error": f"{type(exc).__name__}: {message[:500]}"}
         emit(directory, "failed", error=result["error"])
+        encoded = json.dumps(result, default=str, allow_nan=False)
     temporary = directory / "result.tmp"
-    temporary.write_text(json.dumps(result, default=str))
+    temporary.write_text(encoded)
     temporary.replace(directory / "result.json")
     return 0 if result["ok"] else 2
 

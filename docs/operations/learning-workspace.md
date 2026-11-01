@@ -29,11 +29,17 @@ A backend-specific override takes precedence over `STUDIO_TRAINING_PYTHON`,
 which in turn takes precedence over automatic discovery. No environment is
 installed by selecting a model or starting a job.
 
-The catalog includes Qwen3 0.6B in MLX 4-bit and Transformers formats. Selecting a
+The catalog includes Qwen3 0.6B in MLX 4-bit and Transformers formats, plus Qwen3
+4B Instruct 2507 in MLX 4-bit for substantive local assistant adaptation. Selecting a
 catalog model creates an explicit download job. Existing local safetensors model
 directories can also be registered. Training loads local assets with remote code
 disabled and model-hub offline flags. Native execution scrubs credentials from
 the worker environment; it does not claim OS-enforced network isolation.
+Catalog revisions are pinned to immutable Hugging Face commits. Downloads verify
+weight SHA-256 values and retain a manifest of repository, revision, license and
+every file's hash. Remote workers use the same pinned download path. Optional
+runtime interpreters receive first-party source paths without the API environment's
+site-packages, so installed MLX and Chemprop versions remain isolated.
 
 ## Datasets and jobs
 
@@ -50,6 +56,18 @@ Use `/api/learning-workspace` with the existing authenticated session:
   grouping and train/development/final partitions. At least three independent
   groups are needed for held-out partitions. Related examples never cross the
   boundary. Rejected rows and duplicate counts stay visible.
+- `POST /datasets/from-source` imports externally computed CSV/JSONL values
+  directly from an owner-retained source's original bytes. It requires declared
+  training rights, verifies the retained checksum, preserves selected metadata
+  columns and property/unit/method/condition context, and records source lineage.
+  Caller-supplied replacement content is never used. This is the agent's route
+  for published computational datasets; generated labels cannot use this route.
+- `POST /jobs/preflight` accepts the same kind/dataset/model/config payload as
+  job creation and returns ordered compatibility, rights, held-out partition,
+  runtime/device and disk checks with resolved parameters. `GET /jobs/preflight`
+  checks defaults. Job creation uses these checks too; unresolved checks produce
+  a blocked job. Research-workflow jobs and catalog downloads retain a 5 GiB
+  free-space reserve in addition to the estimated allocation.
 - `POST /jobs` accepts `datasetId`, optional `modelId`, `kind`, and bounded
   `config`. Supported kinds are assistant SFT, DPO, GRPO, Chemprop regression or
   binary classification (`propertyTask`),
@@ -73,6 +91,12 @@ experimental properties, biological activity or safety.
 Research extraction and structure checks validate provenance/schema/structure;
 they do not turn a paper claim or synthetic example into an experimental
 measurement. Data kinds remain explicit in job lineage.
+Assistant JSONL also supports complete `messages` and `tools`, including matched
+assistant tool calls and tool results. Tool protocol is checked on import;
+identical user conversations stay in the same partition. Molecular data preserves
+polymer repeat-unit SMILES (including connection wildcards), UUID metadata and
+declared conditions. Each property fit uses one property/unit/method/condition
+context, rather than silently combining unlike measurements.
 
 ## Self-hosted GPU workers
 
@@ -112,6 +136,17 @@ An `evaluate` job runs the base and candidate on the same held-out final prompts
 without supplying their expected answers to either model. It records exact-match
 metrics and the real responses in an owner-only downloadable artifact. This
 evaluation is software evidence, not scientific validation of chemistry claims.
+Each base/candidate is loaded once per evaluation pass. Optional per-row
+`evaluation` contracts check JSON fields, allowed/required citation IDs, numeric
+values and units, expected tool calls and forbidden phrases. Citation-ID checks
+do not establish that a source entails a generated claim.
+
+Property evaluation predicts only labelled final rows and reports MAE/RMSE or
+classification metrics against a mean/majority baseline fitted from training
+labels. Saved models retain a Morgan-fingerprint applicability manifest, and
+predictions report nearest-training structural coverage. The threshold is an
+uncalibrated coverage flag, rather than an uncertainty interval or a measure of
+fabric hand, drape or performance.
 
 `POST /models/{id}/activate` requires `approved: true` and `evaluationJobId` from a
 completed matched held-out evaluation for that exact model. The human user's

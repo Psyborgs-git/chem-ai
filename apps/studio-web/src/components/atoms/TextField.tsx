@@ -1,4 +1,5 @@
 import { useId, type InputHTMLAttributes } from "react";
+import { Input } from "@/components/ui/input";
 
 /** Labeled text field — label association and described-by wiring
  * are mandatory, not optional props. */
@@ -28,12 +29,12 @@ export function TextField({
       <label htmlFor={id} className="cs-field__label">
         {label}
       </label>
-      <input
+      <Input
         id={id}
         {...props}
         aria-invalid={error ? true : existingInvalid}
         aria-describedby={describedBy || undefined}
-        className={`cs-input ${className ?? ""}`.trim()}
+        className={className}
       />
       {hint && (
         <p id={hintId} className="cs-field__hint">

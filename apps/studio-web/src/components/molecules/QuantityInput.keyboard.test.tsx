@@ -54,9 +54,12 @@ describe("QuantityInput keyboard accessibility (AT-0205-1)", () => {
     const user = userEvent.setup();
     render(<Harness />);
     const unitField = screen.getByLabelText("unit");
-    await user.click(unitField);
-    await user.selectOptions(unitField, "mass_percent");
-    expect(unitField).toHaveValue("mass_percent");
+    unitField.focus();
+    await user.keyboard("{ArrowDown}");
+    expect(await screen.findByRole("listbox")).toBeVisible();
+    await user.keyboard("{ArrowDown}{Enter}");
+    expect(unitField).toHaveTextContent("mass_percent");
+    expect(unitField).toHaveFocus();
   });
 
   it("domain validation feedback is exposed via aria-invalid + alert", async () => {

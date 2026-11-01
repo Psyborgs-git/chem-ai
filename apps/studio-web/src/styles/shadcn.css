@@ -1,0 +1,83 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Scoped preflight: registry controls need neutral browser primitives, while
+   the rest of the existing app keeps its current element defaults. */
+@layer base {
+  button[data-slot], input[data-slot], textarea[data-slot] {
+    appearance: none;
+    margin: 0;
+    border-width: 0;
+    border-style: solid;
+    border-radius: 0;
+    padding: 0;
+    background-color: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+  }
+}
+
+:root {
+  --background: var(--surface);
+  --foreground: var(--text);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-contrast);
+  --secondary: var(--surface-sunken);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface-raised);
+  --muted-foreground: var(--text-muted);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --destructive: var(--status-danger);
+  --input: var(--border);
+  --ring: var(--focus-ring);
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-background: var(--surface);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-contrast);
+  --color-secondary: var(--surface-sunken);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-raised);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--surface-sunken);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--status-danger);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--focus-ring);
+}
+
+/* Registry components share Studio tokens without resetting the existing app. */
+[data-slot] { box-sizing: border-box; }
+[data-slot="tabs-content"][hidden] { display: none; }
+[data-slot="button"], [data-slot="select-trigger"], [data-slot="input"], [data-slot="textarea"] {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+}
+[data-slot="button"] { font-weight: 500; }
+[data-slot="button"], [data-slot="select-trigger"], [data-slot="input"], [data-slot="textarea"] {
+  border-style: solid;
+}
+[data-slot="select-item"], [data-slot="dropdown-menu-item"] { cursor: pointer; }
+[data-slot="select-trigger"] { text-align: left; }
+[data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="popover-content"] { z-index: 310; }
+[data-slot="dialog-overlay"], [data-slot="alert-dialog-overlay"] { z-index: 200; }
+[data-slot="dialog-content"], [data-slot="alert-dialog-content"] { z-index: 210; }
+[data-slot="tooltip-content"] { z-index: 400; }
+@media (prefers-reduced-motion: reduce) {
+  [data-slot] { animation-duration: 0ms !important; transition-duration: 0ms !important; }
+}

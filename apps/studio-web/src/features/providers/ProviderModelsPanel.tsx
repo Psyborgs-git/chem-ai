@@ -1,7 +1,8 @@
 import { useId, useState, type FormEvent } from "react";
 import { Badge } from "../../components/atoms/Badge";
 import { Button } from "../../components/atoms/Button";
-import { Checkbox } from "../../components/atoms/Checkbox";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TextField } from "../../components/atoms/TextField";
 import type { AgentModel, AgentProvider } from "../agent/AgentSidebar";
 import { messageOf, post, useWorkspace } from "../workspace/useWorkspace";
@@ -26,6 +27,11 @@ function price(value: string): number | null {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100000) throw new Error("Enter token prices from 0 to 100,000 USD per million tokens, or leave them blank.");
   return parsed;
+}
+
+function ModelCheckbox({ label, checked, disabled, onCheckedChange }: { label: string; checked: boolean; disabled: boolean; onCheckedChange: (checked: boolean) => void }) {
+  const id = useId();
+  return <div className="cs-checkbox"><Checkbox id={id} checked={checked} disabled={disabled} onCheckedChange={(value) => onCheckedChange(value === true)} /><label htmlFor={id}>{label}</label></div>;
 }
 
 function ModelEditor({ provider, model, initialModelId, onSaved, onCancel }: {
@@ -53,12 +59,12 @@ function ModelEditor({ provider, model, initialModelId, onSaved, onCancel }: {
   return <form className="cs-provider-model-form" aria-label={`${model ? "Edit" : "Add"} model for ${provider.name}`} onSubmit={(event) => void save(event)}>
     <TextField label="Model ID" value={draft.modelId} maxLength={160} required disabled={busy || Boolean(model)} onChange={(event) => update("modelId", event.target.value)} hint="Use the exact ID returned by the provider." />
     <TextField label="Display name" value={draft.label} maxLength={200} disabled={busy} onChange={(event) => update("label", event.target.value)} />
-    <div className="cs-field"><label className="cs-field__label" htmlFor={protocolId}>Model API protocol</label><select id={protocolId} aria-describedby={`${protocolId}-hint`} className="cs-input" value={draft.apiStyle} disabled={busy} onChange={(event) => update("apiStyle", event.target.value as ModelApiStyle)}><option value="inherit">Inherit provider</option><option value="responses">Responses API</option><option value="chat_completions">Chat Completions</option></select><p id={`${protocolId}-hint`} className="cs-field__hint">Override the provider protocol when this model requires a different API.</p></div>
+    <div className="cs-field"><label className="cs-field__label" htmlFor={protocolId}>Model API protocol</label><Select value={draft.apiStyle} disabled={busy} onValueChange={(value) => update("apiStyle", value as ModelApiStyle)}><SelectTrigger id={protocolId} aria-describedby={`${protocolId}-hint`} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="inherit">Inherit provider</SelectItem><SelectItem value="responses">Responses API</SelectItem><SelectItem value="chat_completions">Chat Completions</SelectItem></SelectContent></Select><p id={`${protocolId}-hint`} className="cs-field__hint">Override the provider protocol when this model requires a different API.</p></div>
     <TextField label="Input price (USD / million tokens)" type="number" min="0" max="100000" step="any" value={draft.inputPrice} disabled={busy} onChange={(event) => update("inputPrice", event.target.value)} hint="Leave blank if unknown. Enter 0 only when usage is free." />
     <TextField label="Output price (USD / million tokens)" type="number" min="0" max="100000" step="any" value={draft.outputPrice} disabled={busy} onChange={(event) => update("outputPrice", event.target.value)} />
-    <fieldset className="cs-model-role-checks"><legend>Available agent roles</legend>{ROLES.map((role) => <Checkbox key={role} label={role[0].toUpperCase() + role.slice(1)} checked={draft.roles.includes(role)} disabled={busy} onChange={(event) => update("roles", event.target.checked ? [...draft.roles, role] : draft.roles.filter((current) => current !== role))} />)}</fieldset>
-    <Checkbox label="Available for selection" checked={draft.enabled} disabled={busy} onChange={(event) => update("enabled", event.target.checked)} />
-    <Checkbox label="This model supports function tools" checked={draft.supportsTools} disabled={busy} onChange={(event) => update("supportsTools", event.target.checked)} />
+    <fieldset className="cs-model-role-checks"><legend>Available agent roles</legend>{ROLES.map((role) => <ModelCheckbox key={role} label={role[0].toUpperCase() + role.slice(1)} checked={draft.roles.includes(role)} disabled={busy} onCheckedChange={(checked) => update("roles", checked ? [...draft.roles, role] : draft.roles.filter((current) => current !== role))} />)}</fieldset>
+    <ModelCheckbox label="Available for selection" checked={draft.enabled} disabled={busy} onCheckedChange={(checked) => update("enabled", checked)} />
+    <ModelCheckbox label="This model supports function tools" checked={draft.supportsTools} disabled={busy} onCheckedChange={(checked) => update("supportsTools", checked)} />
     {error && <p className="cs-error" role="alert">{error}</p>}
     <div className="cs-actions"><Button type="submit" variant="primary" disabled={busy}>{busy ? "Saving model…" : "Save model"}</Button><Button onClick={onCancel} disabled={busy}>Cancel</Button></div>
   </form>;
@@ -95,7 +101,7 @@ function ModelGroup({ provider, canManage, onRefresh }: {
   };
   return <article className="cs-provider-model-group" aria-label={`${provider.name} models`}>
     <header><div><h3>{provider.name}</h3><p className="cs-field__hint">{provider.local ? "Local endpoint" : "External endpoint"} · {provider.models.length} configured {provider.models.length === 1 ? "model" : "models"}{!provider.enabled ? " · Provider disabled" : ""}</p></div>{canManage && <div className="cs-actions"><Button onClick={() => { setEditor({}); setError(null); }} disabled={Boolean(busy) || Boolean(editor)}>Add model</Button><Button onClick={() => void discover()} disabled={Boolean(busy) || Boolean(editor)}>{busy === "discover" ? "Listing models…" : "Discover models"}</Button></div>}</header>
-    {discovered && <div className="cs-provider-discovery"><label className="cs-field__label" htmlFor={selectId}>{discovered.length ? "Models reported by this endpoint" : "This endpoint returned no model IDs"}</label>{discovered.length > 0 && <div className="cs-actions"><select id={selectId} className="cs-input" value={discoveredId} onChange={(event) => setDiscoveredId(event.target.value)}>{discovered.map((id) => <option value={id} key={id}>{id}</option>)}</select><Button disabled={!discoveredId || Boolean(editor)} onClick={() => setEditor({ model: provider.models.find((model) => model.modelId === discoveredId), modelId: discoveredId })}>Configure selected model</Button></div>}<p className="cs-field__hint">Discovery sends a model-list request to this endpoint. It does not send notebook content or verify tool support.</p></div>}
+    {discovered && <div className="cs-provider-discovery"><label className="cs-field__label" htmlFor={selectId}>{discovered.length ? "Models reported by this endpoint" : "This endpoint returned no model IDs"}</label>{discovered.length > 0 && <div className="cs-actions"><Select value={discoveredId} onValueChange={setDiscoveredId}><SelectTrigger id={selectId}><SelectValue /></SelectTrigger><SelectContent>{discovered.map((id) => <SelectItem value={id} key={id}>{id}</SelectItem>)}</SelectContent></Select><Button disabled={!discoveredId || Boolean(editor)} onClick={() => setEditor({ model: provider.models.find((model) => model.modelId === discoveredId), modelId: discoveredId })}>Configure selected model</Button></div>}<p className="cs-field__hint">Discovery sends a model-list request to this endpoint. It does not send notebook content or verify tool support.</p></div>}
     <div className="cs-provider-model-rows">{provider.models.map((model) => <div className="cs-provider-model-row" key={model.id}>
       <div><strong>{model.label}</strong><small><code>{model.modelId}</code></small><small>{model.roles.length ? model.roles.join(", ") : "No roles assigned"} · {model.supportsTools ? "Function tools enabled" : "Function tools disabled"}</small><small>API: {protocolLabel(model.apiStyle)}</small><small>Input: {model.inputPricePerMillionUsd == null ? "price unknown" : `$${model.inputPricePerMillionUsd}/M`} · Output: {model.outputPricePerMillionUsd == null ? "price unknown" : `$${model.outputPricePerMillionUsd}/M`}</small></div>
       <Badge tone={model.enabled ? "info" : "neutral"}>{model.enabled ? "Available" : "Disabled"}</Badge>

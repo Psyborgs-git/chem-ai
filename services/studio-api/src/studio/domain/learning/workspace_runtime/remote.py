@@ -80,6 +80,8 @@ def lease(service: LearningWorkspaceService, payload: dict[str, Any]) -> dict[st
                         "trainingJobId",
                         "artifacts",
                         "baseModelId",
+                        "revision",
+                        "baseRevision",
                     }
                 },
             }

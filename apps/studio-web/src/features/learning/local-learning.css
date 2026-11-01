@@ -1,24 +1,84 @@
-.cs-learning-runtime-strip { display:flex; flex-wrap:wrap; gap:.65rem; margin:0 0 1.4rem; }
-.cs-learning-runtime-strip details { border:1px solid var(--border); padding:.6rem .8rem; background:var(--surface); border-radius:8px; font-size:.72rem; }
-.cs-learning-runtime-strip summary { display:flex; gap:.6rem; align-items:center; cursor:pointer; }
-.cs-learning-runtime-strip small { color:var(--text-muted); }
-.cs-learning-runtime-strip details[open] { flex-basis:100%; }
-.cs-learning-runtime-strip code { display:block; overflow-wrap:anywhere; font-size:.7rem; }
-.cs-learning-tab { background:none; border:0; padding:.7rem .1rem; color:var(--text-muted); font:inherit; font-size:.83rem; cursor:pointer; white-space:nowrap; }
-.cs-learning-tab[aria-selected=true] { border-bottom:2px solid var(--accent); color:var(--accent); font-weight:600; }
-.cs-learning-columns { display:grid; grid-template-columns:minmax(270px,.9fr) minmax(0,1.2fr); gap:1.4rem; align-items:start; }
-.cs-learning-workspace .cs-field { display:grid; gap:.35rem; margin-bottom:1rem; min-width:0; }
-.cs-learning-workspace .cs-panel { margin-bottom:1rem; }
-.cs-learning-workspace .cs-panel > h2,.cs-learning-columns > section > h2 { font-size:1.05rem; margin-top:0; }
-.cs-learning-workspace .cs-panel > h3 { font-size:.95rem; margin-top:0; }
+.cs-learning-workspace { font-size:14px; }
+.cs-learning-workspace h2 { margin:0 0 1rem; font-size:17px; }
+.cs-learning-workspace h3 { font-size:14px; }
+.cs-learning-workspace .cs-field { display:grid; gap:.4rem; margin:0 0 1rem; min-width:0; }
+.cs-learning-workspace .cs-field__label,.cs-learning-workspace .cs-field__hint,.cs-learning-meta { font-size:12px; color:var(--text-muted); }
+.cs-learning-workspace .cs-input { font-size:14px; }
+.cs-learning-workspace .cs-panel { margin-bottom:1.2rem; }
+.cs-learning-tab { border:0; border-bottom:2px solid transparent; background:transparent; padding:.75rem .1rem; font:inherit; color:var(--text-muted); cursor:pointer; }
+.cs-learning-tab[aria-selected=true] { border-color:var(--accent); color:var(--text); font-weight:600; }
+.cs-learning-topline { display:flex; align-items:center; gap:1.25rem; margin:-.5rem 0 1rem; color:var(--text-muted); font-size:12px; }
+.cs-learning-topline > a { margin-left:auto; color:inherit; }
+.cs-learning-topline details { position:relative; }
+.cs-learning-topline summary { cursor:pointer; }
+.cs-learning-runtime-menu { position:absolute; top:1.5rem; left:0; z-index:10; width:min(450px,75vw); padding:1rem; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-panel); }
+.cs-learning-runtime-menu > div { display:grid; grid-template-columns:1fr auto; padding:.7rem 0; border-bottom:1px solid var(--border); }
+.cs-learning-runtime-menu small,.cs-learning-runtime-menu code { grid-column:1/-1; overflow-wrap:anywhere; margin-top:.3rem; }
+.cs-learning-split { display:grid; grid-template-columns:minmax(280px,.85fr) minmax(0,1.4fr); min-height:460px; border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--surface); }
+.cs-learning-list { border-right:1px solid var(--border); min-width:0; }
+.cs-learning-row { display:flex; align-items:center; gap:.7rem; width:100%; text-align:left; border:0; border-bottom:1px solid var(--border); background:transparent; color:var(--text); padding:1rem; font:inherit; cursor:pointer; }
+.cs-learning-row > span:nth-child(2) { flex:1; min-width:0; }
+.cs-learning-row strong,.cs-learning-row-main strong,.cs-learning-data-row strong { display:block; font-size:14px; font-weight:550; overflow-wrap:anywhere; }
+.cs-learning-row small,.cs-learning-data-row small { display:block; font-size:12px; color:var(--text-muted); margin-top:.3rem; }
+.cs-learning-row:hover,.cs-learning-row.is-selected { background:var(--accent-subtle); }
+.cs-learning-row-state { font-size:12px; color:var(--text-muted); }
+.cs-learning-state { width:8px; height:8px; border-radius:50%; border:1px solid var(--border-strong); flex-shrink:0; }
+.cs-learning-state.is-running,.cs-learning-state.is-queued { background:var(--accent); border-color:var(--accent); }
+.cs-learning-state.is-completed { background:var(--status-success); border-color:var(--status-success); }
+.cs-learning-state.is-failed { background:var(--status-danger); border-color:var(--status-danger); }
+.cs-learning-inspector { min-width:0; padding:1.5rem; background:var(--surface); }
+.cs-learning-inspector > header { display:flex; align-items:start; justify-content:space-between; gap:1rem; margin-bottom:1.5rem; }
+.cs-learning-inspector > header h2,.cs-learning-inspector > header h3 { margin:.3rem 0 0; overflow-wrap:anywhere; }
+.cs-learning-metrics { display:flex; flex-wrap:wrap; gap:1.5rem; margin:1rem 0 1.5rem; }
+.cs-learning-metrics > div { display:grid; gap:.3rem; }
+.cs-learning-metrics strong { font-size:22px; font-weight:550; font-variant-numeric:tabular-nums; }
+.cs-learning-metrics span { font-size:12px; color:var(--text-muted); }
+.cs-learning-chart { margin:1rem 0 1.5rem; }
+.cs-learning-chart figcaption { display:flex; justify-content:space-between; font-size:14px; }
+.cs-learning-chart figcaption span,.cs-learning-chart small { font-size:12px; color:var(--text-muted); }
+.cs-learning-chart svg { width:100%; max-height:180px; }
+.cs-learning-artifacts { margin:1.5rem 0; }
+.cs-learning-artifacts a { display:flex; justify-content:space-between; gap:.7rem; padding:.7rem 0; border-bottom:1px solid var(--border); color:var(--accent); font-size:13px; text-decoration:none; overflow-wrap:anywhere; }
+.cs-learning-artifacts span { color:var(--text-muted); font-size:12px; flex-shrink:0; }
+.cs-learning-columns { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(290px,.8fr); gap:1.5rem; align-items:start; }
+.cs-learning-data-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem .25rem; border-bottom:1px solid var(--border); }
+.cs-learning-data-row > div,.cs-learning-data-row > button:first-child { min-width:0; }
+.cs-learning-row-main { text-align:left; color:var(--text); font:inherit; border:0; background:transparent; cursor:pointer; flex:1; }
+.cs-learning-table-wrap { overflow:auto; margin:1rem 0; }
+.cs-learning-table-wrap table { width:100%; border-collapse:collapse; font-size:12px; }
+.cs-learning-table-wrap th,.cs-learning-table-wrap td { text-align:left; border-bottom:1px solid var(--border); padding:.65rem; max-width:240px; overflow-wrap:anywhere; }
+.cs-learning-split-counts { display:flex; gap:1rem; font-size:12px; }
 .cs-learning-fields { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:0 1rem; }
-.cs-learning-record > header { display:flex; align-items:start; gap:1rem; justify-content:space-between; }
-.cs-learning-record > header > h2,.cs-learning-record > header > h3 { font-size:.95rem; margin:0; }
-.cs-learning-record > p { font-size:.75rem; color:var(--text-muted); }
-.cs-learning-record .cs-record { font-size:.72rem; }
-.cs-learning-record > details { font-size:.75rem; padding:.5rem 0; }
-.cs-learning-record .cs-actions { margin-top:.8rem; }
-.cs-learning-catalog { margin-bottom:1.5rem; }
+.cs-learning-local-import { padding:1rem 0; margin:1rem 0 2rem; border-bottom:1px solid var(--border); }
+.cs-learning-local-import summary { cursor:pointer; margin-bottom:1rem; }
+.cs-learning-preview { white-space:pre-wrap; line-height:1.7; padding:1rem 0; }
 .cs-learning-train-form { max-width:850px; }
-.cs-learning-jobs { display:grid; gap:1rem; }
-@media(max-width:850px) { .cs-learning-columns { grid-template-columns:minmax(0,1fr); } }
+.cs-learning-steps { display:flex; gap:.6rem; list-style:none; padding:0; margin:0 0 2rem; flex-wrap:wrap; }
+.cs-learning-steps button { display:flex; align-items:center; gap:.4rem; font:inherit; font-size:12px; color:var(--text-muted); border:0; background:none; padding:.3rem; cursor:pointer; }
+.cs-learning-steps button[aria-current=step] { color:var(--accent); font-weight:650; }
+.cs-learning-steps span { display:grid; place-items:center; width:22px; height:22px; border:1px solid var(--border); border-radius:50%; }
+.cs-learning-steps button[aria-current=step] span { color:var(--accent-contrast); background:var(--accent); border-color:var(--accent); }
+.cs-learning-form-footer { display:flex; justify-content:flex-end; gap:.75rem; padding-top:1.5rem; margin-top:1.5rem; border-top:1px solid var(--border); }
+.cs-learning-review { display:grid; gap:.8rem; margin-bottom:1.5rem; }
+.cs-learning-review > div { display:grid; grid-template-columns:80px 1fr; gap:1rem; }
+.cs-learning-review dt { color:var(--text-muted); font-size:12px; }
+.cs-learning-review dd { margin:0; }
+.cs-learning-preflight { padding:1rem; margin:1rem 0; border:1px solid var(--border); border-radius:8px; }
+.cs-learning-preflight p { display:flex; gap:.6rem; font-size:13px; }
+.cs-learning-preflight [data-state=fail] { color:var(--status-danger); }
+.cs-learning-preflight small { font-size:12px; color:var(--text-muted); }
+.cs-text-button { border:0; padding:0; background:transparent; color:var(--accent); font:inherit; cursor:pointer; text-decoration:underline; }
+@media(max-width:950px) { .cs-learning-split,.cs-learning-columns { grid-template-columns:minmax(0,1fr); } .cs-learning-list { border-right:0; border-bottom:1px solid var(--border); max-height:320px; overflow:auto; } }
+.cs-learning-campaigns { margin:0 0 1.75rem; }
+.cs-learning-campaigns details { margin-top:.6rem; font-size:12px; color:var(--text-muted); }
+.cs-learning-campaigns summary { cursor:pointer; }
+.cs-learning-workspace .cs-technical { font-size:12px; }
+@container(max-width:800px) { .has-agent-panel .cs-learning-split,.has-agent-panel .cs-learning-columns { grid-template-columns:minmax(0,1fr); } .has-agent-panel .cs-learning-list { border-right:0; border-bottom:1px solid var(--border); max-height:320px; overflow:auto; } }
+.cs-learning-progress-line { display:flex; flex-wrap:wrap; gap:.9rem; color:var(--text-muted); font-size:12px; margin:-.5rem 0 1.25rem; }
+.cs-learning-train-form,.cs-learning-columns > form.cs-panel { padding:1.5rem; box-sizing:border-box; }
+.cs-learning-workspace .cs-btn { font-size:14px; }
+@media(max-width:550px) { .cs-learning-train-form,.cs-learning-columns > form.cs-panel { padding:1rem; } }
+.cs-learning-schedule { display:grid; align-content:start; gap:.4rem; margin-bottom:1rem; }
+.cs-learning-schedule p { margin:0; font-size:14px; font-variant-numeric:tabular-nums; }
+.cs-learning-schedule small { color:var(--text-muted); font-size:12px; }
+.cs-learning-property-context { font-size:12px; color:var(--text-muted); margin:0 0 1rem; }

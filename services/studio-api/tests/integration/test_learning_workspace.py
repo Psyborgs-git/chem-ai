@@ -10,7 +10,11 @@ import pytest
 from studio.auth.context import ServiceContext
 from studio.config.settings import Settings
 from studio.domain.learning.workspace import LearningWorkspaceService
-from studio.domain.learning.workspace_runtime.models import LearningJob, LearningModel
+from studio.domain.learning.workspace_runtime.models import (
+    LearningDataset,
+    LearningJob,
+    LearningModel,
+)
 from studio.domain.learning.workspace_runtime.remote import (
     complete,
     heartbeat,
@@ -49,6 +53,300 @@ def _dataset(service, **overrides):
             **overrides,
         }
     )
+
+
+def test_shared_preflight_blocks_unheldout_or_incompatible_training_before_queue(session, tmp_path):
+    first, _second = _env(session, tmp_path)
+    single = _dataset(first, content="smiles,target\nCC,1\n")
+    first.freeze_dataset(single["id"])
+    payload = {
+        "kind": "chemprop",
+        "datasetId": single["id"],
+        "config": {"executionTarget": "remote"},
+    }
+    check = first.preflight(payload)
+    assert check["ready"] is False
+    assert any(item["id"] == "heldout" and item["status"] == "fail" for item in check["checks"])
+    assert first.create_job(payload)["state"] == "blocked"
+    invalid = first.preflight({**payload, "kind": "sft"})
+    assert invalid["ready"] is False
+    assert "model" in invalid["checks"][0]["message"]
+
+
+def test_property_preflight_records_actual_fixed_engine_schedule(session, tmp_path):
+    first, _second = _env(session, tmp_path)
+    data = _dataset(first)
+    first.freeze_dataset(data["id"])
+    result = first.preflight(
+        {
+            "kind": "chemprop",
+            "datasetId": data["id"],
+            "config": {"executionTarget": "remote", "learningRate": 0.005},
+        }
+    )
+    assert result["ready"]
+    config = result["normalizedConfig"]
+    assert "learningRate" not in config
+    assert config["learningRateSchedule"] == {
+        "engine": "chemprop-2.3.1-default",
+        "initial": 0.0001,
+        "maximum": 0.001,
+        "final": 0.0001,
+        "warmupEpochs": 2,
+    }
+
+
+def test_catalog_repair_reuses_owned_pinned_model_path(session, tmp_path):
+    first, second = _env(session, tmp_path)
+    registered = first.register_model({"catalogId": "qwen3-4b-instruct-mlx"})
+    model = session.get(LearningModel, uuid.UUID(registered["id"]))
+    old_job = session.get(LearningJob, uuid.UUID(registered["downloadJobId"]))
+    old_job.state = "completed"
+    model.details = {**model.details, "state": "ready"}
+    session.flush()
+    payload = {"catalogId": "qwen3-4b-instruct-mlx", "repairModelId": registered["id"]}
+    with pytest.raises(DomainError):
+        second.register_model(payload)
+    repaired = first.register_model(payload)
+    assert repaired["id"] == registered["id"]
+    assert repaired["location"] == registered["location"]
+    assert repaired["downloadJobId"] != registered["downloadJobId"]
+    with pytest.raises(DomainError, match="active job"):
+        first.register_model(payload)
+    with pytest.raises(DomainError, match="same pinned"):
+        first.register_model({**payload, "catalogId": "qwen3-0.6b-mlx"})
+
+
+@pytest.mark.parametrize("catalog_id", ["not-in-catalog", "", None])
+def test_unknown_catalog_never_falls_back_to_existing_local_model(session, tmp_path, catalog_id):
+    first, _second = _env(session, tmp_path)
+    private_path = tmp_path / "unrelated-private-model"
+    private_path.mkdir()
+    (private_path / "config.json").write_text('{"model_type":"qwen3"}')
+    (private_path / "model.safetensors").write_bytes(b"registration-only test artifact")
+    payload = {"location": str(private_path), "backend": "mlx", "license": "owned"}
+    with pytest.raises(DomainError, match="Unknown curated model catalog"):
+        first.register_model({**payload, "catalogId": catalog_id})
+    assert first.list_models() == []
+    assert first.list_jobs() == []
+    # Explicit owner-requested local imports remain available without a catalog ID.
+    local = first.register_model(payload)
+    assert local["location"] == str(private_path)
+    assert local["details"]["state"] == "ready"
+
+
+def test_merge_shards_preserves_conversations_and_source_groups(session, tmp_path):
+    first, second = _env(session, tmp_path)
+    one = {
+        "prompt": "First paper-A finding",
+        "response": "Generated summary",
+        "documentId": "paper-a",
+        "evaluation": {"jsonRequired": True},
+    }
+    chat = {
+        "messages": [
+            {"role": "user", "content": "Read paper B"},
+            {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [
+                    {"id": "lookup", "function": {"name": "read_resource", "arguments": "{}"}}
+                ],
+            },
+            {"role": "tool", "tool_call_id": "lookup", "content": "Public source text"},
+            {"role": "assistant", "content": "A computed property."},
+        ],
+        "tools": [{"type": "function", "function": {"name": "read_resource"}}],
+        "documentId": "paper-b",
+    }
+
+    def shard(name, rows):
+        return first.import_dataset(
+            {
+                "name": name,
+                "format": "jsonl",
+                "content": "\n".join(json.dumps(row) for row in rows),
+                "dataKind": "synthetic",
+                "rights": "owned",
+            }
+        )
+
+    left = shard("First shard", [one, chat])
+    right = shard(
+        "Second shard",
+        [
+            one,
+            {
+                "prompt": "Second paper-A finding",
+                "response": "Second summary",
+                "documentId": "paper-a",
+            },
+            {"prompt": "Paper C", "response": "Third summary", "documentId": "paper-c"},
+            {"prompt": "Paper D", "response": "Fourth summary", "documentId": "paper-d"},
+        ],
+    )
+    merged = first.merge_datasets({"datasetIds": [left["id"], right["id"]]})
+    assert merged["rowCount"] == 5
+    assert merged["report"]["duplicates"] == 1
+    assert merged["source"]["parents"][0]["digest"] == left["digest"]
+    conversation = next(row for row in merged["rows"] if row.get("messages"))
+    assert conversation["messages"] == chat["messages"]
+    assert conversation["tools"] == chat["tools"]
+    assert merged["rows"][0]["evaluation"] == one["evaluation"]
+    frozen = first.freeze_dataset(merged["id"])
+    paper_a = [row["id"] for row in frozen["rows"] if row.get("documentId") == "paper-a"]
+    assert len({frozen["splits"][identifier] for identifier in paper_a}) == 1
+    assert set(frozen["partitions"]) == {"train", "development", "final"}
+    with pytest.raises(DomainError):
+        second.merge_datasets({"datasetIds": [left["id"], right["id"]]})
+    measured = _dataset(first)
+    with pytest.raises(DomainError, match="synthetic"):
+        first.merge_datasets({"datasetIds": [left["id"], measured["id"]]})
+
+
+def test_merge_rechecks_live_parent_and_retained_source_rights(session, tmp_path):
+    from studio.domain.library.models import LibrarySource
+    from studio.domain.library.research import Download
+    from studio.domain.library.service import LibraryService
+
+    first, _second = _env(session, tmp_path)
+    library = LibraryService(
+        session, first.ctx, vault_root=tmp_path, downloads_root=tmp_path / "review"
+    )
+    source = library.archive_download(
+        Download(
+            "https://example.org/paper",
+            "text/plain",
+            b"A public paper with declared training rights.",
+        ),
+        title="Paper",
+        citation={"rights": {"training": "allowed", "extraction": "allowed"}},
+    )
+    datasets = [
+        first.import_dataset(
+            {
+                "name": f"Shard {number}",
+                "format": "jsonl",
+                "content": json.dumps(
+                    {
+                        "prompt": f"Question {number}",
+                        "response": "Generated summary",
+                        "documentId": f"paper-{number}",
+                    }
+                ),
+                "dataKind": "synthetic",
+                "rights": "allowed",
+                "source": {"sourceIds": [source["id"]]},
+            }
+        )
+        for number in range(2)
+    ]
+    merged = first.merge_datasets({"datasetIds": [row["id"] for row in datasets]})
+    first.authorize_dataset_training(merged["id"])
+    parent = session.get(LearningDataset, uuid.UUID(datasets[0]["id"]))
+    parent.rights = "denied"
+    session.flush()
+    with pytest.raises(DomainError, match="parent dataset rights"):
+        first.authorize_dataset_training(merged["id"])
+    parent.rights = "allowed"
+    retained = session.get(LibrarySource, uuid.UUID(source["id"]))
+    retained.citation = {"rights": {"training": "denied", "extraction": "allowed"}}
+    session.flush()
+    with pytest.raises(DomainError, match="source rights"):
+        first.authorize_dataset_training(merged["id"])
+
+
+def test_workflow_preflight_preserves_five_gib_free_reserve_without_changing_manual_jobs(
+    session, tmp_path, monkeypatch
+):
+    from studio.domain.learning import workspace
+
+    first, _second = _env(session, tmp_path)
+    dataset = _dataset(first)
+    first.freeze_dataset(dataset["id"])
+    monkeypatch.setattr(
+        workspace,
+        "storage_preflight",
+        lambda _settings, required: {
+            "available": required <= 4 * 1024**3,
+            "requiredFreeBytes": required,
+            "freeBytes": 4 * 1024**3,
+        },
+    )
+    payload = {
+        "kind": "chemprop",
+        "datasetId": dataset["id"],
+        "config": {"executionTarget": "remote"},
+    }
+    assert first.preflight(payload)["ready"]
+    workflow_payload = {**payload, "workflowId": str(uuid.uuid4())}
+    check = first.preflight(workflow_payload)
+    assert not check["ready"]
+    assert check["estimated"]["requiredFreeBytes"] > 5 * 1024**3
+    assert first.create_job(workflow_payload)["state"] == "blocked"
+
+
+def test_external_computed_import_reads_retained_bytes_and_preserves_property_context(
+    session, tmp_path
+):
+    from studio.domain.library.research import Download
+    from studio.domain.library.service import LibraryService
+
+    first, second = _env(session, tmp_path)
+    library = LibraryService(
+        session, first.ctx, vault_root=tmp_path, downloads_root=tmp_path / "review"
+    )
+    source = library.archive_download(
+        Download(
+            "https://huggingface.co/datasets/fixture/resolve/abc/data.csv",
+            "text/csv",
+            b"PSMILES,density,UUID,temp,check_eq\n*CC*,1.2,one,300,True\n*CO*,1.1,two,300,True\n*CN*,1.3,three,300,True\n*CCC*,1.4,four,300,False\n",
+        ),
+        title="Computed polymer data",
+        citation={
+            "license": "cc-by-4.0",
+            "rights": {"training": "allowed", "extraction": "allowed"},
+        },
+    )
+    payload = {
+        "sourceId": source["id"],
+        "name": "Density",
+        "mapping": {"smiles": "PSMILES", "target": "density", "polymerId": "UUID"},
+        "metadataColumns": ["UUID", "temp", "check_eq"],
+        "filters": {"check_eq": True},
+        "property": "density",
+        "unit": "g/cm3",
+        "method": "RadonPy MD",
+        "conditions": {"temperatureK": 300},
+        "content": "malicious replacement labels ignored",
+    }
+    imported = first.import_retained_dataset(payload)
+    assert imported["rowCount"] == 3
+    assert imported["dataKind"] == "computed"
+    assert imported["rows"][0]["target"] == 1.2
+    assert imported["rows"][0]["metadata"]["UUID"] == "one"
+    assert imported["rows"][0]["conditions"]["temperatureK"] == 300
+    assert imported["source"]["sourceRefs"][0]["checksum"] == source["checksum"]
+    with pytest.raises(DomainError):
+        second.import_retained_dataset(payload)
+    first.freeze_dataset(imported["id"])
+    good = first.preflight(
+        {"kind": "chemprop", "datasetId": imported["id"], "config": {"executionTarget": "remote"}}
+    )
+    assert good["ready"]
+    assert good["normalizedConfig"]["unit"] == "g/cm3"
+    bad = first.preflight(
+        {
+            "kind": "chemprop",
+            "datasetId": imported["id"],
+            "config": {"executionTarget": "remote", "unit": "kg/m3"},
+        }
+    )
+    assert not bad["ready"]
+    path, _, _ = library.source_file(source["id"])
+    path.write_text("tampered")
+    with pytest.raises(DomainError, match="checksum"):
+        first.import_retained_dataset(payload)
 
 
 def test_datasets_and_jobs_are_owner_private_even_in_the_same_workspace(session, tmp_path):

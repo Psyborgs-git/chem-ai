@@ -14,6 +14,7 @@ from sqlalchemy import engine_from_config, pool
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from studio.domain.agent_workspace import models as agent_models  # noqa: F401
+from studio.domain.agent_workspace import workflows as workflow_models  # noqa: F401
 from studio.domain.learning.workspace_runtime import models as learning_models  # noqa: F401
 from studio.domain.library import models as library_models  # noqa: F401
 from studio.persistence import models  # noqa: F401 - register tables

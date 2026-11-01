@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import shutil
 import signal
@@ -16,7 +17,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from studio.config.settings import Settings
 from studio.domain.learning.workspace_runtime.models import (
@@ -39,6 +40,15 @@ def job_directory(settings: Settings, job: LearningJob) -> Path:
 
 
 def _environment(directory: Path, *, download: bool = False) -> dict[str, str]:
+    root = Path(__file__).resolve().parents[7]
+    source_paths = [root]
+    for value in sys.path:
+        candidate = Path(value).resolve()
+        if candidate.is_relative_to(root) and not any(
+            part in {".venv", ".runtime", "node_modules"}
+            for part in candidate.relative_to(root).parts
+        ):
+            source_paths.append(candidate)
     env = {
         key: os.environ[key]
         for key in ("PATH", "LANG", "LC_ALL", "SYSTEMROOT", "TMPDIR")
@@ -48,7 +58,7 @@ def _environment(directory: Path, *, download: bool = False) -> dict[str, str]:
         {
             "HF_HOME": str(directory / "cache" / "huggingface"),
             "XDG_CACHE_HOME": str(directory / "cache"),
-            "PYTHONPATH": os.pathsep.join(path for path in sys.path if path),
+            "PYTHONPATH": os.pathsep.join(dict.fromkeys(str(path) for path in source_paths)),
             "PYTHONUNBUFFERED": "1",
             "PYTHONDONTWRITEBYTECODE": "1",
             "TOKENIZERS_PARALLELISM": "false",
@@ -89,10 +99,13 @@ def _request(db: Any, job: LearningJob, settings: Settings | None = None) -> dic
             ).authorize_dataset_training(str(dataset.id))
         except DomainError as exc:
             raise ValueError(exc.message) from exc
+    rows = dataset.rows if dataset else []
+    if dataset is not None and job.kind in {"sft", "dpo", "grpo"}:
+        rows = [row for row in rows if dataset.splits.get(row["id"]) in {"train", "development"}]
     return {
         "kind": job.kind,
         "config": job.config,
-        "rows": dataset.rows if dataset else [],
+        "rows": rows,
         "splits": dataset.splits if dataset else {},
         "datasetDigest": dataset.digest if dataset else None,
         "model": {"location": model.location, "backend": model.backend, "details": model.details}
@@ -130,10 +143,39 @@ def _events(directory: Path) -> list[dict[str, Any]]:
         try:
             value = json.loads(line)
             if isinstance(value, dict):
-                result.append(value)
+                sanitized, invalid = _safe_event_numbers(value)
+                if invalid:
+                    sanitized["metricSanitization"] = {
+                        "nonFinitePaths": invalid,
+                        "action": "replaced_with_null",
+                        "meaning": "Historical invalid metric; no successful measurement implied",
+                    }
+                result.append(sanitized)
         except ValueError:
             continue
     return result
+
+
+def _safe_event_numbers(value: Any, path: str = "") -> tuple[Any, list[str]]:
+    if isinstance(value, float) and not math.isfinite(value):
+        return None, [path or "$"]
+    if isinstance(value, (dict, list)):
+        invalid = []
+        if isinstance(value, dict):
+            result: Any = {}
+            for key, child in value.items():
+                result[key], found = _safe_event_numbers(
+                    child, f"{path}.{key}" if path else str(key)
+                )
+                invalid.extend(found)
+        else:
+            result = []
+            for index, child in enumerate(value):
+                sanitized, found = _safe_event_numbers(child, f"{path}[{index}]")
+                result.append(sanitized)
+                invalid.extend(found)
+        return result, invalid
+    return value, []
 
 
 def _register_result(db: Any, job: LearningJob, directory: Path) -> None:
@@ -159,6 +201,10 @@ def _register_result(db: Any, job: LearningJob, directory: Path) -> None:
             "license": base.details.get("license", "unknown") if base else "owned",
             "baseModelId": str(base.id) if base else None,
             "repo": base.details.get("repo") if base else None,
+            "baseRevision": base.details.get("revision", base.details.get("baseRevision"))
+            if base
+            else None,
+            "baseManifest": (base.details.get("download") or {}).get("manifest") if base else None,
         },
     )
     db.add(model)
@@ -213,7 +259,19 @@ class LearningDispatcher:
             db.commit()
 
     def _claim(self) -> uuid.UUID | None:
+        from studio.domain.simulations.models import SimulationJob
+
         with self.factory() as db:
+            if db.bind.dialect.name == "postgresql":
+                if not db.scalar(text("SELECT pg_try_advisory_xact_lock(917431102)")):
+                    return None
+            for cls in (LearningJob, SimulationJob):
+                if db.scalar(
+                    select(cls.id)
+                    .where(cls.state == "running", cls.lease_expires_at > datetime.now(UTC))
+                    .limit(1)
+                ):
+                    return None
             rows = db.execute(
                 select(LearningJob)
                 .where(LearningJob.state == "queued")
@@ -225,6 +283,11 @@ class LearningDispatcher:
                 if job.config.get("executionTarget") == "remote":
                     continue
                 job.state, job.lease_owner = "running", self.identity
+                job.result = {
+                    **job.result,
+                    "attemptStartedAt": datetime.now(UTC).isoformat(),
+                    "elapsedBeforeAttempt": float(job.result.get("elapsedSeconds", 0)),
+                }
                 job.attempt += 1
                 job.lease_expires_at = datetime.now(UTC) + timedelta(seconds=60)
                 identifier: uuid.UUID = job.id
@@ -234,6 +297,7 @@ class LearningDispatcher:
         return None
 
     def _execute(self, identifier: uuid.UUID) -> None:
+        execution_started = time.monotonic()
         from studio.domain.learning.workspace import (
             job_storage_requirement,
             runtime_python,
@@ -315,6 +379,14 @@ class LearningDispatcher:
                 if result_path.exists() and result_path.stat().st_size < 5 * 1024 * 1024
                 else {}
             )
+            _safe_result, invalid_result = _safe_event_numbers(result)
+            if invalid_result:
+                result = {
+                    "ok": False,
+                    "error": "Worker result contains non-finite numeric values; "
+                    "outputs were not accepted",
+                    "nonFinitePaths": invalid_result,
+                }
             with self.factory() as db:
                 job = db.get(LearningJob, identifier)
                 job.events = _events(directory)
@@ -324,7 +396,14 @@ class LearningDispatcher:
                     for path in sorted((directory / "output").rglob("*"))
                     if path.is_file() and ("checkpoint" in str(path) or "adapter" in path.name)
                 ]
-                job.result = {**job.result, **result, "checkpoints": checkpoints[-100:]}
+                job.result = {
+                    **job.result,
+                    **result,
+                    "checkpoints": checkpoints[-100:],
+                    "elapsedSeconds": float(job.result.get("elapsedSeconds", 0))
+                    + time.monotonic()
+                    - execution_started,
+                }
                 if stopped:
                     job.state, job.error = stopped, f"Job {stopped}; saved checkpoints are retained"
                 elif result.get("ok"):
@@ -347,6 +426,12 @@ class LearningDispatcher:
             with self.factory() as db:
                 job = db.get(LearningJob, identifier)
                 job.state, job.error = "failed", f"Worker execution failed ({type(exc).__name__})"
+                job.result = {
+                    **job.result,
+                    "elapsedSeconds": float(job.result.get("elapsedSeconds", 0))
+                    + time.monotonic()
+                    - execution_started,
+                }
                 job.lease_owner, job.lease_expires_at = None, None
                 db.commit()
         finally:

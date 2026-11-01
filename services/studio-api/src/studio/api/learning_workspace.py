@@ -139,6 +139,27 @@ def create_job(
     return result
 
 
+@router.post("/jobs/preflight")
+def job_preflight(
+    payload: dict[str, Any], request: Request, db: DbSession, ctx: Ctx
+) -> dict[str, Any]:
+    return _service(request, db, ctx).preflight_job(payload)
+
+
+@router.get("/jobs/preflight")
+def default_job_preflight(
+    request: Request,
+    db: DbSession,
+    ctx: Ctx,
+    datasetId: str,
+    kind: str = "sft",
+    modelId: str | None = None,
+) -> dict[str, Any]:
+    return _service(request, db, ctx).preflight_job(
+        {"datasetId": datasetId, "kind": kind, "modelId": modelId}
+    )
+
+
 @router.get("/jobs/{identifier}")
 def job(identifier: str, request: Request, db: DbSession, ctx: Ctx) -> dict[str, Any]:
     return _service(request, db, ctx).get_job(identifier)
@@ -169,6 +190,15 @@ def notebook_dataset(
     payload: dict[str, Any], request: Request, db: DbSession, ctx: Ctx
 ) -> dict[str, Any]:
     result = _service(request, db, ctx).import_notebook(payload)
+    db.commit()
+    return result
+
+
+@router.post("/datasets/from-source")
+def source_dataset(
+    payload: dict[str, Any], request: Request, db: DbSession, ctx: Ctx
+) -> dict[str, Any]:
+    result = _service(request, db, ctx).import_retained_dataset(payload)
     db.commit()
     return result
 

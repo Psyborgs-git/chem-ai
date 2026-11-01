@@ -1,12 +1,16 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod downloads;
 mod runtime;
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use tauri::{Manager, State, TitleBarStyle, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
+use tauri::{
+    webview::DownloadEvent, Manager, State, TitleBarStyle, WebviewUrl, WebviewWindow,
+    WebviewWindowBuilder,
+};
 
 static TERMINATE_REQUESTED: AtomicBool = AtomicBool::new(false);
 
@@ -78,6 +82,8 @@ fn main() {
             let resource_dir = app.path().resource_dir()?;
             let runtime = Arc::new(runtime::LocalRuntime::new(resource_dir.join("frontend")));
             app.manage(runtime.clone());
+            let downloads = Arc::new(downloads::DownloadStore::new(app.path().download_dir()?));
+            let download_runtime = runtime.clone();
             let window = WebviewWindowBuilder::new(
                 app,
                 "main",
@@ -90,6 +96,42 @@ fn main() {
             .title_bar_style(TitleBarStyle::Overlay)
             .hidden_title(true)
             .initialization_script("window.__CHEMISTRY_DESKTOP__ = true;")
+            .on_download(move |webview, event| match event {
+                DownloadEvent::Requested { url, destination } => {
+                    let Ok(origin) = download_runtime.ready_origin() else {
+                        return false;
+                    };
+                    let Ok(page) = webview.url() else {
+                        return false;
+                    };
+                    if !runtime::is_app_download(&url, &page, &origin) {
+                        return false;
+                    }
+                    let suggested = destination
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .unwrap_or("download");
+                    match downloads.requested(url.as_str(), url.path(), suggested) {
+                        Ok(path) => {
+                            *destination = path;
+                            true
+                        }
+                        Err(_) => {
+                            download_runtime.record_download(false);
+                            false
+                        }
+                    }
+                }
+                DownloadEvent::Finished { url, success, .. } => {
+                    match downloads.finished(url.as_str(), success) {
+                        Ok(Some(_)) => download_runtime.record_download(true),
+                        Err(_) => download_runtime.record_download(false),
+                        Ok(None) => (),
+                    }
+                    true
+                }
+                _ => false,
+            })
             .on_navigation(|url| {
                 if runtime::is_internal_navigation(url) {
                     return true;

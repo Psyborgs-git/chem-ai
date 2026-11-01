@@ -30,6 +30,8 @@
 .cs-provider-check { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; cursor: pointer; }
 .cs-provider-check > input { flex: 0 0 17px; width: 17px; height: 17px; margin: 2px 0 0; accent-color: var(--accent); }
 .cs-provider-check > span { display: grid; gap: 4px; }
+.cs-provider-check > [data-slot="checkbox"] { flex-shrink:0; margin-top:2px; }
+.cs-provider-check > label { display:grid; gap:4px; cursor:pointer; }
 .cs-provider-check small { color: var(--text-muted); font-size: 12px; line-height: 1.5; }
 .cs-provider-options { padding: 14px 16px; background: var(--surface-raised); border-radius: 8px; }
 .cs-provider-options summary { cursor: pointer; font-size: 13px; font-weight: 600; }

@@ -65,3 +65,13 @@ describe("workspace query refresh", () => {
     expect(state.request).not.toHaveBeenCalled();
   });
 });
+
+it("exposes a 404 status and clears it after switching to an available owner resource", async () => {
+  state.request.mockRejectedValue(Object.assign(new Error("Private chat not found"), { status: 404 }));
+  const { result, rerender } = renderHook(({ path }) => useWorkspace(path), { initialProps: { path: "/api/agent-workspace/threads/missing" } });
+  await waitFor(() => expect(result.current.errorStatus).toBe(404));
+  state.request.mockResolvedValue({ id: "owned" });
+  rerender({ path: "/api/agent-workspace/threads/owned" });
+  await waitFor(() => expect(result.current.data).toEqual({ id: "owned" }));
+  expect(result.current.errorStatus).toBeNull(); expect(result.current.error).toBeNull();
+});

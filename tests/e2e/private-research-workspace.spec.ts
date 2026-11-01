@@ -1,7 +1,45 @@
 import { createServer, type Server } from "node:http";
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { decodeGlobalId, gql, signIn } from "./at-1103-helpers";
+
+async function choose(page: Page, label: string, option: string) {
+  await page.getByRole("combobox", { name: label, exact: true }).click();
+  await expect(page.getByRole("listbox")).toBeVisible();
+  if (["Agent model", "Training or evaluation track"].includes(label)) await page.screenshot({ animations: "disabled", path: test.info().outputPath(`${label.toLowerCase().replaceAll(" ", "-")}-options.png`), fullPage: true });
+  await page.getByRole("option", { name: option, exact: true }).click();
+}
+
+async function workbenchScreenshots(page: Page, info: TestInfo, name: string) {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  const changeTheme = async (theme: "light" | "dark") => {
+    const toggle = page.getByRole("button", { name: `Switch to ${theme} theme` });
+    if (!await toggle.count()) return;
+    const expanded = await page.getByRole("button", { name: "Collapse chat", exact: true }).count();
+    if (expanded) await page.getByRole("button", { name: "Collapse chat", exact: true }).click();
+    await toggle.click();
+    if (expanded) await page.getByRole("button", { name: "Expand chat", exact: true }).click();
+  };
+  await changeTheme("light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.screenshot({ animations: "disabled", path: info.outputPath(`${name}-light.png`), fullPage: true });
+  await changeTheme("dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.screenshot({ animations: "disabled", path: info.outputPath(`${name}-dark.png`), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  if (await page.locator("#research-agent").isVisible()) {
+    expect(await page.locator("#research-agent").getByRole("button", { name: "Send", exact: true }).evaluate((node) => parseFloat(getComputedStyle(node).fontSize))).toBeGreaterThanOrEqual(14);
+    await page.locator("#research-agent").screenshot({ animations: "disabled", path: info.outputPath(`${name}-narrow.png`) });
+  } else await page.screenshot({ animations: "disabled", path: info.outputPath(`${name}-narrow.png`), fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await changeTheme("light");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.setViewportSize({ width: 390, height: 844 });
+  if (await page.locator("#research-agent").isVisible()) await page.locator("#research-agent").screenshot({ animations: "disabled", path: info.outputPath(`${name}-narrow-light.png`) });
+  else await page.screenshot({ animations: "disabled", path: info.outputPath(`${name}-narrow-light.png`), fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+}
 
 test("private notes autosave, render formulae, and retain source-linked memory", async ({ page, context }) => {
   await signIn(context);
@@ -13,50 +51,69 @@ test("private notes autosave, render formulae, and retain source-linked memory",
   await page.getByRole("button", { name: "Add first page" }).click();
   await page.getByLabel("Page title", { exact: true }).fill("Ethanol observations");
   await page.getByLabel("Notes · Markdown and $LaTeX$ supported", { exact: true }).fill("# Solvent notes\nKeep the original source.\n\nConcentration: $c=n/V$.");
-  await expect(page.getByRole("status").filter({ hasText: "Saved · revision" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Page title", { exact: true })).toHaveValue("Ethanol observations");
   await page.getByRole("button", { name: "Preview", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Solvent notes" })).toBeVisible();
   await expect(page.locator(".katex")).toBeVisible();
-  await page.screenshot({ path: test.info().outputPath("notebook-formula.png"), fullPage: true });
-  await page.getByLabel("New page kind").selectOption("recipe");
+  await page.screenshot({ animations: "disabled", path: test.info().outputPath("notebook-formula.png"), fullPage: true });
+  await choose(page, "New page kind", "Recipe");
   await page.getByRole("button", { name: "Add page", exact: true }).click();
   await page.getByRole("button", { name: "Add ingredient" }).click();
   await page.getByLabel("Ingredient 1 name").fill("Ethanol");
   await page.getByLabel("Ingredient 1 amount").fill("10");
   await page.getByLabel("Ingredient 1 unit").fill("mL");
   await page.getByLabel("Procedure · one step per line").fill("Record the batch.\nMeasure the solvent.");
-  await expect(page.getByRole("status").filter({ hasText: "Saved · revision" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /^Saved$/ })).toBeVisible();
   await page.goto("/memory");
   const finding = `Use the retained source ${randomUUID()}`;
+  await page.getByRole("button", { name: "Add memory", exact: true }).click();
   await page.getByLabel("Title", { exact: true }).fill(finding);
   await page.getByLabel("Finding, decision, or question").fill("Repeat the measurement before drawing a conclusion.");
   await page.getByRole("button", { name: "Remember", exact: true }).click();
   await expect(page.getByRole("heading", { name: finding })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: finding })).toBeVisible();
-  await page.getByRole("button", { name: "Forget", exact: true }).last().click();
+  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Forget", exact: true }).click();
   await expect(page.getByRole("heading", { name: finding })).toHaveCount(0);
 });
 
 test("SMILES dataset import exposes rejected rows and freezes leakage-aware partitions", async ({ page, context }) => {
   await signIn(context);
   await page.goto("/learning");
+  await expect(page.locator('[data-slot="tabs"]').filter({ has: page.getByRole("tablist", { name: "Local learning", exact: true }) })).toHaveCSS("flex-direction", "column");
+  await page.getByRole("tab", { name: "Datasets", exact: true }).click();
   const name = `Property data ${randomUUID()}`;
   await page.getByLabel("File · CSV, JSONL, SDF, or SMILES").setInputFiles({ name: "structures.csv", mimeType: "text/csv", buffer: Buffer.from("smiles,target\nCCO,1\nCCN,2\nc1ccccc1,3\nC1CCCCC1,4\nC1CCOC1,5\ninvalid,6\nCCO,1\n") });
   await page.getByLabel("Dataset name", { exact: true }).fill(name);
-  await page.getByLabel("Data origin").selectOption("computed");
+  await page.getByText("Source and rights", { exact: true }).click();
+  await choose(page, "Data origin", "Computed");
+  await choose(page, "Training rights", "I own this data");
   await page.getByRole("button", { name: "Import and validate" }).click();
-  const record = page.locator("article").filter({ has: page.getByRole("heading", { name, exact: true }) });
-  await expect(record).toContainText("5 accepted rows");
+  const record = page.locator("article.cs-learning-data-row").filter({ hasText: name });
+  await expect(record).toContainText("5 rows");
   await expect(record).toContainText("computed");
-  await record.getByRole("button", { name: "Freeze snapshot" }).click();
+  await record.getByRole("button", { name: "Freeze" }).click();
   await expect(record).toContainText("frozen");
-  await page.getByRole("tab", { name: "Train & evaluate" }).click();
-  await expect(page.getByLabel("Frozen dataset").locator("option").filter({ hasText: name })).toHaveCount(1);
+  await page.getByRole("tab", { name: "New run", exact: true }).click();
+  await choose(page, "Training or evaluation track", "SMILES property model");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("combobox", { name: "Frozen dataset", exact: true }).click();
+  await expect(page.getByRole("option", { name: `${name} · 5 rows`, exact: true })).toHaveCount(1);
+  await page.keyboard.press("Escape");
   await page.reload();
-  await expect(page.getByRole("heading", { name, exact: true }).first()).toBeVisible();
+  await page.getByRole("tab", { name: "Datasets", exact: true }).click();
+  await expect(page.getByRole("button").filter({ hasText: name }).first()).toBeVisible();
+  await page.getByRole("tab", { name: "New run", exact: true }).click();
+  await choose(page, "Training or evaluation track", "SMILES property model");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await choose(page, "Frozen dataset", `${name} · 5 rows`);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.getByLabel("Maximum epochs")).toBeVisible();
+  await workbenchScreenshots(page, test.info(), "learning-settings");
 });
 
 test("sidebar uses a second model on one provider and persists a real tool action", async ({ page, context }) => {
@@ -90,17 +147,62 @@ test("sidebar uses a second model on one provider and persists a real tool actio
     expect(saved.ok()).toBe(true);
     await page.goto("/notebooks");
     await page.getByRole("button", { name: "Open research agent" }).click();
-    await page.getByLabel("Agent provider", { exact: true }).selectOption(id);
-    await page.getByLabel("Agent model", { exact: true }).selectOption("second-model");
-    await page.getByLabel("Message research agent").fill(`Create a private notebook named ${notebookTitle}.`);
+    await expect(page.getByRole("region", { name: "Chat history", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "New chat", exact: true }).click();
+    await choose(page, "Agent model", `Second model · ${providerName}`);
+    await expect(page.getByLabel("Message research agent")).toHaveCSS("border-top-width", "0px");
+    await expect(page.getByRole("combobox", { name: "Agent model", exact: true })).toHaveAttribute("data-slot", "select-trigger");
+    expect(await page.getByRole("combobox", { name: "Agent model", exact: true }).evaluate((node) => node.tagName)).toBe("BUTTON");
+    const promptEnd = "End of the complete research brief.";
+    const prompt = `Create a private notebook named ${notebookTitle}.\n\n${"Keep source provenance and separate observations from hypotheses.\n".repeat(15)}${promptEnd}`;
+    await page.getByLabel("Message research agent").fill(prompt);
     await page.getByRole("button", { name: "Send", exact: true }).click();
-    await expect(page.getByRole("log", { name: "Agent conversation messages" })).toContainText("The private notebook was saved successfully.", { timeout: 30_000 });
+    const transcript = page.getByRole("log", { name: "Agent conversation messages" });
+    await expect(transcript).toContainText("The private notebook was saved successfully.", { timeout: 30_000 });
+    await expect(transcript).not.toContainText(promptEnd);
+    await transcript.getByRole("button", { name: "Show full message", exact: true }).click();
+    await expect(transcript).toContainText(promptEnd);
+    await transcript.getByRole("button", { name: "Show less", exact: true }).click();
+    const activity = transcript.locator(".cs-chat-activity");
+    await expect(activity).toHaveCount(1);
+    await expect(activity).not.toHaveAttribute("open", "");
+    await expect(activity.getByText("Technical details", { exact: true })).toHaveCount(0);
+    await activity.locator(":scope > summary").click();
+    await activity.getByText("Technical details", { exact: true }).click();
+    await expect(activity.locator("pre")).toContainText(notebookTitle);
+    await activity.locator(":scope > summary").click();
     await expect(page.getByRole("button", { name: notebookTitle, exact: true })).toBeVisible();
     const contentRight = await page.locator("main").evaluate((node) => node.getBoundingClientRect().right);
     const panelLeft = await page.locator("#research-agent").evaluate((node) => node.getBoundingClientRect().left);
     expect(contentRight).toBeLessThanOrEqual(panelLeft + 1);
-    await page.screenshot({ path: test.info().outputPath("agent-sidebar.png"), fullPage: true });
+    await page.screenshot({ animations: "disabled", path: test.info().outputPath("agent-sidebar.png"), fullPage: true });
     expect(failure).toBeNull(); expect(calls).toEqual(["second-model", "second-model"]);
+    await workbenchScreenshots(page, test.info(), "agent-workbench");
+    await page.getByRole("button", { name: "Agent settings", exact: true }).click();
+    const settings = page.getByRole("dialog", { name: "Chat settings", exact: true });
+    await expect(settings).toHaveAttribute("data-slot", "dialog-content");
+    await expect(settings.locator('[data-slot="tabs"]')).toHaveCSS("flex-direction", "column");
+    for (const width of [1280, 390]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+      for (const name of ["General", "Autopilot", "Schedule"]) {
+        await settings.getByRole("tab", { name, exact: true }).click();
+        await expect(settings.getByRole("tab", { name, exact: true })).toHaveAttribute("aria-selected", "true");
+        const tabBottom = await settings.getByRole("tablist").evaluate((node) => node.getBoundingClientRect().bottom);
+        const panelTop = await settings.getByRole("tabpanel", { name, exact: true }).evaluate((node) => node.getBoundingClientRect().top);
+        expect(tabBottom).toBeLessThanOrEqual(panelTop + 1);
+        for (const inactivePanel of await settings.locator('[data-slot="tabs-content"][hidden]').all()) await expect(inactivePanel).toBeHidden();
+        const control = name === "General" ? settings.getByRole("combobox", { name: "Agent role", exact: true }) : name === "Autopilot" ? settings.getByRole("spinbutton", { name: "Compute hours/day", exact: true }) : settings.getByRole("textbox", { name: "Research goal", exact: true });
+        const controlRight = await control.evaluate((node) => node.getBoundingClientRect().right);
+        const dialogRight = await settings.evaluate((node) => node.getBoundingClientRect().right);
+        expect(controlRight).toBeLessThanOrEqual(dialogRight - 1);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+        await page.screenshot({ animations: "disabled", path: test.info().outputPath(`agent-settings-${name.toLowerCase()}-${width}.png`), fullPage: true });
+      }
+    }
+    await settings.getByRole("button", { name: "Close", exact: true }).click();
+    await expect(settings).toHaveCount(0);
+    expect(calls).toEqual(["second-model", "second-model"]);
+    await page.setViewportSize({ width: 1280, height: 900 });
     await page.getByRole("button", { name: "Close agent", exact: true }).click();
     await page.reload();
     await expect(page.getByRole("button", { name: notebookTitle, exact: true })).toBeVisible();
@@ -108,7 +210,125 @@ test("sidebar uses a second model on one provider and persists a real tool actio
     await page.getByRole("button", { name: "Open research agent" }).click();
     await expect(page.getByRole("complementary", { name: "Research agent" })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    await page.screenshot({ path: test.info().outputPath("agent-mobile.png"), fullPage: true });
+    await page.screenshot({ animations: "disabled", path: test.info().outputPath("agent-mobile.png"), fullPage: true });
+  } finally {
+    if (providerId) { const state = await gql(token, "query{inferenceProviders{id revision}}"); const row = state.data.inferenceProviders.find((provider: { id: string }) => provider.id === providerId); if (row) await gql(token, "mutation($id:ID!,$revision:Int!){providers{delete(input:{id:$id,expectedRevision:$revision}){deleted errors{message}}}}", { id: providerId, revision: row.revision }); }
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
+test("chat history searches older message bodies, switches sessions, and restores selection without inference", async ({ page, context }) => {
+  test.setTimeout(90_000);
+  const token = await signIn(context);
+  const titleA = `Fibre measurements ${randomUUID()}`;
+  const titleB = `Yarn construction ${randomUUID()}`;
+  const bodyOnlyTerm = `archived-${randomUUID()}`;
+  const calls: string[] = [];
+  let failure: string | null = null;
+  const server: Server = createServer((request, response) => {
+    const chunks: Buffer[] = [];
+    request.on("data", (chunk: Buffer) => chunks.push(chunk));
+    request.on("end", () => {
+      response.setHeader("content-type", "application/json");
+      try {
+        const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        calls.push(body.model);
+        response.end(JSON.stringify({ choices: [{ message: { role: "assistant", content: `Saved research response ${calls.length}.` } }], usage: { prompt_tokens: 40, completion_tokens: 15 } }));
+      } catch (error) { failure = String(error); response.statusCode = 500; response.end("{}"); }
+    });
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Fixture missing port");
+  let providerId: string | undefined;
+  try {
+    const created = await gql(token, `mutation($input:InferenceProviderSaveInput!){providers{save(input:$input){provider{id revision}errors{message}}}}`, { input: { name: `History fixture ${randomUUID()}`, kind: "openai_compatible", baseUrl: `http://127.0.0.1:${address.port}/v1`, model: "history-model", enabled: true, supportsTools: true } });
+    expect(created.data.providers.save.errors).toEqual([]);
+    providerId = created.data.providers.save.provider.id;
+    const id = /^[0-9a-f-]{36}$/i.test(providerId!) ? providerId! : decodeGlobalId(providerId!);
+    const makeThread = async (title: string) => {
+      const response = await context.request.post("/api/agent-workspace/threads", { data: { title } });
+      expect(response.ok()).toBe(true);
+      return (await response.json()).id as string;
+    };
+    const run = async (threadId: string, message: string) => {
+      const response = await context.request.post(`/api/agent-workspace/threads/${threadId}/runs`, { data: { providerId: id, modelId: "history-model", role: "planner", message } });
+      expect(response.ok()).toBe(true);
+      const job = await response.json();
+      await expect.poll(async () => {
+        const status = await context.request.get(`/api/agent-workspace/runs/${job.id}`);
+        expect(status.ok()).toBe(true);
+        return (await status.json()).status;
+      }, { timeout: 30_000, message: "The isolated mock-provider run should finish" }).toBe("completed");
+    };
+    const threadA = await makeThread(titleA);
+    await run(threadA, `Retain this earlier observation for future research: ${bodyOnlyTerm}.`);
+    await run(threadA, "Review the measurement protocol before the next experiment.");
+    const threadB = await makeThread(titleB);
+    await run(threadB, "Compare yarn geometry with the retained reference material.");
+    expect(calls).toEqual(["history-model", "history-model", "history-model"]);
+
+    const searchResponse = await context.request.get(`/api/agent-workspace/threads?q=${encodeURIComponent(bodyOnlyTerm)}&offset=0&limit=50`);
+    expect(searchResponse.ok()).toBe(true);
+    expect(searchResponse.headers()["cache-control"]).toBe("no-store");
+    const search = await searchResponse.json();
+    expect(search.threads.map((thread: { id: string }) => thread.id)).toEqual([threadA]);
+    expect(search.threads[0].title).not.toContain(bodyOnlyTerm);
+    expect(search.threads[0].lastMessagePreview).not.toContain(bodyOnlyTerm);
+    expect(search.threads[0].messageCount).toBe(4);
+
+    const navigationMutations: string[] = [];
+    page.on("request", (request) => {
+      const path = new URL(request.url()).pathname;
+      if (request.method() === "POST" && path.startsWith("/api/agent-workspace/threads")) navigationMutations.push(path);
+    });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/notebooks");
+    await page.getByRole("button", { name: "Open research agent" }).click();
+    const history = page.getByRole("region", { name: "Chat history", exact: true });
+    await expect(history).toBeVisible();
+    await expect(history.getByRole("button", { name: `Open chat: ${titleA}`, exact: true })).toBeVisible();
+    await expect(history.getByRole("button", { name: `Open chat: ${titleB}`, exact: true })).toBeVisible();
+    const searched = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname === "/api/agent-workspace/threads" && url.searchParams.get("q") === bodyOnlyTerm && response.ok();
+    });
+    await history.getByRole("searchbox", { name: "Search chats" }).fill(bodyOnlyTerm);
+    await searched;
+    await expect(history.getByRole("button", { name: `Open chat: ${titleA}`, exact: true })).toBeVisible();
+    await expect(history.getByRole("button", { name: `Open chat: ${titleB}`, exact: true })).toHaveCount(0);
+    await history.getByRole("button", { name: `Open chat: ${titleA}`, exact: true }).click();
+    const current = page.getByRole("region", { name: "Current chat", exact: true });
+    await expect(current.getByRole("heading", { name: titleA, exact: true })).toBeVisible();
+    await expect(current.getByRole("log")).toContainText(bodyOnlyTerm);
+    await expect(current.getByRole("log")).toContainText("Saved research response 2.");
+    await page.getByRole("button", { name: "History", exact: true }).click();
+    await history.getByRole("searchbox", { name: "Search chats" }).fill("");
+    await history.getByRole("button", { name: `Open chat: ${titleB}`, exact: true }).click();
+    await expect(current.getByRole("heading", { name: titleB, exact: true })).toBeVisible();
+    await expect(current.getByRole("log")).toContainText("Saved research response 3.");
+    await expect(current.getByRole("log")).not.toContainText(bodyOnlyTerm);
+    const selectionKey = `studio.agent.activeThread:${search.ownerScope}`;
+    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), selectionKey)).toBe(threadB);
+    await page.reload();
+    await page.getByRole("button", { name: "Open research agent" }).click();
+    await expect(current.getByRole("heading", { name: titleB, exact: true })).toBeVisible();
+    await expect(current.getByRole("log")).toContainText("Saved research response 3.");
+    await page.getByRole("button", { name: "Expand chat", exact: true }).click();
+    await expect(history).toBeVisible();
+    await expect(current).toBeVisible();
+    await expect(history.getByRole("button", { name: `Open chat: ${titleB}`, exact: true })).toHaveAttribute("aria-current", "page");
+    await workbenchScreenshots(page, test.info(), "agent-history-workspace");
+    await page.getByRole("button", { name: "New chat", exact: true }).click();
+    await expect(current.getByRole("heading", { name: "New chat", exact: true })).toBeVisible();
+    await expect(current.getByRole("log")).not.toContainText("Saved research response");
+    await expect(current.getByLabel("Message research agent")).toHaveValue("");
+    await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), selectionKey)).toBeNull();
+    const ids = await context.request.get("/api/agent-workspace/threads?offset=0&limit=100");
+    expect((await ids.json()).threads.filter((thread: { id: string }) => [threadA, threadB].includes(thread.id))).toHaveLength(2);
+    expect(failure).toBeNull();
+    expect(calls).toEqual(["history-model", "history-model", "history-model"]);
+    expect(navigationMutations).toEqual([]);
   } finally {
     if (providerId) { const state = await gql(token, "query{inferenceProviders{id revision}}"); const row = state.data.inferenceProviders.find((provider: { id: string }) => provider.id === providerId); if (row) await gql(token, "mutation($id:ID!,$revision:Int!){providers{delete(input:{id:$id,expectedRevision:$revision}){deleted errors{message}}}}", { id: providerId, revision: row.revision }); }
     await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -127,9 +347,12 @@ test("Downloads retains uploaded originals and exports citation metadata", async
   const retained = await context.request.get(href!);
   expect(retained.ok()).toBe(true); expect(await retained.text()).toBe(original);
   const exported = page.waitForEvent("download");
-  await details.getByRole("button", { name: "Export citation", exact: true }).click();
+  await details.getByRole("button", { name: "Cite", exact: true }).click();
+  await page.getByRole("menuitem", { name: "Export citation", exact: true }).click();
   expect((await exported).suggestedFilename()).toBe("citation.json");
   await page.reload();
   await expect(page.getByRole("button", { name: title, exact: true })).toBeVisible();
-  await page.screenshot({ path: test.info().outputPath("downloads-library.png"), fullPage: true });
+  await page.getByRole("button", { name: title, exact: true }).click();
+  await workbenchScreenshots(page, test.info(), "downloads-inspector");
+  await page.screenshot({ animations: "disabled", path: test.info().outputPath("downloads-library.png"), fullPage: true });
 });

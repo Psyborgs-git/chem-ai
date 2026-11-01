@@ -4,10 +4,12 @@ import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { isNativeDesktop } from "./features/desktop/runtime";
 import { readTheme } from "./theme";
+import { TooltipProvider } from "./components/ui/tooltip";
 import "./styles/tokens.css";
 import "./styles/components.css";
 import "./styles/product.css";
 import "./styles/motion.css";
+import "./styles/shadcn.css";
 
 // The research studio starts light; an explicit saved choice wins.
 document.documentElement.dataset.theme =
@@ -22,6 +24,6 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <TooltipProvider><App /></TooltipProvider>
   </StrictMode>,
 );
