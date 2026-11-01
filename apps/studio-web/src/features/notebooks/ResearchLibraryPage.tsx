@@ -2,8 +2,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectItem } from "@/components/ui/select";
-import { useState, type FormEvent } from "react";
-import { Link } from "react-router";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useSearchParams } from "react-router";
 import { Button } from "../../components/atoms/Button";
 import { PageHeader, TechnicalDetails } from "../../components/layout/StudioLayout";
 import { workspaceRequest } from "../../relay/network";
@@ -22,6 +22,14 @@ function downloadText(name: string, content: string, type = "text/plain") {
 }
 
 export function ResearchLibraryPage({ view = "research" }: { view?: "research" | "downloads" | "memory" }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const resourceSearch = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (view !== "research" || searchParams.get("focus") !== "search") return;
+    resourceSearch.current?.focus();
+    const next = new URLSearchParams(searchParams); next.delete("focus");
+    setSearchParams(next, { replace: true });
+  }, [view, searchParams, setSearchParams]);
   const library = useWorkspace<Library>("/api/library");
   const [query, setQuery] = useState("");
   const [sourceQuery, setSourceQuery] = useState("");
@@ -33,6 +41,23 @@ export function ResearchLibraryPage({ view = "research" }: { view?: "research" |
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selected, setSelected] = useState<ResearchSource | null>(null);
+  const sourceTarget = searchParams.get("source"), memoryTarget = searchParams.get("memory");
+  useEffect(() => {
+    if (!sourceTarget || view === "memory") return;
+    let current = true;
+    void workspaceRequest<ResearchSource>(`/api/library/sources/${encodeURIComponent(sourceTarget)}`).then((source) => {
+      if (!current) return;
+      setSelected(source);
+      setSearchParams((previous) => { const next = new URLSearchParams(previous); next.delete("source"); return next; }, { replace: true });
+    }).catch((error) => { if (current) setNotice(messageOf(error)); });
+    return () => { current = false; };
+  }, [sourceTarget, view, setSearchParams]);
+  useEffect(() => {
+    if (view !== "memory" || !memoryTarget || !library.data) return;
+    if (library.data.memory.some((memory) => memory.id === memoryTarget)) setSelectedMemoryId(memoryTarget);
+    else setNotice("That memory is no longer available.");
+    setSearchParams((previous) => { const next = new URLSearchParams(previous); next.delete("memory"); return next; }, { replace: true });
+  }, [memoryTarget, view, library.data, setSearchParams]);
   const [memoryTitle, setMemoryTitle] = useState("");
   const [memoryBody, setMemoryBody] = useState("");
   const sources = (library.data?.sources ?? []).filter((source) => !sourceQuery || `${source.title} ${source.sourceUrl ?? source.url ?? ""}`.toLowerCase().includes(sourceQuery.toLowerCase()));
@@ -79,7 +104,7 @@ export function ResearchLibraryPage({ view = "research" }: { view?: "research" |
     <nav className="cs-library-tabs" aria-label="Research library"><Link to="/library/research" aria-current={view === "research" ? "page" : undefined}>Discover</Link><Link to="/downloads" aria-current={view === "downloads" ? "page" : undefined}>Downloads</Link><Link to="/memory" aria-current={view === "memory" ? "page" : undefined}>Memory</Link><Link to="/notebooks">Notebooks</Link></nav>
     {(notice || library.error) && <p role="status" className="cs-workspace-notice">{notice ?? library.error}</p>}
     {view === "downloads" && <label className="cs-field cs-library-upload"><span className="cs-field__label">Add a file</span><Input aria-label="Retain a paper, dataset, or reference file" type="file" disabled={!!busy} onChange={(event) => { void uploadSource(event.target.files?.[0]); event.target.value = ""; }} /></label>}
-    {view === "research" && <section className="cs-research-discovery" aria-label="Find sources"><form className="cs-research-search" onSubmit={(event) => void search(event)}><Input aria-label="Search resources" required value={query} placeholder="Search papers, compounds, or a DOI" onChange={(event) => setQuery(event.target.value)} /><Select value={connector} onValueChange={(selectedValue) => { const value = selectedValue === "__none" ? "" : selectedValue; setConnector(value); }}><SelectTrigger className="w-full" aria-label="Source"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="openalex">OpenAlex papers</SelectItem><SelectItem value="crossref">Crossref</SelectItem><SelectItem value="pubchem">PubChem</SelectItem><SelectItem value="web">Web search</SelectItem></SelectGroup></SelectContent></Select><Button type="submit" variant="primary" disabled={!!busy}>{busy === "search" ? "Searching…" : "Search"}</Button></form><details className="cs-source-url-disclosure"><summary>Save a URL</summary><form className="cs-research-url" onSubmit={(event) => { event.preventDefault(); void fetchSource(url); }}><Input aria-label="Save a source URL" type="url" required placeholder="https://…" value={url} onChange={(event) => setUrl(event.target.value)} /><Button type="submit" disabled={!!busy}>Save source</Button></form></details>
+    {view === "research" && <section className="cs-research-discovery" aria-label="Find sources"><form className="cs-research-search" onSubmit={(event) => void search(event)}><Input ref={resourceSearch} aria-label="Search resources" required value={query} placeholder="Search papers, compounds, or a DOI" onChange={(event) => setQuery(event.target.value)} /><Select value={connector} onValueChange={(selectedValue) => { const value = selectedValue === "__none" ? "" : selectedValue; setConnector(value); }}><SelectTrigger className="w-full" aria-label="Source"><SelectValue /></SelectTrigger><SelectContent><SelectGroup><SelectItem value="openalex">OpenAlex papers</SelectItem><SelectItem value="crossref">Crossref</SelectItem><SelectItem value="pubchem">PubChem</SelectItem><SelectItem value="web">Web search</SelectItem></SelectGroup></SelectContent></Select><Button type="submit" variant="primary" disabled={!!busy}>{busy === "search" ? "Searching…" : "Search"}</Button></form><details className="cs-source-url-disclosure"><summary>Save a URL</summary><form className="cs-research-url" onSubmit={(event) => { event.preventDefault(); void fetchSource(url); }}><Input aria-label="Save a source URL" type="url" required placeholder="https://…" value={url} onChange={(event) => setUrl(event.target.value)} /><Button type="submit" disabled={!!busy}>Save source</Button></form></details>
       {results.length > 0 && <div className="cs-source-search-results"><h2>{results.length} results</h2>{results.map((result, index) => <article className="cs-source-result" key={result.id ?? result.url ?? index}><div><h3>{result.title ?? "Resource"}</h3>{(result.snippet || result.abstract) && <p>{String(result.snippet ?? result.abstract).slice(0, 240)}</p>}{safeUrl(result.url) && <a href={safeUrl(result.url)} rel="noopener noreferrer" target="_blank">View source ↗</a>}</div>{safeUrl(result.downloadUrl ?? result.url) && <Button disabled={!!busy} onClick={() => void fetchSource(result.downloadUrl ?? result.url ?? "", result)}>{busy === (result.downloadUrl ?? result.url) ? "Saving…" : "Save"}</Button>}</article>)}</div>}
     </section>}
     {view === "memory" ? <><div className="cs-library-workbench"><section className="cs-library-rows" aria-label="Saved memories">{memories.length ? memories.map((memory) => <button className={`cs-library-row${memory.id === selectedMemory?.id ? " is-selected" : ""}`} key={memory.id} onClick={() => setSelectedMemoryId(memory.id)}><span><strong>{memory.title}</strong><small>{memory.stale ? "Source changed" : memory.sourceRefs?.length ? "Source linked" : "Personal memory"}</small></span><span aria-hidden="true">›</span></button>) : <div className="cs-friendly-empty"><h2>No memories yet</h2><p>Save a finding or a question to return to.</p></div>}</section>{selectedMemory && <section className="cs-library-inspector" aria-label="Memory details"><header><h2>{selectedMemory.title}</h2><span className="cs-count">{selectedMemory.stale ? "Needs review" : "Saved"}</span></header><MarkdownPreview content={selectedMemory.body} /><div className="cs-actions"><Button onClick={() => openAgent(`Continue research from this saved memory: ${selectedMemory.title}`, { memoryId: selectedMemory.id })}>Continue</Button><DropdownMenu><DropdownMenuTrigger asChild><Button>More</Button></DropdownMenuTrigger><DropdownMenuContent align="start"><DropdownMenuItem onSelect={() => void workspaceRequest(`/api/library/memory/${selectedMemory.id}`, { method: "DELETE" }).then(library.refresh).catch((e) => setNotice(messageOf(e)))}>Forget</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div>{!!selectedMemory.sourceRefs?.length && <TechnicalDetails label="Sources" value={selectedMemory.sourceRefs} />}</section>}</div>{newMemory && <form className="cs-panel cs-memory-create" onSubmit={(event) => void saveMemory(event)}><header><h2>Add memory</h2><Button variant="ghost" onClick={() => setNewMemory(false)}>Close</Button></header><label className="cs-field"><span className="cs-field__label">Title</span><Input required value={memoryTitle} onChange={(event) => setMemoryTitle(event.target.value)} /></label><label className="cs-field"><span className="cs-field__label">Finding, decision, or question</span><Textarea rows={5} required value={memoryBody} onChange={(event) => setMemoryBody(event.target.value)} /></label><Button type="submit" disabled={!!busy}>Remember</Button></form>}</> : <>

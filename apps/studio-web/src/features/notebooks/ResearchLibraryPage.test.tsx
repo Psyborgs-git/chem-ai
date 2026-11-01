@@ -12,6 +12,18 @@ vi.mock("./MarkdownPreview", () => ({ MarkdownPreview: ({ content }: { content: 
 afterEach(cleanup);
 beforeEach(() => { state.request.mockReset().mockResolvedValue(source); state.post.mockReset(); state.refresh.mockReset().mockResolvedValue(undefined); });
 describe("research library workbench", () => {
+  it("focuses the paper-search shortcut without starting a search", () => {
+    render(<MemoryRouter initialEntries={["/library/research?focus=search"]}><ResearchLibraryPage /></MemoryRouter>);
+    expect(screen.getByRole("textbox", { name: "Search resources" })).toHaveFocus();
+    expect(state.request).not.toHaveBeenCalled();
+    expect(state.post).not.toHaveBeenCalled();
+  });
+  it("opens the exact saved source selected in the command palette", async () => {
+    render(<MemoryRouter initialEntries={["/downloads?source=paper-one"]}><ResearchLibraryPage view="downloads" /></MemoryRouter>);
+    await waitFor(() => expect(screen.getByRole("region", { name: "Source details" })).toHaveTextContent(source.title));
+    expect(state.request).toHaveBeenCalledWith("/api/library/sources/paper-one");
+    expect(state.post).not.toHaveBeenCalled();
+  });
   it("opens a selected source inspector with original and citation actions, keeping exact metadata collapsed", async () => {
     render(<MemoryRouter><ResearchLibraryPage view="downloads" /></MemoryRouter>);
     expect(screen.getByText("Select a source to review its file and citation.")).toBeVisible();

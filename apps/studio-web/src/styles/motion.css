@@ -132,3 +132,80 @@
  .cs-launch-stage-symbol { width:22px; height:22px; }
  .cs-native-launcher__footnote { padding-top:10px; font-size:9px; }
 }
+
+/* Interaction motion, including later route changes and disclosure state.
+   All content remains readable if a native dialog suspends the animation clock.
+   No animation callback controls an action, fetch, focus, or mounting. */
+:root { --ease-out: cubic-bezier(.22,1,.36,1); --ease-standard: cubic-bezier(.2,.65,.3,1); }
+@keyframes cs-route-arrive {
+  from { opacity: .82; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cs-disclosure-arrive {
+  from { opacity: .72; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes cs-popover-arrive {
+  from { opacity: .75; scale: .985; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes cs-popover-depart {
+  from { opacity: 1; scale: 1; }
+  to { opacity: .75; scale: .985; }
+}
+@keyframes cs-overlay-arrive { from { opacity: .35; } to { opacity: 1; } }
+@keyframes cs-overlay-depart { from { opacity: 1; } to { opacity: .35; } }
+
+@media (prefers-reduced-motion: no-preference) {
+  .cs-route-content { animation: cs-route-arrive 240ms var(--ease-out); }
+  :is([data-slot="tabs-content"][data-state="active"], [role="tabpanel"]:not([hidden])) {
+    animation: cs-route-arrive 180ms var(--ease-out);
+  }
+  .cs-nav-secondary, details[open] > :not(summary) { animation: cs-disclosure-arrive 180ms var(--ease-out); }
+  :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="popover-content"])[data-state="open"], dialog[open] {
+    animation: cs-popover-arrive 200ms var(--ease-out);
+  }
+  :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="popover-content"])[data-state="closed"] {
+    animation: cs-popover-depart 140ms var(--ease-standard);
+  }
+  :is([data-slot="dialog-overlay"], [data-slot="alert-dialog-overlay"])[data-state="open"] { animation: cs-overlay-arrive 180ms ease-out; }
+  :is([data-slot="dialog-overlay"], [data-slot="alert-dialog-overlay"])[data-state="closed"] { animation: cs-overlay-depart 140ms ease-out; }
+  .cs-sidebar { transition: transform 240ms var(--ease-out), width 240ms var(--ease-out), background-color 160ms; }
+  .cs-sidebar nav a, .cs-nav-more-trigger { transition: background-color 120ms, color 120ms, box-shadow 120ms; }
+  .cs-nav-more-chevron { transition: transform 180ms var(--ease-out); }
+  .cs-disclosure-icon { transition: rotate 180ms var(--ease-out); }
+  [aria-expanded="true"] > .cs-disclosure-icon { rotate: 90deg; }
+  .cs-btn, .cs-icon-btn, .cs-icon-button, [data-slot="button"], [data-slot="tabs-trigger"] {
+    transition: background-color 120ms, border-color 120ms, box-shadow 160ms, color 120ms, scale 120ms var(--ease-out);
+  }
+  :is(.cs-btn, .cs-icon-btn, .cs-icon-button, [data-slot="button"]):active:not(:disabled):not([aria-disabled="true"]) { scale: .97; }
+  .cs-btn:active:not(:disabled) { transform: none; }
+  .cs-input, .cs-select, [data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"] { transition: border-color 150ms, box-shadow 150ms, background-color 150ms; }
+
+  @supports (transition-behavior: allow-discrete) {
+    dialog { transition: opacity 160ms, display 160ms allow-discrete, overlay 160ms allow-discrete; }
+    dialog[open] { opacity: 1; }
+    dialog:not([open]) { opacity: .75; }
+    @starting-style { dialog[open] { opacity: .75; } }
+  }
+
+  /* Newer WebKit/Chromium animate intrinsic disclosure height and keep the
+     element mounted during its close transition; older engines simply close. */
+  @supports (interpolate-size: allow-keywords) {
+    details { interpolate-size: allow-keywords; }
+    details::details-content {
+      block-size: 0;
+      overflow: clip;
+      transition: block-size 200ms var(--ease-out), content-visibility 200ms allow-discrete;
+    }
+    details[open]::details-content { block-size: auto; }
+  }
+}
+
+/* The reduced mode removes spatial/repetitive motion completely, including
+   registry component utilities and the legacy decorative landing animations. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --motion-fast: 0ms; --motion-med: 0ms; --motion-enter: 0ms; }
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .cs-route-content, .cs-nav-secondary { opacity: 1; transform: none; }
+}

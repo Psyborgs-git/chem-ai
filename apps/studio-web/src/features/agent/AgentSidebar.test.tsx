@@ -37,6 +37,30 @@ describe("familiar agent chat", () => {
     await waitFor(() => expect(state.post).toHaveBeenCalledWith("/api/agent-workspace/threads/new-thread/runs", expect.objectContaining({ providerId: "provider-one", modelId: "research-model", message: "Compare silk references" })));
     expect(screen.queryByLabelText("Agent provider")).toBeNull();
   });
+  it("uses icon-only actions and the official prompt input without hiding accessible names", () => {
+    mount(); openPanel();
+    const newChat = screen.getByRole("button", { name: "New chat" });
+    expect(newChat).toHaveTextContent("");
+    expect(newChat.querySelector("svg")).toBeTruthy();
+    fireEvent.click(newChat);
+    const composer = screen.getByLabelText("Message research agent");
+    expect(composer).toHaveAttribute("data-slot", "input-group-control");
+    expect(composer.closest('[data-slot="input-group"]')).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Send" })).toHaveTextContent("");
+  });
+  it("makes the closing panel inert during its exit and removes it afterward", async () => {
+    mount(); openSaved(); fireEvent.click(screen.getByRole("button", { name: "Close agent" }));
+    const closing = document.getElementById("research-agent");
+    expect(closing).toHaveAttribute("data-state", "closed");
+    expect(closing).toHaveAttribute("inert");
+    expect(closing).toHaveAttribute("aria-hidden", "true");
+    await waitFor(() => expect(document.getElementById("research-agent")).toBeNull());
+  });
+  it("removes the panel immediately when reduced motion is requested", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("prefers-reduced-motion"), addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    mount(); openSaved(); fireEvent.click(screen.getByRole("button", { name: "Close agent" }));
+    expect(document.getElementById("research-agent")).toBeNull();
+  });
   it("uses authoritative title-and-message search results and exposes pagination", async () => {
     state.history = { ...state.history, threads: [summary, { ...summary, id: "other", title: "Another chat" }], nextOffset: 50 };
     state.search = { threads: [{ ...summary, title: "Unrelated title", lastMessagePreview: "A different last answer" }], nextOffset: null, query: "needle", ownerScope: "workspace:alice" };
@@ -58,11 +82,12 @@ describe("familiar agent chat", () => {
     expect(screen.getByRole("heading", { name: "Silk research" })).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Agent model" })).toHaveTextContent("Research model · Research provider");
     const log = screen.getByRole("log", { name: "Agent conversation messages" });
-    expect(within(log).getByText("· 1 step")).toBeVisible();
+    expect(within(log).getByRole("button", { name: "Research activity · 1 step" })).toBeVisible();
+    expect(log.querySelector('[data-slot="message-scroller-item"] [data-slot="message"] [data-slot="bubble"]')).toBeTruthy();
     expect(within(log).queryByText(/Silk paper/)).toBeNull();
-    fireEvent.click(within(log).getByText("· 1 step").closest("summary")!);
+    fireEvent.click(within(log).getByRole("button", { name: "Research activity · 1 step" }));
     await waitFor(() => expect(within(log).getByText("1 source")).toBeVisible());
-    fireEvent.click(within(log).getByText("Technical details"));
+    fireEvent.click(within(log).getByRole("button", { name: "Search sources — technical details" }));
     await waitFor(() => expect(within(log).getByText(/Silk paper/)).toBeVisible());
   });
   it("preserves a draft when starting a new chat or opening a contextual request", () => {

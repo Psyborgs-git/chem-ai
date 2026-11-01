@@ -12,9 +12,26 @@ vi.mock("../workspace/useWorkspace", () => ({ post: state.post, messageOf: (erro
 afterEach(cleanup);
 beforeEach(() => { state.jobs = []; state.modelRows = null; state.modelsRefresh.mockReset().mockResolvedValue(undefined); state.post.mockReset(); state.request.mockReset(); state.refresh.mockReset().mockResolvedValue(undefined); });
 function mount() { return render(<MemoryRouter><LocalLearningPage /></MemoryRouter>); }
-async function choose(label: string, option: string) { await userEvent.click(screen.getByRole("combobox", { name: label })); await userEvent.click(await screen.findByRole("option", { name: option })); }
+async function choose(label: string, option: string) { if (label === "Training or evaluation track") fireEvent.click(screen.getByText("More training options", { exact: true })); await userEvent.click(screen.getByRole("combobox", { name: label })); await userEvent.click(await screen.findByRole("option", { name: option })); }
 function next() { fireEvent.click(screen.getByRole("button", { name: "Continue" })); }
 describe("learning workbench", () => {
+  it("opens the new-run shortcut without inference and starts a selected task immediately", () => {
+    render(<MemoryRouter initialEntries={["/learning?tab=new"]}><LocalLearningPage /></MemoryRouter>);
+    expect(screen.getByRole("heading", { name: "Choose a task" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /Train a property model/ }));
+    expect(screen.getByRole("heading", { name: "Choose training data" })).toBeVisible();
+    expect(state.post).not.toHaveBeenCalled();
+  });
+  it("shows practical run bounds before specialist settings", async () => {
+    mount(); fireEvent.click(screen.getByRole("button", { name: "New run" })); next();
+    await choose("Frozen dataset", "Textile research · 40 rows"); next();
+    await choose("Base or trained model", "Qwen research base · mlx"); next();
+    expect(screen.getByLabelText("Maximum steps")).toBeVisible();
+    expect(screen.getByLabelText("Time limit · seconds")).toBeVisible();
+    expect(screen.getByLabelText("Adapter rank")).not.toBeVisible();
+    fireEvent.click(screen.getByText("Advanced settings", { exact: true }));
+    expect(screen.getByLabelText("Adapter rank")).toBeVisible();
+  });
   it("shows runs first and keeps result payloads behind details", () => {
     state.jobs = [{ id: "run", name: "Silk research adapter", kind: "sft", state: "completed", events: [{ loss: 2.1 }, { loss: 1.2 }], config: { secretInternalPath: "/output/adapters" }, result: { stepsCompleted: 50, metrics: { train_loss: 1.2 }, artifacts: [{ path: "evaluation.json", bytes: 100 }] } }];
     mount();
@@ -32,6 +49,8 @@ describe("learning workbench", () => {
     await userEvent.click(screen.getByRole("combobox", { name: "Base or trained model" }));
     expect(screen.queryByRole("option", { name: /downloading/ })).toBeNull();
     await userEvent.click(await screen.findByRole("option", { name: "Qwen research base · mlx" })); next();
+    expect(screen.getByLabelText("Learning rate")).not.toBeVisible();
+    fireEvent.click(screen.getByText("Advanced settings", { exact: true }));
     expect(screen.getByLabelText("Learning rate")).toHaveAttribute("max", "0.01");
     fireEvent.change(screen.getByLabelText("Seed"), { target: { value: "42" } });
     fireEvent.change(screen.getByLabelText("Sequence length"), { target: { value: "1024" } }); next();
@@ -46,6 +65,7 @@ describe("learning workbench", () => {
     mount(); fireEvent.click(screen.getByRole("button", { name: "New run" })); await choose("Training or evaluation track", "SMILES property model"); next();
     await choose("Frozen dataset", "Polymer labels · 40 rows"); next(); next();
     expect(screen.getByLabelText("Maximum epochs")).toBeVisible();
+    fireEvent.click(screen.getByText("Advanced settings", { exact: true }));
     expect(screen.queryByLabelText("Checkpoint every · epochs")).toBeNull();
     expect(screen.getByLabelText("Target property")).toHaveValue("glass_transition");
     expect(screen.getByLabelText("Target unit")).toHaveValue("K");

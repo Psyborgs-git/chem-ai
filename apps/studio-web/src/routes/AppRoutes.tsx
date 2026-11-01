@@ -3,7 +3,6 @@ import { Component } from "react";
 import { RelayEnvironmentProvider, useLazyLoadQuery } from "react-relay";
 import {
   Link,
-  NavLink,
   Route,
   BrowserRouter as Router,
   Routes,
@@ -23,9 +22,11 @@ import {
   SignInScreen,
 } from "../features/auth/AuthScreens";
 import { InlineFinding } from "../components/molecules/InlineFinding";
-import { PageHeader, StudioIcon, humanize } from "../components/layout/StudioLayout";
+import { PageHeader, StudioIcon, WorkspaceNavigation, WORKSPACE_DESTINATIONS, humanize } from "../components/layout/StudioLayout";
 import { CreateSheet } from "../components/layout/CreateSheet";
 import { WorkspaceFinder } from "../components/layout/WorkspaceFinder";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { ResearchSheet } from "../features/tasks/ResearchSheet";
 import { BrandMark } from "../components/layout/BrandMark";
 import { ChemistryArt } from "../components/layout/ChemistryArt";
@@ -177,43 +178,12 @@ class FallbackQueryBoundary extends Component<
  * surface — a nav link that 404s is a defect, not a placeholder
  * (CS-1201). PAR-07 restored "Materials & Products" now that a real
  * registry surface exists at /materials. */
-const NAV = [
-  { to: "/", label: "Workspace", icon: "home" },
-  { to: "/projects", label: "Projects", icon: "projects" },
-  { to: "/notebooks", label: "Notebooks", icon: "notebooks" },
-  { to: "/library/research", label: "Research library", icon: "research" },
-  { to: "/downloads", label: "Downloads", icon: "imports" },
-  { to: "/memory", label: "Research memory", icon: "models" },
-  { to: "/materials", label: "Materials & Products", icon: "materials" },
-  { to: "/imports", label: "Imports", icon: "imports" },
-  { to: "/evidence", label: "Evidence", icon: "evidence" },
-  { to: "/lab", label: "Lab", icon: "lab" },
-  { to: "/models", label: "Models & Learning", icon: "models" },
-  { to: "/learning", label: "Local learning", icon: "models" },
-  { to: "/compute", label: "Compute", icon: "compute" },
-  { to: "/settings/providers", label: "Providers", icon: "providers" },
-];
+const NAV = WORKSPACE_DESTINATIONS;
 
 function ThemeToggle() {
-  const [theme, setTheme] = useState(
-    () => document.documentElement.dataset.theme ?? "light",
-  );
+  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme ?? "light");
   const next = theme === "dark" ? "light" : "dark";
-  return (
-    <button
-      type="button"
-      className="cs-btn cs-btn--ghost cs-theme-toggle"
-      aria-pressed={theme === "dark"}
-      aria-label={`Switch to ${next} theme`}
-      onClick={() => {
-        document.documentElement.dataset.theme = next;
-        writeTheme(next);
-        setTheme(next);
-      }}
-    >
-      <svg className="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">{theme === "dark" ? <path d="M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10Z" /> : <><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></>}</svg>{theme === "dark" ? "Dark" : "Light"}
-    </button>
-  );
+  return <Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="cs-icon-button cs-theme-toggle" data-icon-only aria-pressed={theme === "dark"} aria-label={`Switch to ${next} theme`} onClick={() => { document.documentElement.dataset.theme = next; writeTheme(next); setTheme(next); }}><svg className="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">{theme === "dark" ? <path d="M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10Z" /> : <><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></>}</svg></Button></TooltipTrigger><TooltipContent>{`Switch to ${next} theme`}</TooltipContent></Tooltip>;
 }
 
 /** Sign-out ends the server session, drops the identity-scoped Relay
@@ -260,7 +230,7 @@ function AppShell({
   const { pathname } = useLocation();
   const [navOpen, setNavOpen] = useState(false);
   const [finderOpen, setFinderOpen] = useState(false);
-  useEffect(() => { const openFinder = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setFinderOpen((value) => !value); } }; document.addEventListener("keydown", openFinder); return () => document.removeEventListener("keydown", openFinder); }, []);
+  useEffect(() => { const openFinder = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") { event.preventDefault(); setNavOpen(false); setFinderOpen((value) => !value); } }; document.addEventListener("keydown", openFinder); return () => document.removeEventListener("keydown", openFinder); }, []);
   const sidebarRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLButtonElement>(null);
   const closeNav = () => { setNavOpen(false); menuRef.current?.focus(); };
@@ -291,37 +261,26 @@ function AppShell({
         Skip to content
       </a>
       <WorkspaceFinder open={finderOpen} onClose={() => setFinderOpen(false)} />
-      <aside ref={sidebarRef} className={`cs-sidebar${navOpen ? " is-open" : ""}`} aria-label="Workspace navigation">
+      <aside ref={sidebarRef} className={`cs-sidebar cs-sidebar--focused${navOpen ? " is-open" : ""}`} aria-label="Workspace navigation">
         <Link to="/" className="cs-shell__brand">
           <span className="cs-brand-mark"><BrandMark size={35} className="cs-brand-logo" /></span> Chemistry Studio
         </Link>
-        <button type="button" className="cs-icon-btn cs-sidebar-close" aria-label="Close navigation" onClick={closeNav}><StudioIcon name="close" /></button>
-        <div className="cs-sidebar__workspace"><span className="cs-live-dot"/><span>Local workspace</span></div>
-        <Link to="/?new=research" className="cs-sidebar__new" onClick={() => setNavOpen(false)}><span aria-hidden="true">＋</span> New research</Link>
-        <nav aria-label="primary" id="primary-navigation">
-          {[
-            { label: "YOUR WORK", destinations: ["/", "/projects", "/notebooks", "/lab"] },
-            { label: "REFERENCE LIBRARY", destinations: ["/library/research", "/downloads", "/memory", "/materials", "/evidence", "/imports"] },
-            { label: "TOOLS", destinations: ["/compute", "/learning", "/models", "/settings/providers"] },
-          ].map((group) => <div className="cs-navigation-group" key={group.label}><div className="cs-sidebar__label">{group.label}</div>{group.destinations.map((destination) => {
-            const item = NAV.find((entry) => entry.to === destination)!;
-            return <NavLink key={item.to} to={item.to} end={item.to === "/"} onClick={() => setNavOpen(false)}><StudioIcon name={item.icon}/>{item.label}</NavLink>;
-          })}</div>)}
-        </nav>
-        <div className="cs-sidebar__footer"><span className="cs-sidebar__footer-mark">✦</span><strong>Questions become evidence.</strong><span>One connected research workspace.</span></div>
+        <button type="button" className="cs-icon-button cs-sidebar-close" data-icon-only aria-label="Close navigation" onClick={closeNav}><StudioIcon name="close" /></button>
+        <WorkspaceNavigation pathname={pathname} onNavigate={() => setNavOpen(false)} />
+        <div className="cs-sidebar__footer cs-sidebar__footer--quiet"><span className="cs-live-dot" aria-hidden="true" /><span>On this Mac</span></div>
       </aside>
       <button type="button" className="cs-sidebar-backdrop" aria-label="Dismiss navigation" onClick={closeNav} tabIndex={-1} />
       <header className="cs-shell__header">
-        <button ref={menuRef} type="button" className="cs-icon-btn cs-menu-button" aria-label="Open navigation" aria-expanded={navOpen} aria-controls="primary-navigation" onClick={() => setNavOpen(true)}><StudioIcon name="menu" /></button>
+        <button ref={menuRef} type="button" className="cs-icon-button cs-menu-button" data-icon-only aria-label="Open navigation" aria-expanded={navOpen} aria-controls="primary-navigation" onClick={() => setNavOpen(true)}><StudioIcon name="menu" /></button>
         <div className="cs-shell__location"><span aria-hidden="true">Studio /</span><span>{location}</span></div>
-        <button className="cs-workspace-finder" type="button" onClick={() => setFinderOpen(true)}><svg className="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><span>Find your work</span><kbd>⌘ K</kbd></button>
+        <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="cs-icon-button cs-find-trigger" data-icon-only aria-label="Find your work" aria-keyshortcuts="Meta+K Control+K" onClick={() => { setNavOpen(false); setFinderOpen(true); }}><StudioIcon name="research" /></Button></TooltipTrigger><TooltipContent>Find your work · ⌘K</TooltipContent></Tooltip>
         <span className="cs-shell__session"><span className="cs-avatar" aria-hidden="true">{displayName.split(/\s+/).map((name) => name[0]).slice(0,2).join("")}</span>{displayName}</span>
         <SignOutControl />
         <ThemeToggle />
         <AgentSidebar />
       </header>
       <main id="main" tabIndex={-1}>
-        <div className="cs-content">{children}</div>
+        <div className="cs-content"><div className="cs-route-content" key={pathname}>{children}</div></div>
       </main>
     </div>
   );

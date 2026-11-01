@@ -1,24 +1,13 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import { Button } from "../ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
-/** Icon-only button — requires an accessible label so the icon never
- * carries meaning alone. */
-export function IconButton({
-  label,
-  children,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
+type IconButtonProps = Omit<ComponentProps<typeof Button>, "aria-label" | "size" | "children"> & {
   label: string;
   children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      {...props}
-      className={`cs-icon-btn ${props.className ?? ""}`.trim()}
-    >
-      <span aria-hidden="true">{children}</span>
-    </button>
-  );
+};
+
+/** Recognizable toolbar actions keep an accessible name and keyboard tooltip. */
+export function IconButton({ label, children, variant = "ghost", className = "", type = "button", ...props }: IconButtonProps) {
+  return <TooltipProvider delayDuration={450}><Tooltip><TooltipTrigger asChild><Button {...props} type={type} variant={variant} size="icon" aria-label={label} data-icon-only className={`cs-icon-btn cs-icon-button ${className}`}><span aria-hidden="true">{children}</span></Button></TooltipTrigger><TooltipContent>{label}</TooltipContent></Tooltip></TooltipProvider>;
 }

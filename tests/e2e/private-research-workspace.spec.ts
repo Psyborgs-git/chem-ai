@@ -4,9 +4,15 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { decodeGlobalId, gql, signIn } from "./at-1103-helpers";
 
 async function choose(page: Page, label: string, option: string) {
+  if (label === "Training or evaluation track" && !await page.getByRole("combobox", { name: label, exact: true }).isVisible()) {
+    await page.getByText("More training options", { exact: true }).click();
+  }
   await page.getByRole("combobox", { name: label, exact: true }).click();
   await expect(page.getByRole("listbox")).toBeVisible();
-  if (["Agent model", "Training or evaluation track"].includes(label)) await page.screenshot({ animations: "disabled", path: test.info().outputPath(`${label.toLowerCase().replaceAll(" ", "-")}-options.png`), fullPage: true });
+  if (["Agent model", "Training or evaluation track"].includes(label)) {
+    await page.getByRole("listbox").evaluate(async (node) => { await Promise.all(node.getAnimations().map((animation) => animation.finished.catch(() => undefined))); });
+    await page.screenshot({ path: test.info().outputPath(`${label.toLowerCase().replaceAll(" ", "-")}-options.png`) });
+  }
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
@@ -75,13 +81,14 @@ test("private notes autosave, render formulae, and retain source-linked memory",
   await expect(page.getByRole("heading", { name: finding })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: finding })).toBeVisible();
-  await page.getByRole("button", { name: "More", exact: true }).click();
+  await page.getByRole("region", { name: "Memory details", exact: true }).getByRole("button", { name: "More", exact: true }).click();
   await page.getByRole("menuitem", { name: "Forget", exact: true }).click();
   await expect(page.getByRole("heading", { name: finding })).toHaveCount(0);
 });
 
 test("SMILES dataset import exposes rejected rows and freezes leakage-aware partitions", async ({ page, context }) => {
   await signIn(context);
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/learning");
   await expect(page.locator('[data-slot="tabs"]').filter({ has: page.getByRole("tablist", { name: "Local learning", exact: true }) })).toHaveCSS("flex-direction", "column");
   await page.getByRole("tab", { name: "Datasets", exact: true }).click();
@@ -113,7 +120,12 @@ test("SMILES dataset import exposes rejected rows and freezes leakage-aware part
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page.getByLabel("Maximum epochs")).toBeVisible();
-  await workbenchScreenshots(page, test.info(), "learning-settings");
+  await expect(page.getByRole("combobox", { name: "Device", exact: true })).toBeHidden();
+  await workbenchScreenshots(page, test.info(), "learning-settings-basic");
+  await page.getByText("Advanced settings", { exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Device", exact: true })).toBeVisible();
+  await expect(page.getByText("Fixed schedule · 2 warm-up epochs", { exact: true })).toBeVisible();
+  await workbenchScreenshots(page, test.info(), "learning-settings-advanced");
 });
 
 test("sidebar uses a second model on one provider and persists a real tool action", async ({ page, context }) => {
@@ -162,15 +174,17 @@ test("sidebar uses a second model on one provider and persists a real tool actio
     await expect(transcript).not.toContainText(promptEnd);
     await transcript.getByRole("button", { name: "Show full message", exact: true }).click();
     await expect(transcript).toContainText(promptEnd);
-    await transcript.getByRole("button", { name: "Show less", exact: true }).click();
-    const activity = transcript.locator(".cs-chat-activity");
+    await transcript.getByRole("button", { name: "Collapse message", exact: true }).click();
+    const activity = transcript.locator(".cs-chat-trace");
     await expect(activity).toHaveCount(1);
-    await expect(activity).not.toHaveAttribute("open", "");
-    await expect(activity.getByText("Technical details", { exact: true })).toHaveCount(0);
-    await activity.locator(":scope > summary").click();
-    await activity.getByText("Technical details", { exact: true }).click();
+    const activityTrigger = activity.getByRole("button", { name: "Research activity · 1 step", exact: true });
+    await expect(activityTrigger).toHaveAttribute("aria-expanded", "false");
+    await expect(activity.getByRole("button", { name: "Create notebook — technical details", exact: true })).toHaveCount(0);
+    await activityTrigger.click();
+    await activity.getByRole("button", { name: "Create notebook — technical details", exact: true }).click();
     await expect(activity.locator("pre")).toContainText(notebookTitle);
-    await activity.locator(":scope > summary").click();
+    await activityTrigger.click();
+    await expect(activity.locator("pre")).toHaveCount(0);
     await expect(page.getByRole("button", { name: notebookTitle, exact: true })).toBeVisible();
     const contentRight = await page.locator("main").evaluate((node) => node.getBoundingClientRect().right);
     const panelLeft = await page.locator("#research-agent").evaluate((node) => node.getBoundingClientRect().left);
@@ -233,7 +247,7 @@ test("chat history searches older message bodies, switches sessions, and restore
       try {
         const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
         calls.push(body.model);
-        response.end(JSON.stringify({ choices: [{ message: { role: "assistant", content: `Saved research response ${calls.length}.` } }], usage: { prompt_tokens: 40, completion_tokens: 15 } }));
+        response.end(JSON.stringify({ choices: [{ message: { role: "assistant", content: `Saved research response ${calls.length}.\n\n${"Retain source provenance and distinguish measured observations from hypotheses.\n\n".repeat(24)}` } }], usage: { prompt_tokens: 40, completion_tokens: 15 } }));
       } catch (error) { failure = String(error); response.statusCode = 500; response.end("{}"); }
     });
   });
@@ -277,6 +291,16 @@ test("chat history searches older message bodies, switches sessions, and restore
     expect(search.threads[0].lastMessagePreview).not.toContain(bodyOnlyTerm);
     expect(search.threads[0].messageCount).toBe(4);
 
+    // Exercise actual backend cursor pagination with this small real thread.
+    // Only the initial page size changes; no response body or older page is mocked.
+    await page.route(`**/api/agent-workspace/threads/${threadA}*`, async (route) => {
+      const url = new URL(route.request().url());
+      if (route.request().method() === "GET" && url.pathname === `/api/agent-workspace/threads/${threadA}` && !url.searchParams.has("before")) {
+        url.searchParams.set("limit", "2");
+        await route.continue({ url: url.href });
+      } else await route.continue();
+    });
+
     const navigationMutations: string[] = [];
     page.on("request", (request) => {
       const path = new URL(request.url()).pathname;
@@ -300,7 +324,28 @@ test("chat history searches older message bodies, switches sessions, and restore
     await history.getByRole("button", { name: `Open chat: ${titleA}`, exact: true }).click();
     const current = page.getByRole("region", { name: "Current chat", exact: true });
     await expect(current.getByRole("heading", { name: titleA, exact: true })).toBeVisible();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(current.getByRole("log")).not.toContainText(bodyOnlyTerm);
+    const scrollArea = current.getByLabel("Conversation scroll area", { exact: true });
+    await scrollArea.hover();
+    await page.mouse.wheel(0, -10000);
+    const older = current.getByRole("button", { name: "Load earlier messages", exact: true });
+    await expect(older).toBeVisible();
+    await older.scrollIntoViewIfNeeded();
+    await expect.poll(() => scrollArea.evaluate((node) => node.scrollTop)).toBeLessThan(1);
+    await scrollArea.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    const readingAnchor = current.getByText("Review the measurement protocol before the next experiment.", { exact: true });
+    const anchorBefore = await readingAnchor.evaluate((node) => node.getBoundingClientRect().top);
+    const earlierPage = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return url.pathname === `/api/agent-workspace/threads/${threadA}` && url.searchParams.has("before") && url.searchParams.get("limit") === "500" && response.ok();
+    });
+    await older.click();
+    await earlierPage;
     await expect(current.getByRole("log")).toContainText(bodyOnlyTerm);
+    await expect.poll(async () => Math.abs(await readingAnchor.evaluate((node) => node.getBoundingClientRect().top) - anchorBefore), { message: "Prepending the real older page should preserve the reader's message position at 390px" }).toBeLessThan(8);
+    await page.screenshot({ animations: "disabled", path: test.info().outputPath("agent-history-mobile-prepend-position.png"), fullPage: true });
+    await page.setViewportSize({ width: 1280, height: 900 });
     await expect(current.getByRole("log")).toContainText("Saved research response 2.");
     await page.getByRole("button", { name: "History", exact: true }).click();
     await history.getByRole("searchbox", { name: "Search chats" }).fill("");
@@ -355,4 +400,120 @@ test("Downloads retains uploaded originals and exports citation metadata", async
   await page.getByRole("button", { name: title, exact: true }).click();
   await workbenchScreenshots(page, test.info(), "downloads-inspector");
   await page.screenshot({ animations: "disabled", path: test.info().outputPath("downloads-library.png"), fullPage: true });
+});
+
+test("Home shortcuts, secondary navigation and workspace search preserve intent with accessible motion", async ({ page, context }) => {
+  test.setTimeout(90_000);
+  await signIn(context);
+  const title = `Exact retained silk source ${randomUUID()}.txt`;
+  const uploaded = await context.request.post("/api/library/sources/upload", { multipart: { title, file: { name: title, mimeType: "text/plain", buffer: Buffer.from("Retained source for navigation review, not a material-performance claim.\n") } } });
+  expect(uploaded.ok()).toBe(true);
+  const source = await uploaded.json();
+  const mutations: string[] = [];
+  page.on("request", (request) => {
+    const pathname = new URL(request.url()).pathname;
+    if (request.method() === "POST" && (/^\/api\/(?:learning-workspace|simulations)\/(?:jobs|preflight)/.test(pathname) || /^\/api\/agent-workspace\/threads(?:\/[^/]+\/runs)?$/.test(pathname) || pathname.includes("/preview"))) mutations.push(pathname);
+  });
+  await page.addInitScript(() => {
+    const state = window as Window & { researchMotion?: { name: string; target: string }[] };
+    state.researchMotion = [];
+    document.addEventListener("animationstart", (event) => {
+      if (event.target instanceof HTMLElement && event.target.matches(".cs-route-content, .cs-agent-panel")) state.researchMotion!.push({ name: event.animationName, target: event.target.className });
+    });
+  });
+  const motion = () => page.evaluate(() => (window as Window & { researchMotion?: { name: string; target: string }[] }).researchMotion ?? []);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Your research", exact: true })).toBeVisible();
+  const navigation = page.getByRole("navigation", { name: "primary", exact: true });
+  await expect(navigation.locator(".cs-nav-primary").getByRole("link")).toHaveCount(5);
+  await expect(navigation.getByRole("button", { name: "More", exact: true })).toHaveAttribute("aria-expanded", "false");
+  await expect(navigation.getByRole("link", { name: "Downloads", exact: true })).toBeHidden();
+  await workbenchScreenshots(page, test.info(), "apple-home");
+  await page.getByRole("button", { name: "Explore molecule", exact: true }).click();
+  await expect(page.locator("#quick-structure")).toBeFocused();
+  await page.locator("#quick-structure").fill("CCO");
+  await page.getByRole("button", { name: "Close molecule explorer", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Molecule explorer", exact: true })).toBeHidden();
+  await page.getByRole("link", { name: "New notebook", exact: true }).click();
+  await expect(page.locator(".cs-inline-create").getByLabel("Notebook title", { exact: true })).toBeFocused();
+  await expect(page.locator(".cs-inline-create").getByLabel("Notebook title", { exact: true })).toHaveValue("");
+  await expect(page.getByRole("button", { name: "Create notebook", exact: true })).toBeVisible();
+  await navigation.getByRole("link", { name: "Home", exact: true }).click();
+  await page.getByRole("link", { name: "Find papers", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Search resources", exact: true })).toBeFocused();
+  await navigation.getByRole("link", { name: "Home", exact: true }).click();
+  const beforeRoute = (await motion()).filter((item) => item.name === "cs-route-arrive").length;
+  await page.getByRole("link", { name: "Train model", exact: true }).click();
+  await expect(page.getByRole("tab", { name: "New run", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("heading", { name: "Choose a task", exact: true })).toBeVisible();
+  await expect.poll(async () => (await motion()).filter((item) => item.name === "cs-route-arrive").length).toBeGreaterThan(beforeRoute);
+  await page.getByRole("button", { name: /Train a property model/ }).click();
+  await expect(page.getByRole("heading", { name: "Choose training data", exact: true })).toBeVisible();
+  expect(mutations).toEqual([]);
+
+  await navigation.getByRole("button", { name: "More", exact: true }).click();
+  await expect(navigation.getByRole("link", { name: "Downloads", exact: true })).toBeVisible();
+  await navigation.getByRole("link", { name: "Downloads", exact: true }).click();
+  await expect(navigation.getByRole("link", { name: "Downloads", exact: true })).toHaveAttribute("aria-current", "page");
+  await navigation.getByRole("button", { name: "More", exact: true }).click();
+  await expect(navigation.getByRole("link", { name: "Downloads", exact: true })).toBeHidden();
+  await page.reload();
+  await expect(navigation.getByRole("button", { name: "More", exact: true })).toHaveAttribute("aria-expanded", "true");
+  await expect(navigation.getByRole("link", { name: "Downloads", exact: true })).toBeVisible();
+  await workbenchScreenshots(page, test.info(), "apple-secondary-navigation");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Open navigation", exact: true }).click();
+  await expect(navigation.getByRole("link", { name: "Downloads", exact: true })).toBeVisible();
+  await page.screenshot({ animations: "disabled", path: test.info().outputPath("apple-secondary-navigation-mobile-open.png"), fullPage: true });
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Open navigation", exact: true })).toBeFocused();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await navigation.getByRole("link", { name: "Home", exact: true }).click();
+
+  await page.keyboard.press("ControlOrMeta+k");
+  const finder = page.getByRole("dialog", { name: "Find your work", exact: true });
+  await expect(finder).toBeVisible();
+  const locationBeforeSearch = page.url();
+  await finder.getByRole("combobox", { name: "Search your workspace", exact: true }).fill(title);
+  const exactSource = finder.getByRole("option").filter({ hasText: title });
+  await expect(exactSource).toHaveCount(1);
+  await expect(exactSource).toContainText("Saved source");
+  expect(page.url()).toBe(locationBeforeSearch);
+  for (const theme of ["light", "dark"] as const) {
+    await page.keyboard.press("Escape");
+    const toggle = page.getByRole("button", { name: `Switch to ${theme} theme`, exact: true });
+    if (await toggle.count()) await toggle.click();
+    await page.keyboard.press("ControlOrMeta+k");
+    await finder.getByRole("combobox", { name: "Search your workspace", exact: true }).fill(title);
+    await expect(exactSource).toHaveCount(1);
+    await page.screenshot({ animations: "disabled", path: test.info().outputPath(`apple-workspace-palette-${theme}.png`), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ animations: "disabled", path: test.info().outputPath(`apple-workspace-palette-${theme}-390.png`), fullPage: true });
+    await page.setViewportSize({ width: 1280, height: 900 });
+  }
+  const selected = page.waitForResponse((response) => new URL(response.url()).pathname === `/api/library/sources/${source.id}` && response.ok());
+  await exactSource.click();
+  await selected;
+  await expect(finder).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Source details", exact: true }).getByRole("heading", { name: title, exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Open research agent", exact: true }).click();
+  await expect(page.getByRole("complementary", { name: "Research agent", exact: true })).toBeVisible();
+  await expect.poll(async () => (await motion()).some((item) => item.name === "cs-chat-open")).toBe(true);
+  await page.getByRole("button", { name: "Close agent", exact: true }).click();
+  await expect.poll(async () => (await motion()).some((item) => item.name === "cs-chat-close")).toBe(true);
+  await expect(page.locator("#research-agent")).toHaveCount(0);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const beforeReduced = (await motion()).length;
+  await navigation.getByRole("link", { name: "Home", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Your research", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Open research agent", exact: true }).click();
+  await expect(page.locator("#research-agent")).toBeVisible();
+  await expect(page.locator(".cs-route-content")).toHaveCSS("animation-name", "none");
+  await expect(page.locator("#research-agent")).toHaveCSS("animation-name", "none");
+  expect((await motion()).length).toBe(beforeReduced);
+  expect(mutations).toEqual([]);
 });

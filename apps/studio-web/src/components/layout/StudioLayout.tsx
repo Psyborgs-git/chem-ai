@@ -1,4 +1,48 @@
-import { type ReactNode, useId } from "react";
+import { type ReactNode, useEffect, useId, useState } from "react";
+import { Link } from "react-router";
+import { Button } from "../atoms/Button";
+import "../../styles/navigation.css";
+
+export const PRIMARY_DESTINATIONS = [
+  { to: "/", label: "Home", icon: "home" },
+  { to: "/projects", label: "Projects", icon: "projects" },
+  { to: "/notebooks", label: "Notebooks", icon: "notebooks" },
+  { to: "/library/research", label: "Research library", icon: "research" },
+  { to: "/learning", label: "Local learning", icon: "models" },
+];
+export const SECONDARY_DESTINATIONS = [
+  { label: "Saved work", destinations: [
+    { to: "/downloads", label: "Downloads", icon: "imports" },
+    { to: "/memory", label: "Research memory", icon: "notebooks" },
+    { to: "/lab", label: "Lab", icon: "lab" },
+  ] },
+  { label: "Tools & settings", destinations: [
+    { to: "/materials", label: "Materials & Products", icon: "materials" },
+    { to: "/evidence", label: "Evidence", icon: "evidence" },
+    { to: "/imports", label: "Imports", icon: "imports" },
+    { to: "/models", label: "Model registry", icon: "models" },
+    { to: "/compute", label: "Compute", icon: "compute" },
+    { to: "/settings/providers", label: "Providers", icon: "providers" },
+  ] },
+];
+export const WORKSPACE_DESTINATIONS = [...PRIMARY_DESTINATIONS, ...SECONDARY_DESTINATIONS.flatMap((group) => group.destinations)];
+const isDestination = (pathname: string, to: string) => to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
+
+export function WorkspaceNavigation({ pathname, onNavigate }: { pathname: string; onNavigate: () => void }) {
+  const secondaryActive = SECONDARY_DESTINATIONS.some((group) => group.destinations.some((item) => isDestination(pathname, item.to)));
+  const [moreOpen, setMoreOpen] = useState(secondaryActive);
+  const moreId = useId();
+  useEffect(() => { if (secondaryActive) setMoreOpen(true); }, [pathname, secondaryActive]);
+  const destination = (item: typeof PRIMARY_DESTINATIONS[number]) => {
+    const active = isDestination(pathname, item.to) || (item.to === "/projects" && pathname.startsWith("/tasks/"));
+    return <Link key={item.to} to={item.to} className={active ? "active" : undefined} aria-current={active ? "page" : undefined} onClick={onNavigate}><StudioIcon name={item.icon} /><span>{item.label}</span></Link>;
+  };
+  return <nav aria-label="primary" id="primary-navigation" className="cs-focused-navigation">
+    <div className="cs-nav-primary">{PRIMARY_DESTINATIONS.map(destination)}</div>
+    <Button variant="ghost" className={`cs-nav-more-trigger${secondaryActive ? " is-active" : ""}`} aria-expanded={moreOpen} aria-controls={moreId} onClick={() => setMoreOpen(!moreOpen)}><StudioIcon name="more" /><span>More</span><StudioIcon name="chevron" className="cs-nav-more-chevron" /></Button>
+    <div id={moreId} className="cs-nav-secondary" hidden={!moreOpen}>{SECONDARY_DESTINATIONS.map((group) => <section key={group.label} className="cs-nav-secondary-group" aria-label={group.label}><h2>{group.label}</h2>{group.destinations.map(destination)}</section>)}</div>
+  </nav>;
+}
 
 /** Shared research surfaces keep the same hierarchy without hiding scientific context. */
 export function PageHeader({ eyebrow, title, description, actions, level = 1 }: {
@@ -72,6 +116,8 @@ export function StudioIcon({ name, className = "" }: { name: string; className?:
     menu: <path d="M4 6h16M4 12h16M4 18h16" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
     arrow: <path d="M4 12h15m-5-5 5 5-5 5" />,
+    more: <><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></>,
+    chevron: <path d="m8 10 4 4 4-4" />,
   };
   return <svg className={`cs-icon ${className}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths.materials}</svg>;
 }

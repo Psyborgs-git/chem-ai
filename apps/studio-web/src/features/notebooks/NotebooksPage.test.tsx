@@ -1,4 +1,5 @@
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { createRef } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -120,7 +121,7 @@ it("clears the previous notebook and page when creating an empty folder", async 
   state.library = { ownerKey: "workspace:alice", folders: [], notebooks: [{ id: page.notebookId, title: "Existing notebook", folderId: null, revision: 1 }], pages: [page], sources: [], memory: [], downloadsRoot: "/tmp/private-downloads" };
   state.post.mockResolvedValue({ id: "new-empty-folder" });
   state.refresh.mockImplementation(async () => { state.library = { ...state.library!, folders: [{ id: "new-empty-folder", name: "New folder", parentId: null, revision: 1 }] }; });
-  render(<NotebooksPage />);
+  render(<MemoryRouter><NotebooksPage /></MemoryRouter>);
   expect(screen.getByLabelText("Notes · Markdown and $LaTeX$ supported")).toHaveValue("Original note");
   fireEvent.click(screen.getByRole("button", { name: "New folder" }));
   fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "New folder" } });
@@ -145,4 +146,22 @@ it("keeps unfiled and notebook privacy choices intact through the custom control
   expect(screen.getByRole("checkbox", { name: "Allow local training from this notebook" })).toBeChecked();
   expect(onError).not.toHaveBeenCalled();
   expect(JSON.stringify(state.patch.mock.calls)).not.toContain("__none");
+});
+
+
+it("opens a blank notebook form from a shortcut without creating anything", async () => {
+  state.library = { ownerKey: "workspace:alice", folders: [], notebooks: [], pages: [], sources: [], memory: [], downloadsRoot: "/tmp/private-downloads" };
+  render(<MemoryRouter initialEntries={["/notebooks?new=notebook"]}><NotebooksPage /></MemoryRouter>);
+  expect(await screen.findByRole("button", { name: "Create notebook" })).toBeVisible();
+  expect(screen.getByLabelText("Notebook title")).toHaveValue("");
+  expect(state.post).not.toHaveBeenCalled();
+});
+
+it("opens the exact owned page selected in workspace search", async () => {
+  const second = { ...page, id: "second-page", notebookId: "second-notebook", title: "Selected search result", content: { markdown: "Selected owned content" } };
+  state.library = { ownerKey: "workspace:alice", folders: [], notebooks: [{ id: page.notebookId, title: "First notebook", folderId: null, revision: 1 }, { id: second.notebookId, title: "Search notebook", folderId: null, revision: 1 }], pages: [page, second], sources: [], memory: [], downloadsRoot: "/tmp/private-downloads" };
+  render(<MemoryRouter initialEntries={["/notebooks?notebook=second-notebook&page=second-page"]}><NotebooksPage /></MemoryRouter>);
+  await waitFor(() => expect(screen.getByLabelText("Page title")).toHaveValue("Selected search result"));
+  expect(screen.getByLabelText("Notes · Markdown and $LaTeX$ supported")).toHaveValue("Selected owned content");
+  expect(state.post).not.toHaveBeenCalled();
 });

@@ -17,6 +17,20 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
 
+  /* Layout uses an 8px grid. The older --space-* names retain their
+     established values for existing component/intrinsic-size contracts. */
+  --grid-1: 8px;
+  --grid-2: 16px;
+  --grid-3: 24px;
+  --grid-4: 32px;
+  --grid-5: 40px;
+  --grid-6: 48px;
+  --page-gutter: var(--grid-4);
+  --section-gap: var(--grid-4);
+  --card-padding: var(--grid-3);
+  --form-gap: var(--grid-2);
+  --field-gap: var(--grid-1);
+
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;

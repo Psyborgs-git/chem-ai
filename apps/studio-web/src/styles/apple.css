@@ -1,0 +1,283 @@
+/* Native-inspired visual foundation. Content stays opaque; only navigation
+   chrome uses a material, with an opaque accessibility/compatibility fallback. */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius: 0.625rem;
+  --shadow-panel: 0 1px 2px rgb(24 24 22 / 3%), 0 5px 20px rgb(24 24 22 / 2%);
+  --shadow-floating: 0 16px 48px rgb(24 24 22 / 15%), 0 2px 8px rgb(24 24 22 / 8%);
+  --motion-fast: 120ms;
+  --motion-med: 220ms;
+  --motion-enter: 240ms;
+}
+
+:root, :root[data-theme="light"] {
+  --surface: #ffffff;
+  --surface-raised: #f8f8f6;
+  --surface-sunken: #eeefec;
+  --canvas: #f5f5f3;
+  --text: #252523;
+  --text-muted: #62625f;
+  --border: #dededb;
+  --border-strong: #aeafaa;
+  --accent: #0064d2;
+  --accent-contrast: #ffffff;
+  --accent-subtle: #e8f0fc;
+  --focus-ring: #0064d2;
+  --control-surface: #ffffff;
+  --chrome-surface: #f0f0ed;
+  --chrome-material: rgb(243 243 240 / 88%);
+  --nav-surface: var(--chrome-surface);
+  --nav-text: var(--text);
+  --nav-muted: var(--text-muted);
+  --nav-active: #dededa;
+  --art-soft: #eef1f6;
+  --art-mint: #eef1ee;
+  --art-line: #afb7c1;
+  --art-blue: #5076a4;
+  --art-teal: #577b70;
+}
+
+:root[data-theme="dark"] {
+  --surface: #222221;
+  --surface-raised: #292928;
+  --surface-sunken: #1a1a19;
+  --canvas: #1c1c1b;
+  --text: #f1f1ee;
+  --text-muted: #b0b0aa;
+  --border: #3d3d39;
+  --border-strong: #75756f;
+  --accent: #8abaff;
+  --accent-contrast: #151515;
+  --accent-subtle: #293749;
+  --focus-ring: #8abaff;
+  --control-surface: #353532;
+  --chrome-surface: #242423;
+  --chrome-material: rgb(37 37 35 / 90%);
+  --nav-surface: var(--chrome-surface);
+  --nav-text: var(--text);
+  --nav-muted: var(--text-muted);
+  --nav-active: #3a3a36;
+  --art-soft: #2b3037;
+  --art-mint: #2c3430;
+  --art-line: #737e89;
+  --art-blue: #95adca;
+  --art-teal: #93b5a9;
+  --shadow-panel: 0 1px 2px rgb(0 0 0 / 12%);
+  --shadow-floating: 0 16px 48px rgb(0 0 0 / 35%), 0 2px 8px rgb(0 0 0 / 20%);
+}
+
+body { letter-spacing: -.012em; }
+button, input, select, textarea { font-family: var(--font-sans); }
+button, input, select, textarea, [role="tab"] { -webkit-tap-highlight-color: transparent; }
+h1, h2, h3 { letter-spacing: -.025em; }
+::selection { background: var(--accent-subtle); color: var(--text); }
+
+/* Remove the older saturated navigation treatment without changing its layout. */
+.cs-sidebar {
+  background: var(--chrome-surface);
+  color: var(--text);
+  border-right: 1px solid var(--border);
+}
+.cs-sidebar .cs-shell__brand, .cs-sidebar__footer strong { color: var(--text); }
+.cs-sidebar__workspace { border-color: var(--border); }
+.cs-sidebar nav a { color: var(--text); }
+.cs-sidebar nav a:hover { background: var(--surface-sunken); color: var(--text); }
+.cs-sidebar nav a[aria-current="page"] {
+  background: var(--nav-active);
+  color: var(--text);
+  box-shadow: none;
+  font-weight: 600;
+}
+.cs-sidebar__new { background: var(--control-surface); color: var(--text); border: 1px solid var(--border); }
+.cs-sidebar__new:hover { background: var(--surface-raised); }
+.cs-sidebar-close { color: var(--text); }
+.cs-shell__header, .cs-desktop-titlebar { background: var(--chrome-surface); }
+.cs-shell__header { border-bottom-color: var(--border); }
+.cs-desktop-titlebar { height: 40px; border-bottom-color: var(--border); }
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* The toolbar contains the fixed agent panel. Filtering that ancestor would
+     change its containing block and clip the panel to the toolbar geometry. */
+  .cs-sidebar, .cs-desktop-titlebar {
+    background: var(--chrome-material);
+    -webkit-backdrop-filter: saturate(115%) blur(18px);
+    backdrop-filter: saturate(115%) blur(18px);
+  }
+}
+
+/* Compact desktop controls retain separate, generous touch targets. */
+.cs-btn {
+  min-height: var(--grid-5);
+  padding: var(--grid-1) var(--grid-2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  background: var(--control-surface);
+  border-color: var(--border);
+  box-shadow: 0 1px 1px rgb(0 0 0 / 3%);
+}
+.cs-btn:hover { background: var(--surface-raised); border-color: var(--border-strong); }
+.cs-btn--primary, .cs-btn--primary:hover { background: var(--accent); color: var(--accent-contrast); border-color: var(--accent); }
+.cs-btn--ghost { background: transparent; border-color: transparent; box-shadow: none; }
+.cs-btn--ghost:hover { background: var(--surface-sunken); border-color: transparent; }
+.cs-btn--danger { color: var(--status-danger); background: var(--state-surface-error); }
+.cs-input, .cs-select, select:not([class]), textarea:not([class]), input:not([type="checkbox"]):not([type="radio"]):not([class]) {
+  min-height: var(--grid-5);
+  padding: var(--grid-1) var(--grid-2);
+  border-radius: var(--radius-sm);
+  background: var(--control-surface);
+  border-color: var(--border-strong);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.cs-icon-btn, .cs-icon-button, [data-icon-only="true"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  flex: none;
+  border-radius: var(--radius-sm);
+}
+.cs-icon-btn > svg, .cs-icon-button > svg, [data-icon-only="true"] > svg { width: 17px; height: 17px; flex: none; }
+[data-slot="button"] { border-radius: var(--radius-sm); font-weight: 500; }
+[data-slot="button"][data-variant="outline"] { background: var(--control-surface); box-shadow: 0 1px 1px rgb(0 0 0 / 3%); }
+[data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"] { border-radius: var(--radius-sm); }
+[data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="popover-content"] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-floating);
+}
+[data-slot="dialog-content"], [data-slot="alert-dialog-content"] { border-radius: var(--radius-lg); }
+[data-slot="select-content"], [data-slot="dropdown-menu-content"], [data-slot="popover-content"] { border-radius: var(--radius-md); }
+[data-slot="dialog-overlay"], [data-slot="alert-dialog-overlay"] { background: rgb(0 0 0 / 24%); }
+.cs-panel, .cs-quick-calculator, .cs-home-review { box-shadow: var(--shadow-panel); }
+.cs-panel__header { background: transparent; }
+.cs-table thead th { text-transform: none; letter-spacing: 0; font-weight: 600; }
+.cs-kicker, .cs-sidebar__label { letter-spacing: .045em; font-weight: 600; }
+.cs-tab { border-radius: var(--radius-sm); }
+.cs-tab--active { border-color: var(--border-strong); box-shadow: inset 0 -2px var(--accent); }
+.cs-workspace-finder { background: var(--control-surface); border-radius: var(--radius-sm); }
+
+@media (pointer: coarse) {
+  .cs-btn, .cs-icon-btn, .cs-icon-button, [data-icon-only="true"], [data-slot="button"], [data-slot="select-trigger"], .cs-input, .cs-select { min-height: 44px; }
+  .cs-icon-btn, .cs-icon-button, [data-icon-only="true"], [data-slot="button"][data-size^="icon"] { width: 44px; min-width: 44px; height: 44px; }
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .cs-sidebar, .cs-shell__header, .cs-desktop-titlebar {
+    background: var(--chrome-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  :root { --border: var(--border-strong); }
+  .cs-btn, [data-slot="button"][data-variant="outline"], .cs-panel { box-shadow: none; }
+}
+@media (forced-colors: active) {
+  .cs-sidebar, .cs-shell__header, .cs-desktop-titlebar { background: Canvas; color: CanvasText; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .cs-sidebar nav a[aria-current="page"] { outline: 1px solid Highlight; }
+}
+
+/* Visible 8px layout rhythm. These are real insets and gaps, not a token-only
+   change. Icon geometry, borders and type sizes intentionally stay independent. */
+.cs-shell main { padding: var(--page-gutter); }
+.cs-page-header { gap: var(--grid-3); margin-bottom: var(--grid-3); }
+.cs-page-header h1, .cs-page-header h2 { margin-top: 0; }
+.cs-page-description { margin: var(--grid-1) 0 0; }
+.cs-actions, .cs-page-actions { gap: var(--grid-1); }
+.cs-two-column, .cs-dashboard-grid, .cs-learning-columns { gap: var(--grid-3); }
+.cs-section-heading { gap: var(--grid-2); margin-bottom: var(--grid-2); }
+.cs-panel:not(:has(> .cs-panel__body)) { padding: var(--card-padding); }
+.cs-panel:has(> .cs-panel__body) { padding: 0; }
+.cs-panel__header, .cs-panel__body { padding: var(--card-padding); }
+.cs-panel__header { gap: var(--grid-2); }
+.cs-panel__header p { margin-top: var(--grid-1); }
+.cs-panel + .cs-panel { margin-top: var(--grid-3); }
+.cs-plan, .cs-execution, .cs-state, .cs-contract,
+.cs-quick-calculator, .cs-home-review, .cs-source-card,
+.cs-feature-body > form, .cs-feature-body > article,
+.cs-feature-body > section, .cs-feature-body > div > form,
+.cs-feature-body > div > article, .cs-feature-body > div > section {
+  padding: var(--card-padding);
+}
+.cs-feature-body > form, .cs-feature-body > article,
+.cs-feature-body > section, .cs-feature-body > div > form,
+.cs-feature-body > div > article, .cs-feature-body > div > section { margin-bottom: var(--grid-3); }
+[data-slot="card"] { gap: var(--grid-3); padding-block: var(--card-padding); }
+[data-slot="card-header"], [data-slot="card-content"], [data-slot="card-footer"] { padding-inline: var(--card-padding); }
+[data-slot="dialog-content"], [data-slot="alert-dialog-content"] { gap: var(--grid-2); padding: var(--card-padding); }
+.cs-create-sheet__header, .cs-create-sheet__body { padding: var(--card-padding); }
+.cs-create-sheet__header { gap: var(--grid-2); }
+
+.cs-field,
+:is(.cs-learning-workspace, .cs-notebooks-page, .cs-library-page) .cs-field,
+.cs-memory-create .cs-field { gap: var(--field-gap); }
+.cs-route-content :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"]) {
+  min-height: var(--grid-5);
+  padding: var(--grid-1) var(--grid-2);
+}
+.cs-route-content [data-slot="button"]:not([data-size^="icon"]) { padding: var(--grid-1) var(--grid-2); }
+[data-slot="select-item"], [data-slot="dropdown-menu-item"] { padding: var(--grid-1) var(--grid-2); }
+.cs-inline-create { gap: var(--form-gap); padding: var(--grid-2); margin-bottom: var(--grid-3); }
+.cs-learning-fields, .cs-research-search, .cs-research-url, .cs-citation-attach { gap: var(--form-gap); }
+.cs-learning-fields > .cs-field, .cs-learning-fields > .cs-learning-schedule { margin-bottom: 0; }
+.cs-learning-steps { gap: var(--grid-2); margin-bottom: var(--grid-4); }
+.cs-learning-steps button { gap: var(--grid-1); padding: var(--grid-1); }
+.cs-learning-topline { gap: var(--grid-2); margin: 0 0 var(--grid-3); }
+.cs-learning-intents { gap: var(--grid-2); margin-block: var(--grid-3); }
+.cs-learning-workspace .cs-learning-intent { gap: var(--grid-1); padding: var(--card-padding); }
+.cs-learning-advanced { margin-top: var(--grid-3); padding-top: var(--grid-2); }
+.cs-learning-advanced > summary { padding-block: var(--grid-1); }
+.cs-learning-advanced > .cs-field, .cs-learning-advanced > .cs-learning-fields { margin-top: var(--grid-2); }
+.cs-learning-form-footer { gap: var(--grid-2); margin-top: var(--grid-3); padding-top: var(--grid-3); }
+.cs-learning-inspector, .cs-library-inspector { padding: var(--card-padding); }
+.cs-learning-inspector > header, .cs-library-inspector > header { gap: var(--grid-2); margin-bottom: var(--grid-3); }
+.cs-learning-metrics { gap: var(--grid-3); margin-block: var(--grid-2) var(--grid-3); }
+.cs-learning-metrics > div, .cs-learning-schedule { gap: var(--grid-1); }
+.cs-learning-artifacts a { gap: var(--grid-2); padding: var(--grid-2); }
+.cs-learning-review { gap: var(--grid-2); margin-bottom: var(--grid-3); }
+.cs-learning-review > div { gap: var(--grid-2); }
+.cs-learning-preflight { margin-block: var(--grid-2); padding: var(--grid-2); }
+.cs-learning-preflight p { gap: var(--grid-1); }
+
+/* In particular, a bordered recent-work row must have horizontal insets. */
+.cs-recent-work li > a, .cs-review-list li > a,
+.cs-home-simple .cs-recent-work li > a, .cs-home-simple .cs-review-list li > a {
+  padding: var(--grid-2);
+  gap: var(--grid-2);
+}
+.cs-learning-row, .cs-learning-data-row, .cs-library-row, .cs-library-source-row {
+  padding: var(--grid-2);
+  gap: var(--grid-2);
+}
+.cs-table th, .cs-table td, .cs-learning-table-wrap th, .cs-learning-table-wrap td { padding: var(--grid-2); }
+.cs-notebook-index { padding: var(--grid-2); }
+.cs-notebook-editor { padding: var(--card-padding); }
+.cs-notebook-toolbar { gap: var(--grid-1); padding-bottom: var(--grid-2); margin-bottom: var(--grid-3); }
+.cs-notebook-list button, .cs-notebook-page-list button { padding: var(--grid-1) var(--grid-2); }
+.cs-recipe-row { gap: var(--grid-1); margin-bottom: var(--grid-2); }
+.cs-notebook-history, .cs-notebook-structure, .cs-notebook-source-review, .cs-notebook-trash-confirm { padding: var(--grid-2); }
+.cs-notebook-citations { margin-top: var(--grid-3); padding-top: var(--grid-2); }
+.cs-library-tabs { gap: var(--grid-3); margin-bottom: var(--grid-3); }
+.cs-library-tabs a { padding: var(--grid-1) var(--grid-2); }
+.cs-library-list-heading { gap: var(--grid-2); margin-block: var(--grid-3) var(--grid-2); }
+.cs-library-upload { gap: var(--grid-2); margin-bottom: var(--grid-3); }
+.cs-library-inspector .cs-actions { margin-block: var(--grid-3); }
+.cs-source-result { gap: var(--grid-2); padding: var(--grid-2); }
+.cs-source-search-results { gap: var(--grid-2); margin-block: var(--grid-3); }
+
+@media (max-width: 767px) {
+  :root { --page-gutter: var(--grid-2); --card-padding: var(--grid-2); --section-gap: var(--grid-3); }
+  .cs-page-header { gap: var(--grid-2); }
+  .cs-create-sheet__header, .cs-create-sheet__body { padding: var(--grid-2); }
+  .cs-table th, .cs-table td, .cs-learning-table-wrap th, .cs-learning-table-wrap td { padding: var(--grid-1) var(--grid-2); }
+}

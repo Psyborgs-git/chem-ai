@@ -4,6 +4,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectGroup, SelectI
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router";
 import { Button } from "../../components/atoms/Button";
 import { PageHeader } from "../../components/layout/StudioLayout";
 import { workspaceRequest } from "../../relay/network";
@@ -121,11 +122,12 @@ export function PageEditor({ page, onSaved, flushRef, ownerKey, sources = [], ai
 
 export function NotebooksPage() {
   const { data, error, loading, refresh } = useWorkspace<Library>("/api/library");
+  const [params, setParams] = useSearchParams();
   const [folderId, setFolderId] = useState("");
-  const [notebookId, setNotebookId] = useState("");
-  const [pageId, setPageId] = useState("");
+  const [notebookId, setNotebookId] = useState(() => params.get("notebook") ?? "");
+  const [pageId, setPageId] = useState(() => params.get("page") ?? "");
   const [name, setName] = useState("");
-  const [creating, setCreating] = useState<"folder" | "notebook" | null>(null);
+  const [creating, setCreating] = useState<"folder" | "notebook" | null>(() => params.get("new") === "notebook" ? "notebook" : null);
   const [kind, setKind] = useState("note");
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -138,11 +140,20 @@ export function NotebooksPage() {
   const selectedPage = pageId ? data?.pages.find((p) => p.id === pageId && p.notebookId === selectedNotebook?.id) : pages[0];
   const firstNotebookId = notebooks[0]?.id;
   const firstPageId = pages[0]?.id;
-  useEffect(() => { if (!notebookId && firstNotebookId) setNotebookId(firstNotebookId); }, [notebookId, firstNotebookId]);
-  useEffect(() => { if (!pageId && firstPageId) setPageId(firstPageId); }, [pageId, firstPageId]);
+  useEffect(() => { if (!notebookId && firstNotebookId && !params.has("notebook") && !params.has("page")) setNotebookId(firstNotebookId); }, [notebookId, firstNotebookId, params]);
+  useEffect(() => { if (!pageId && firstPageId && !params.has("notebook") && !params.has("page")) setPageId(firstPageId); }, [pageId, firstPageId, params]);
   const trashPages = (data?.trash ?? []).filter((page) => page.notebookId === selectedNotebook?.id);
   const restoreTrashed = async (page: NotebookPage) => { try { await flushRef.current?.(); const restored = await post<NotebookPage>(`/api/library/pages/${page.id}/restore`, { expectedRevision: page.revision }); setPageId(restored.id); await refresh(); } catch (e) { setNotice(messageOf(e)); } };
   const navigate = async (change: () => void) => { try { await flushRef.current?.(); flushRef.current = null; change(); setNotice(null); } catch { setNotice("Save or recover the current page before switching."); } };
+  useEffect(() => {
+    const createNotebook = params.get("new") === "notebook", requestedNotebook = params.get("notebook"), requestedPage = params.get("page");
+    if (!createNotebook && !requestedNotebook && !requestedPage) return;
+    void navigate(() => {
+      if (createNotebook) { setName(""); setCreating("notebook"); }
+      if (requestedNotebook) { setFolderId(""); setSearch(""); setNotebookId(requestedNotebook); setPageId(requestedPage ?? ""); }
+      const next = new URLSearchParams(params); next.delete("new"); next.delete("notebook"); next.delete("page"); setParams(next, { replace: true });
+    });
+  }, [params, setParams]);
   const create = async (event: FormEvent) => {
     event.preventDefault(); if (!name.trim() || busy) return; setBusy(true);
     try { await flushRef.current?.(); const record = await post<{ id: string }>(`/api/library/${creating === "folder" ? "folders" : "notebooks"}`, creating === "folder" ? { name, parentId: folderId || null } : { title: name, folderId: folderId || null }); if (creating === "folder") { setFolderId(record.id); setNotebookId(""); setPageId(""); } else { setNotebookId(record.id); setPageId(""); } setName(""); setCreating(null); await refresh(); }

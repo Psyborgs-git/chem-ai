@@ -10,6 +10,7 @@ import "./styles/components.css";
 import "./styles/product.css";
 import "./styles/motion.css";
 import "./styles/shadcn.css";
+import "./styles/apple.css";
 
 // The research studio starts light; an explicit saved choice wins.
 document.documentElement.dataset.theme =
